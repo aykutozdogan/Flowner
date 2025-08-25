@@ -69,12 +69,22 @@ const authenticateToken = async (req: any, res: any, next: any) => {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     const user = await storage.getUserWithTenant(decoded.userId);
     
-    if (!user || !user.is_active || user.tenant_id !== req.tenantId) {
+    if (!user || !user.is_active) {
       return res.status(401).json({
         type: "/api/errors/auth",
         title: "Unauthorized",
         status: 401,
         detail: "Invalid or expired token"
+      });
+    }
+
+    // Ensure the user belongs to the tenant making the request
+    if (user.tenant_id !== req.tenantId) {
+      return res.status(403).json({
+        type: "/api/errors/forbidden",
+        title: "Forbidden",
+        status: 403,
+        detail: "User does not belong to this tenant"
       });
     }
 
