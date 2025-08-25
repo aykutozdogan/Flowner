@@ -43,6 +43,7 @@ export interface IStorage {
   getWorkflows(tenantId: string, filters?: { status?: string }): Promise<Workflow[]>;
   getWorkflow(id: string, tenantId: string): Promise<Workflow | undefined>;
   getWorkflowById(id: string, tenantId: string): Promise<Workflow | undefined>;
+  getWorkflowByKey(key: string, tenantId: string): Promise<Workflow | undefined>;
   createWorkflow(workflow: InsertWorkflow): Promise<Workflow>;
   updateWorkflow(id: string, tenantId: string, updates: Partial<InsertWorkflow>): Promise<Workflow | undefined>;
   publishWorkflow(id: string, tenantId: string, versionNotes?: string): Promise<Workflow | undefined>;
@@ -361,6 +362,16 @@ export class DatabaseStorage implements IStorage {
 
   async getWorkflowById(id: string, tenantId: string): Promise<Workflow | undefined> {
     return this.getWorkflow(id, tenantId);
+  }
+
+  async getWorkflowByKey(key: string, tenantId: string): Promise<Workflow | undefined> {
+    const [workflow] = await db.select().from(workflows)
+      .where(and(
+        eq(workflows.key, key),
+        eq(workflows.tenant_id, tenantId),
+        eq(workflows.is_deleted, false)
+      ));
+    return workflow || undefined;
   }
 
   async createWorkflow(workflow: InsertWorkflow): Promise<Workflow> {

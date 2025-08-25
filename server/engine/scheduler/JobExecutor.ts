@@ -1,7 +1,11 @@
 import type { QueuedJob } from './JobQueue';
 import { TaskExecutor } from '../executor/TaskExecutor';
 import { ProcessStateManager } from '../runtime/ProcessStateManager';
+import { BpmnExecutor } from '../runtime/BpmnExecutor';
 import type { JobPayload, ExecutionContext } from '../index';
+import { db } from '../../db';
+import { workflowVersions } from '../../../shared/schema';
+import { eq, and, desc } from 'drizzle-orm';
 
 export class JobExecutor {
   private taskExecutor: TaskExecutor;
@@ -70,8 +74,53 @@ export class JobExecutor {
         );
         
         // Continue process flow after service task completion
-        // For MVP, this is simplified - in full implementation, would follow BPMN semantics
         console.log(`[JobExecutor] Service task ${job.task_id} completed successfully`);
+        
+        try {
+          console.log(`[JobExecutor] Starting process flow continuation for element: ${payload.elementId}`);
+          
+          // Get process instance to get workflow ID
+          const currentProcessInstance = await this.stateManager.getProcessInstance(job.process_id, job.tenant_id);
+          if (!currentProcessInstance) {
+            throw new Error(`Process instance not found: ${job.process_id}`);
+          }
+          
+          console.log(`[JobExecutor] Found process instance with workflow ID: ${currentProcessInstance.workflow_id}`);
+          
+          // Get the workflow version to get BPMN definition
+          const workflowVersion = await db.select().from(workflowVersions)
+            .where(and(
+              eq(workflowVersions.workflow_id, currentProcessInstance.workflow_id),
+              eq(workflowVersions.tenant_id, currentProcessInstance.tenant_id),
+              eq(workflowVersions.status, 'published')
+            ))
+            .orderBy(desc(workflowVersions.version))
+            .limit(1);
+            
+          if (workflowVersion.length > 0) {
+            const bpmnDefinition = workflowVersion[0].definition_json as any;
+            
+            // Find the current element and follow its outgoing flows
+            const currentElement = bpmnDefinition.elements.find((e: any) => e.id === payload.elementId);
+            if (currentElement?.outgoing) {
+              const executor = new BpmnExecutor(this.stateManager);
+              
+              // Continue to next elements
+              for (const flowId of currentElement.outgoing) {
+                const flow = bpmnDefinition.sequenceFlows.find((f: any) => f.id === flowId);
+                if (flow) {
+                  const targetElement = bpmnDefinition.elements.find((e: any) => e.id === flow.targetRef);
+                  if (targetElement) {
+                    console.log(`[JobExecutor] Continuing process flow to element: ${targetElement.id}`);
+                    await (executor as any).executeElement(targetElement, bpmnDefinition, context);
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`[JobExecutor] Error continuing process flow:`, error);
+        }
       }
     } catch (error) {
       console.error(`[JobExecutor] Service job failed:`, error);

@@ -1564,11 +1564,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workflow Publishing API
   app.post("/api/workflows/:id/publish", parseTenantId, authenticateToken, async (req, res) => {
     try {
-      const { id: workflowId } = req.params;
+      const { id: workflowIdentifier } = req.params;
       const { version = "1.0.0" } = req.body;
       
-      // Get workflow
-      const workflow = await storage.getWorkflowById(workflowId, req.tenantId);
+      // Get workflow by ID or key
+      let workflow;
+      if (workflowIdentifier.includes('-') && workflowIdentifier.length === 36) {
+        // It's a UUID
+        workflow = await storage.getWorkflowById(workflowIdentifier, req.tenantId);
+      } else {
+        // It's a key
+        workflow = await storage.getWorkflowByKey(workflowIdentifier, req.tenantId);
+      }
+      
       if (!workflow) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1581,7 +1589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create workflow version with JSON DSL
       const versionData = {
         tenantId: req.tenantId,
-        workflowId,
+        workflowId: workflow.id,
         version: parseInt(version.replace(/\./g, "")), // Convert "1.0.0" to 100
         definitionJson: JSON.parse(workflow.bpmn_xml), // Assume BPMN XML is actually JSON DSL
         status: "published" as const,
@@ -1591,12 +1599,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createWorkflowVersion(versionData);
       
       // Update workflow status
-      await storage.updateWorkflow(workflowId, req.tenantId, {
+      await storage.updateWorkflow(workflow.id, req.tenantId, {
         status: "published",
         published_at: new Date(),
       });
 
-      console.log(`[Engine API] Workflow ${workflowId} published as version ${versionData.version}`);
+      console.log(`[Engine API] Workflow ${workflow.id} (${workflow.key || workflowIdentifier}) published as version ${versionData.version}`);
       res.json({
         success: true,
         message: "Workflow published successfully",
@@ -1768,6 +1776,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(processInstance);
     } catch (error) {
       console.error("Error starting process:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to start process"
+      });
+    }
+  });
+
+  // Process Start API with workflowKey
+  app.post("/api/processes/start", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { workflowKey, name = "Process", variables = {} } = req.body;
+      
+      // Validate required fields
+      if (!workflowKey) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Validation Error",
+          status: 400,
+          detail: "workflowKey is required"
+        });
+      }
+
+      // Get workflow by key
+      const workflow = await storage.getWorkflowByKey(workflowKey, req.tenantId);
+      if (!workflow) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Workflow Not Found",
+          status: 404,
+          detail: "Workflow not found with the provided key"
+        });
+      }
+
+      // Get published workflow version
+      const workflowVersion = await storage.getLatestWorkflowVersion(workflow.id, req.tenantId);
+      if (!workflowVersion) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Published Workflow Not Found",
+          status: 404,
+          detail: "No published version found for this workflow"
+        });
+      }
+
+      // Start process using engine
+      const processInstance = await processRuntime.startProcess({
+        tenantId: req.tenantId,
+        workflowId: workflow.id,
+        workflowVersion: workflowVersion.version,
+        bpmnDefinition: workflowVersion.definition_json as BpmnDefinition,
+        name: name || `${workflow.name} Process`,
+        variables,
+        startedBy: req.user.id,
+      });
+
+      console.log(`[Engine API] Process started: ${processInstance.id} from workflow key ${workflowKey}`);
+      res.json(processInstance);
+    } catch (error) {
+      console.error("Error starting process from workflowKey:", error);
       res.status(500).json({
         type: "/api/errors/server",
         title: "Internal Server Error",
