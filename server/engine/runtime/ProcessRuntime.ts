@@ -95,6 +95,9 @@ export class ProcessRuntime {
       data.formData
     );
 
+    // TODO: Update process variables with task outcome (temporarily disabled)
+    console.log(`[ProcessRuntime] Task outcome: ${data.outcome} - variables update temporarily disabled`);
+
     // Continue process flow after task completion
     console.log(`[ProcessRuntime] Task ${data.taskId} completed, continuing process flow`);
     

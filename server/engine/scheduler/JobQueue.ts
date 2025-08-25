@@ -197,11 +197,23 @@ export class JobQueue {
     
     await this.markJobRunning(job.id);
     
-    // Job processing would be handled by JobExecutor
-    // For now, we'll just mark as completed after a short delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    await this.markJobCompleted(job.id);
+    try {
+      // Import and use JobExecutor for proper job processing
+      const { JobExecutor } = await import('./JobExecutor');
+      const { ProcessStateManager } = await import('../runtime/ProcessStateManager');
+      
+      const stateManager = new ProcessStateManager();
+      const jobExecutor = new JobExecutor(stateManager);
+      
+      // Execute job properly through JobExecutor
+      await jobExecutor.executeJob(job);
+      
+      await this.markJobCompleted(job.id);
+    } catch (error) {
+      console.error(`[JobQueue] Job processing failed:`, error);
+      await this.markJobFailed(job.id, error instanceof Error ? error.message : 'Unknown error');
+      throw error;
+    }
   }
 
   async getQueueStats(): Promise<{
