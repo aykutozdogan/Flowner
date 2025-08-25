@@ -1,0 +1,70 @@
+LÜTFEN TÜM YANITLARINI TÜRKÇE VER.
+
+Rolün: Kıdemli full-stack geliştirici + teslimat ajanı.
+Amaç: S4’te User Portal üzerinde **dinamik form doldurma ve User Task tamamlama** sürecini uçtan uca çalışır hale getirmek.
+
+DEĞİŞMEZ KURALLAR
+- Source of truth = PLAN.md + S1/S2/S3 çıktıları.
+- Tüm yanıtlar Türkçe.
+- Var olan kodu koru; minimal eklemeler yap.
+- Tam dosya üret; kısmi diff verme.
+- Testler PASS olmadan sprint tamamlanmaz.
+- İş bittiğinde terminale: **S4_UI=PASS** yaz.
+
+──────────────────────────────────────────────
+
+0) ÖN KOŞUL: S3 testlerini doğrula
+- `./tests/s3-form-api-test.sh` PASS sonucunu rapora yaz.
+- Eğer FAIL ise düzelt, tekrar dene.
+
+1) BACKEND — TASK ↔ FORM ENTEGRASYONU
+- UserTask modeline `formKey` + `formVersion` alanlarını ekle.
+- Process yürürken UserTask yaratıldığında bu değerleri `task_instances` tablosuna yaz.
+- `GET /api/v1/tasks/:id` yanıtına `formKey` ve `formVersion` eklensin.
+- `GET /api/v1/forms/{key}/preview?version=N` uç noktası versiyonlu preview döndürsün.
+- Task complete (`POST /api/v1/tasks/:id/complete`) çağrısında gönderilen form verisi `form_data` tablosuna yazılsın.
+
+2) FRONTEND — USER PORTAL GELİŞTİRME
+- Route: `/portal/tasks/:id`
+- Task detayında: backend’den formKey+version al → preview API çağır → dinamik form render et.
+- Kullanıcı formu doldurup outcome seçer → `task.complete` çağrılır → hem task kapanır hem form_data kaydedilir.
+- RBAC: sadece doğru role sahip kullanıcı formu görebilir, aksi durumda 403.
+
+3) FORM RENDERER COMPONENT
+- Component: `FormRenderer` (React + MUI)
+- Props: schema, uiSchema, value, onSubmit
+- Desteklenen alan tipleri: Text, Textarea, Number, Select, Multi-Select, Date, Time, DateTime, Checkbox, Radio, File, RichText
+- Conditional görünürlük: field expression → diğer alanlara göre hide/show
+- Validasyon: required, min/max, regex kontrolü
+
+4) ADMIN PANEL — PROCESS MONITORING
+- /admin/processes → süreç detay paneline form submission geçmişi eklensin.
+- Audit timeline’da `form.published`, `task.completed`, `formdata.saved` olayları görünsün.
+
+5) UI TESTLERİ (Playwright/Cypress) — S4 SMOKE
+- Senaryo A (Admin/Designer):
+  - Yeni `expense_request` formunu publish et.
+  - Workflow’daki Manager Approval UserTask’a formKey+version bağla.
+- Senaryo B (Approver/User):
+  - Process başlat (amount=2500).
+  - Approver login → /portal/tasks → form alanları render olur → doldur → submit → task.complete → process.completed.
+- Senaryo C (Auto approve):
+  - Process başlat (amount=750) → otomatik tamamlanır.
+- Test komutu: `npm run test:ui:s4`
+- PASS olursa terminalde **S4_UI=PASS** görünmeli.
+
+6) DÖKÜMANTASYON
+- README.md → “S4: User Portal’da form doldurma + User Task tamamlama” adım adım kullanım.
+- docs/s4-sprint-report.md dosyasına yaz:
+  - Eklenen tablolar/alanlar
+  - API değişiklikleri
+  - FormRenderer özellikleri
+  - Senaryo sonuçları
+  - Test özeti (PASS/FAIL)
+
+KABUL KRİTERLERİ
+- /portal/tasks/:id ekranında dinamik form render edilir.
+- Form submit → form_data DB’ye kaydedilir, task.complete çağrılır, process devam eder.
+- /admin/processes detayında submission geçmişi görünür.
+- E2E testleri geçer.
+- Terminal çıktısı: **S4_UI=PASS**

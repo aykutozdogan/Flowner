@@ -12,6 +12,8 @@ import Workflows from "@/pages/workflows";
 import Processes from "@/pages/processes";
 import Tasks from "@/pages/tasks";
 import EngineStats from "@/pages/engine-stats";
+import { Portal } from "@/pages/Portal";
+import { TaskDetail } from "@/pages/TaskDetail";
 
 // Create Material-UI theme matching the design reference
 const theme = createTheme({
@@ -99,6 +101,9 @@ function Router() {
       <Route path="/processes" component={Processes} />
       <Route path="/tasks" component={Tasks} />
       <Route path="/engine/stats" component={EngineStats} />
+      <Route path="/portal/tasks/:id" component={TaskDetail} />
+      <Route path="/portal/tasks" component={Portal} />
+      <Route path="/portal" component={Portal} />
       <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>

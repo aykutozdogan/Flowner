@@ -558,6 +558,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async completeTask(id: string, tenantId: string, outcome: string, formData: any, completedBy: string): Promise<TaskInstance | undefined> {
+    // Get task details before completing for form data storage
+    const task = await this.getTaskInstance(id, tenantId);
+    if (!task) {
+      throw new Error("Task not found");
+    }
+
+    // Complete the task
     const [completedTask] = await db.update(taskInstances)
       .set({ 
         status: "completed",
@@ -572,6 +579,26 @@ export class DatabaseStorage implements IStorage {
         eq(taskInstances.tenant_id, tenantId)
       ))
       .returning();
+
+    // S4: Save form data to form_data table if form info exists
+    if (completedTask && task.form_key && task.form_version && formData) {
+      try {
+        await this.saveFormData({
+          tenant_id: tenantId,
+          form_key: task.form_key,
+          form_version: task.form_version,
+          process_id: task.process_id,
+          task_id: id,
+          data_json: formData,
+          created_by: completedBy
+        });
+        console.log(`[Storage] Form data saved for task ${id}`);
+      } catch (error) {
+        console.error(`[Storage] Failed to save form data for task ${id}:`, error);
+        // Don't fail the task completion if form data saving fails
+      }
+    }
+
     return completedTask || undefined;
   }
 

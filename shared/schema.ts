@@ -175,6 +175,9 @@ export const taskInstances = pgTable("task_instances", {
   type: taskTypeEnum("type"), // Add new field (nullable for backward compatibility)
   assignee_role: userRoleEnum("assignee_role"), // Add new field (nullable)
   sla_hours: integer("sla_hours"), // Add new field (nullable)
+  // S4: Form integration fields
+  form_key: varchar("form_key", { length: 255 }), // Form key for dynamic form rendering
+  form_version: integer("form_version"), // Specific form version for this task
   created_at: timestamp("created_at").default(sql`now()`).notNull(),
   updated_at: timestamp("updated_at").default(sql`now()`).notNull(),
 }, (table) => ({

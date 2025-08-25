@@ -1527,6 +1527,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         priority: task.priority,
         assigneeRole: task.assignee_role,
         formId: task.form_id,
+        formKey: task.form_key,
+        formVersion: task.form_version,
         createdAt: task.created_at,
         dueDate: task.due_date
       })));
@@ -1562,8 +1564,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: task.process_id,
             name: `Process - ${task.name}` // TODO: Get actual process name
           },
-          form: task.form_id ? {
+          form: task.form_key ? {
             id: task.form_id,
+            key: task.form_key,
+            version: task.form_version,
             name: "Task Form" // TODO: Get actual form name
           } : null,
           assignee: task.assignee_id ? {
@@ -1591,6 +1595,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: "Internal Server Error",
         status: 500,
         detail: "Failed to fetch task inbox"
+      });
+    }
+  });
+  
+  // S4: Task Detail API endpoint for User Portal
+  app.get("/api/v1/tasks/:id", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { id: taskId } = req.params;
+      
+      const task = await storage.getTaskInstanceById(taskId, req.tenantId);
+      if (!task) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Task Not Found",
+          status: 404,
+          detail: "Task not found"
+        });
+      }
+
+      // Check if user can view this task
+      const canView = task.assignee_id === req.user.id || 
+                     task.assignee_role === req.user.role ||
+                     req.user.role === 'tenant_admin';
+
+      if (!canView) {
+        return res.status(403).json({
+          type: "/api/errors/forbidden",
+          title: "Forbidden",
+          status: 403,
+          detail: "You are not authorized to view this task"
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          id: task.id,
+          name: task.name,
+          description: task.description,
+          processId: task.process_id,
+          status: task.status,
+          priority: task.priority,
+          assigneeRole: task.assignee_role,
+          formId: task.form_id,
+          formKey: task.form_key,
+          formVersion: task.form_version,
+          formData: task.form_data,
+          outcome: task.outcome,
+          dueDate: task.due_date,
+          createdAt: task.created_at,
+          completedAt: task.completed_at
+        }
+      });
+    } catch (error) {
+      console.error("Task detail error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to fetch task details"
+      });
+    }
+  });
+
+  // S4: Form Data API endpoint
+  app.get("/api/forms/data", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { processId, taskId } = req.query;
+      
+      const formDataList = await storage.getFormData(
+        processId as string,
+        taskId as string,
+        req.tenantId
+      );
+      
+      res.json({
+        success: true,
+        data: formDataList
+      });
+    } catch (error) {
+      console.error("Form data fetch error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to fetch form data"
       });
     }
   });
