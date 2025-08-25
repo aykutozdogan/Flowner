@@ -228,8 +228,13 @@ function Router() {
 }
 
 function App() {
+  // Clean props to avoid Material-UI warnings
+  const cleanThemeProviderProps = {
+    theme
+  };
+
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider {...cleanThemeProviderProps}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
