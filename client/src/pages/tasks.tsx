@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { CheckCircle, Clock, AlertCircle, User, Calendar, FileText } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // Assuming next/navigation for routing
+import { useLocation } from "wouter";
 
 interface Task {
   id: string;
@@ -25,7 +25,7 @@ interface Task {
 }
 
 export default function TasksPage() {
-  const router = useRouter(); // Initialize router
+  const setLocation = useLocation()[1]; // Initialize router
   const [activeTab, setActiveTab] = useState('all');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -124,10 +124,6 @@ export default function TasksPage() {
     });
   };
 
-  const handleCardClick = (taskId: string) => {
-    router.push(`/tasks/${taskId}`); // Navigate to task detail page
-  };
-
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
@@ -198,7 +194,7 @@ export default function TasksPage() {
                   key={task.id} 
                   data-testid={`task-card-${task.id}`}
                   className="cursor-pointer hover:shadow-lg hover:bg-accent" // Added Tailwind classes for hover effect
-                  onClick={() => handleCardClick(task.id)}
+                  onClick={() => setLocation(`/tasks/${task.id}`)}
                 >
                   <CardHeader>
                     <div className="flex justify-between items-start">

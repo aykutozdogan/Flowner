@@ -1,30 +1,114 @@
-import React from 'react';
-import { Box } from '@mui/material';
-import { AppHeader } from './AppHeader';
+
+import React, { useState } from 'react';
+import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme, alpha } from '@mui/material';
+import { Menu as MenuIcon, AccountCircle, Notifications, Search } from '@mui/icons-material';
 import AdminSidebar from './AdminSidebar';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
+  user?: any;
 }
 
-export function AdminLayout({ children }: AdminLayoutProps) {
+export default function AdminLayout({ children, user }: AdminLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const theme = useTheme();
+
   return (
-    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
-      <AdminSidebar />
-      
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <AppHeader title="Flowner - Admin Panel" />
-        
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 3,
-            overflow: 'auto',
-          }}
-        >
-          {children}
-        </Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* AppBar */}
+      <AppBar 
+        position="fixed" 
+        sx={{ 
+          bgcolor: 'white',
+          color: theme.palette.text.primary,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          borderBottom: `1px solid ${theme.palette.divider}`
+        }}
+      >
+        <Toolbar sx={{ justifyContent: 'space-between' }}>
+          {/* Left side */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton
+              edge="start"
+              onClick={() => setSidebarOpen(true)}
+              sx={{ 
+                mr: 1,
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.2),
+                }
+              }}
+            >
+              <MenuIcon sx={{ color: theme.palette.primary.main }} />
+            </IconButton>
+            
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 600, 
+                color: theme.palette.primary.main,
+                display: { xs: 'none', sm: 'block' }
+              }}
+            >
+              Flowner Admin
+            </Typography>
+          </Box>
+
+          {/* Right side */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton 
+              sx={{ 
+                '&:hover': { 
+                  bgcolor: alpha(theme.palette.action.hover, 0.1) 
+                } 
+              }}
+            >
+              <Search />
+            </IconButton>
+            
+            <IconButton 
+              sx={{ 
+                '&:hover': { 
+                  bgcolor: alpha(theme.palette.action.hover, 0.1) 
+                } 
+              }}
+            >
+              <Notifications />
+            </IconButton>
+            
+            <IconButton 
+              sx={{ 
+                '&:hover': { 
+                  bgcolor: alpha(theme.palette.action.hover, 0.1) 
+                } 
+              }}
+            >
+              <Avatar sx={{ width: 32, height: 32 }}>
+                <AccountCircle />
+              </Avatar>
+            </IconButton>
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      {/* Sidebar */}
+      <AdminSidebar 
+        open={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        user={user}
+      />
+
+      {/* Main Content */}
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1, 
+          mt: 8, // AppBar height offset
+          bgcolor: '#f8fafc',
+          minHeight: 'calc(100vh - 64px)'
+        }}
+      >
+        {children}
       </Box>
     </Box>
   );
