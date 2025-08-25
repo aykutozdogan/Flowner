@@ -9,7 +9,7 @@ interface PortalLayoutProps {
   user?: any;
 }
 
-export default function PortalLayout({ children, user }: PortalLayoutProps) {
+function PortalLayout({ children, user }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
 
@@ -117,3 +117,6 @@ export default function PortalLayout({ children, user }: PortalLayoutProps) {
     </Box>
   );
 }
+
+export { PortalLayout };
+export default PortalLayout;
