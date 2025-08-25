@@ -19,6 +19,8 @@ export interface IStorage {
   getTenant(id: string): Promise<Tenant | undefined>;
   getTenantByDomain(domain: string): Promise<Tenant | undefined>;
   createTenant(tenant: InsertTenant): Promise<Tenant>;
+  getAllTenants(): Promise<Tenant[]>;
+  getUsersByTenant(tenantId: string): Promise<User[]>;
 
   // Forms
   getForms(tenantId: string, filters?: { status?: string; search?: string }): Promise<Form[]>;
@@ -149,6 +151,21 @@ export class DatabaseStorage implements IStorage {
   async createTenant(tenant: InsertTenant): Promise<Tenant> {
     const [newTenant] = await db.insert(tenants).values(tenant).returning();
     return newTenant;
+  }
+
+  async getAllTenants(): Promise<Tenant[]> {
+    return await db.select().from(tenants)
+      .where(eq(tenants.is_active, true))
+      .orderBy(desc(tenants.created_at));
+  }
+
+  async getUsersByTenant(tenantId: string): Promise<User[]> {
+    return await db.select().from(users)
+      .where(and(
+        eq(users.tenant_id, tenantId),
+        eq(users.is_active, true)
+      ))
+      .orderBy(desc(users.created_at));
   }
 
   // Forms
