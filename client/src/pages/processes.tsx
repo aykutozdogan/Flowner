@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { Plus, Play, StopCircle, Calendar, User, Clock, Eye, RefreshCw, FileText, Timeline } from 'lucide-react';
+import { Plus, Play, StopCircle, Calendar, User, Clock, Eye, RefreshCw, FileText } from 'lucide-react';
 
 interface Workflow {
   id: string;
@@ -78,16 +78,22 @@ export default function ProcessesPage() {
 
   const { data: formSubmissions } = useQuery<FormDataEntry[]>({
     queryKey: ['/api/forms/data', selectedProcessId],
-    queryFn: () => apiRequest(`/api/forms/data?processId=${selectedProcessId}`),
+    queryFn: async () => {
+      const response = await apiRequest(`/api/forms/data?processId=${selectedProcessId}`);
+      const data = await response.json();
+      return data.data || [];
+    },
     enabled: !!selectedProcessId,
-    select: (data: any) => data.data || [],
   });
 
   const { data: auditLogs } = useQuery<AuditLogEntry[]>({
     queryKey: ['/api/audit', selectedProcessId],
-    queryFn: () => apiRequest(`/api/audit?entityType=process&entityId=${selectedProcessId}`),
+    queryFn: async () => {
+      const response = await apiRequest(`/api/audit?entityType=process&entityId=${selectedProcessId}`);
+      const data = await response.json();
+      return data.data || [];
+    },
     enabled: !!selectedProcessId,
-    select: (data: any) => data.data || [],
   });
 
   const startProcessMutation = useMutation({
@@ -420,7 +426,7 @@ export default function ProcessesPage() {
                           <ScrollArea className="h-[300px]">
                             {formSubmissions && formSubmissions.length > 0 ? (
                               <div className="space-y-3">
-                                {formSubmissions.map((submission) => (
+                                {formSubmissions.map((submission: FormDataEntry) => (
                                   <div key={submission.id} className="border p-3 rounded">
                                     <div className="text-sm font-medium mb-2">
                                       {submission.form_key} v{submission.form_version}
@@ -451,7 +457,7 @@ export default function ProcessesPage() {
                           <ScrollArea className="h-[300px]">
                             {auditLogs && auditLogs.length > 0 ? (
                               <div className="space-y-3">
-                                {auditLogs.map((log) => (
+                                {auditLogs.map((log: AuditLogEntry) => (
                                   <div key={log.id} className="border-l-4 border-blue-500 pl-3">
                                     <div className="text-sm font-medium">{log.action}</div>
                                     <div className="text-xs text-gray-500">
