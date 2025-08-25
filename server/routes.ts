@@ -1509,10 +1509,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status = "pending" } = req.query;
       
-      // Filter tasks assigned to current user or their role
+      // Filter tasks assigned to current user's role
       const filters: any = { 
         status,
-        assigneeId: req.user.id,
         assigneeRole: req.user.role 
       };
 

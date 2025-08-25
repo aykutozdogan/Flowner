@@ -95,9 +95,63 @@ export class ProcessRuntime {
       data.formData
     );
 
-    // Continue process flow (simplified for MVP)
-    // In full implementation, this would trigger the next BPMN elements
-    console.log(`[ProcessRuntime] Task ${data.taskId} completed`);
+    // Continue process flow after task completion
+    console.log(`[ProcessRuntime] Task ${data.taskId} completed, continuing process flow`);
+    
+    try {
+      // Get task and process details via storage
+      const { storage } = await import('../../storage');
+      const task = await storage.getTaskInstanceById(data.taskId, data.tenantId);
+      if (task) {
+        const processInstance = await this.stateManager.getProcessInstance(task.process_id, data.tenantId);
+        if (processInstance) {
+          // Get workflow definition
+          const { db } = await import('../../db');
+          const { workflowVersions } = await import('@shared/schema');
+          const { eq, and, desc } = await import('drizzle-orm');
+          
+          const workflowVersion = await db.select().from(workflowVersions)
+            .where(and(
+              eq(workflowVersions.workflow_id, processInstance.workflow_id),
+              eq(workflowVersions.tenant_id, processInstance.tenant_id),
+              eq(workflowVersions.status, 'published')
+            ))
+            .orderBy(desc(workflowVersions.version))
+            .limit(1);
+            
+          if (workflowVersion.length > 0) {
+            const bpmnDefinition = workflowVersion[0].definition_json as any;
+            
+            // Find current element and continue to next elements
+            const currentElement = bpmnDefinition.elements.find((e: any) => e.id === task.task_key);
+            if (currentElement?.outgoing) {
+              const context = {
+                processId: task.process_id,
+                tenantId: data.tenantId,
+                variables: processInstance.variables || {}
+              };
+              
+              const { BpmnExecutor } = await import('../runtime/BpmnExecutor');
+              const executor = new BpmnExecutor(this.stateManager);
+              
+              // Continue to next elements
+              for (const flowId of currentElement.outgoing) {
+                const flow = bpmnDefinition.sequenceFlows.find((f: any) => f.id === flowId);
+                if (flow) {
+                  const targetElement = bpmnDefinition.elements.find((e: any) => e.id === flow.targetRef);
+                  if (targetElement) {
+                    console.log(`[ProcessRuntime] Continuing to element: ${targetElement.id}`);
+                    await (executor as any).executeElement(targetElement, bpmnDefinition, context);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`[ProcessRuntime] Error continuing process flow after task completion:`, error);
+    }
   }
 
   async suspendProcess(processId: string, tenantId: string): Promise<void> {

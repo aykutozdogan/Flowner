@@ -75,10 +75,10 @@ fi
 echo "Görev bulundu: $TASK_ID"
 
 echo "✅ Görev complete (approve)..."
-curl -s -X PUT "$BASE_URL/tasks/$TASK_ID/complete" \
+curl -s -X POST "$BASE_URL/engine/tasks/$TASK_ID/complete" \
   -H "Authorization: Bearer $APP_TOKEN" -H "X-Tenant-Id: $TENANT" \
   -H "Content-Type: application/json" \
-  -d '{"outcome":"approve","data":{}}' >/dev/null
+  -d '{"outcome":"approve","formData":{}}' >/dev/null
 
 sleep 2
 STATUS2=$(curl -s "$BASE_URL/processes/$P2_ID" \
