@@ -1,0 +1,134 @@
+LÜTFEN TÜM YANITLARINI TÜRKÇE VER.
+
+Rolün: Kıdemli front‑end + back‑end mimarı ve teslimat ajanı.
+Amaç: S2 başarılıysa S3’te aşağıdakileri uçtan uca çalışır hale getir:
+- Form Builder (alan paleti, özellik paneli, grid düzen, validasyon, conditional görünürlük, veri kaynakları)
+- Form sürümleme (draft/published) ve User Task’a belirli form sürümünü bağlama
+- BPMN Designer (bpmn-js ile) + workflow sürümleme/publish + diff/undo/redo
+- Süreç / Görev İzleme ekranları (filtre, canlı güncelleme)
+- User Portal’da form tabanlı görev tamamlama
+- E2E testler (UI) → PASS
+
+DEĞİŞMEZ KURALLAR
+- Source of truth = PLAN.md + S1/S2 çıktıları.
+- Çok az ve anlamlı değişiklikle ilerle; var olan mimariyi koru (multi‑tenant, JWT, RBAC, X‑Tenant‑Id).
+- Tam dosya üret; kısmi diff verme. Her adımı kendin çalıştır/test et.
+- S3 sonunda terminale: **S3_UI=PASS** yaz.
+
+────────────────────────────────────────────────────────────────────
+
+0) ÖN KOŞUL: S2 TESTİNİ KOŞ VE DOĞRULA
+- Komut: `npm run test:engine` (veya S2 için tanımlı test komutu)
+- Eğer **başarısız** ise: hatayı düzelt, testi tekrar çalıştır. PASS olmadan S3’e **devam etme**.
+- PASS olursa “S2_ENGINE=PASS doğrulandı” notunu rapora yaz.
+
+1) FORM VERİ MODELİ (DB/ORM)
+- Tablolar (yoksa ekle, varsa genişlet):
+  - forms(id, tenant_id, key, name, latest_version, created_at, updated_at, is_deleted)
+  - form_versions(id, tenant_id, form_id, version, status:'draft'|'published', schema_json, ui_schema_json, created_at, published_at, published_by)
+  - form_data(id, tenant_id, form_key, form_version, process_id, task_id, data_json, created_by, created_at)
+- Indexler: (tenant_id), (form_id, version), (process_id, task_id).
+- ORM (Drizzle/Prisma) migration’ı üret ve uygula.
+- **schema_json**: alanlar, tipler, validasyon kuralları, conditional ifadeler
+- **ui_schema_json**: grid, section, tab, kolon genişlikleri, tooltip/placeholder vb.
+
+2) BACKEND API (REST v1) — FORMLAR
+- POST   /api/v1/forms                 (create or upsert by key; draft v1)
+- GET    /api/v1/forms                 (list latest published + drafts)
+- GET    /api/v1/forms/:key            (get latest published or includeDraft=true ile taslak)
+- POST   /api/v1/forms/:key/versions   (yeni draft versiyon oluştur)
+- POST   /api/v1/forms/:key/publish    (draft → published; version↑; active instances etkilenmez)
+- POST   /api/v1/forms/:key/validate   (örnek veri ile validasyon çalıştır; ProblemDetails döndür)
+- GET    /api/v1/forms/:key/preview    (runtime render için schema/ui_schema döndür)
+
+- **Veri kaynakları (select alanı)**:
+  - GET  /api/v1/datasources/:name     (ör. countries, departments)
+  - (Opsiyonel) POST /api/v1/datasources/test {url, headers} (designer test eder)
+
+3) BPMN DESIGNER (bpmn-js) + WORKFLOW API GENİŞLETME
+- Frontend’de /admin/workflows/designer route’u:
+  - Canvas: bpmn-js viewer/modeler
+  - Palette: StartEvent, EndEvent, UserTask, ServiceTask, ExclusiveGateway, ParallelGateway
+  - Properties panel:
+    - UserTask: name, assigneeRole/assigneeUser, **formKey + formVersion** seçici (published’lardan)
+    - ServiceTask: http/handler seçenekleri (şimdilik metin alanları; MVP)
+    - ExclusiveGateway: expression (vars.*) için doğrulama
+    - SLA/dueAt alanları (opsiyonel; not düş)
+  - Undo/Redo, versiyon karşılaştırma (diff), değişiklik notu (changelog) alanı (metin)
+- Workflow API’ye ek:
+  - GET  /api/v1/workflows/:key/versions
+  - GET  /api/v1/workflows/:key/versions/:ver
+  - POST /api/v1/workflows/:key/publish (zaten var) → changelog parametresi kabul etsin
+
+4) FORM BUILDER (React + MUI)
+- Route: /admin/forms
+  - **Alan paleti** (MVP): Text, Textarea, Number, Select, Multi-Select, Date, Time, DateTime, Checkbox, Radio, File, RichText
+  - **Özellik paneli**: label, name (key), placeholder, required, min/max, regex, helpText, defaultValue
+  - **Grid düzeni**: 12 kolonlu sistem; sürükle‑bırak; section (collapsible), tab desteği
+  - **Conditional görünürlük**: başka alanlara bağlı expression (ör. `fields.amount > 1000`)
+  - **Veri kaynakları**: Select alanında “Static list” ya da “API (datasource)” seçeneği
+  - **Sürümleme**: “Save Draft”, “Publish” butonları; publish edince form_versions artar
+  - **Önizleme**: “Preview” modunda formu runtime gibi render et
+- Kaydetme:
+  - schema_json + ui_schema_json arka uca POST
+- Validasyon:
+  - Backend /validate ile senkron; UI’da hata özet paneli
+
+5) USER TASK ↔ FORM BAĞLAMA (RUN‑TIME)
+- Engine yürütürken UserTask oluştuğunda:
+  - Task nesnesinde `formKey` ve `formVersion` bulunmalı (designer’da seçilmişti).
+  - Portal `/portal/tasks/:id` ekranı:
+    - Backend’den **form schema/ui_schema** çek
+    - Dinamik form renderer (React) ile alanları çiz
+    - Submit → `POST /api/v1/tasks/:id/complete { outcome, data }`
+    - Backend, `form_data` tablosuna **data_json**’u yazsın (audit ve process variables ile ilişkilendir)
+- RBAC: approver ya da ilgili user rolünde değilse 403
+
+6) İZLEME EKRANLARI (Admin)
+- /admin/monitoring (veya /admin/processes’de gelişmiş mod):
+  - Filtreler: workflowKey, status, tarih aralığı, starter
+  - Liste: processId, status, startedAt, duration, currentNode
+  - Detay paneli: audit timeline (process.started → task.created → task.completed → process.completed)
+  - Auto‑refresh (polling 5sn) veya “Refresh” butonu
+- /admin/tasks (admin/designer için de görüntüleme): task havuzu + durumlar
+
+7) OBSERVABILITY & AUDIT
+- Her publish/submit/complete olayında audit_logs’a kayıt:
+  - form.published, workflow.published, process.started, task.created, task.claimed, task.completed, formdata.saved
+- Log enriched fields: traceId, tenantId, userId, action, target
+
+8) UI TESTLERİ (Playwright/Cypress) — S3 SMOKE
+- Senaryo A (Admin/Designer):
+  [A1] Admin login → /admin/forms → yeni “expense_request_v1” formu oluştur → alanlar: amount(Number, required), note(Textarea) → Publish → listede published gör
+  [A2] /admin/workflows/designer → “expense_approval” için Manager Approval userTask’a **formKey=expense_request_v1, formVersion=published** bağla → Publish
+  [A3] /admin/processes → Start Process (amount=2500, note="Taxi") → status “running”, bir user task oluştu
+- Senaryo B (Approver/User):
+  [B1] Approver login → /portal/tasks → ilgili görevi gör → aç → form alanları render oldu
+  [B2] “Approve” outcome ile **Complete** et → process status=completed
+- Senaryo C (Auto approve):
+  [C1] Admin → Start Process (amount=750) → otomatik tamamlandı
+- Komut:
+  - package.json’a `"test:ui:s3"` script ekle ve çalıştır: `npm run test:ui:s3`
+- Hepsi geçerse terminalde **S3_UI=PASS** yaz.
+
+9) DÖKÜMANTASYON
+- README.md güncelle:
+  - Admin URL’ler: /admin/forms, /admin/workflows/designer, /admin/processes, /admin/monitoring
+  - Portal URL’ler: /portal/tasks
+  - “S3 demosu nasıl denenir?” adım adım
+- Sprint3.Report.md dosyasına yaz:
+  - Eklenen tablolar/endpoint’ler
+  - Form builder özellikleri
+  - BPMN designer özellikleri
+  - İzleme ekranları
+  - Test sonucu özeti
+
+KABUL KRİTERLERİ
+- S2 testleri PASS onaylandı.
+- /admin/forms → form oluşturma, draft/publish, preview çalışır.
+- /admin/workflows/designer → userTask’a formKey+version bağlanır; publish eder.
+- /portal/tasks → task açıldığında form dinamik render olur; submit ile complete edilir; verisi DB’ye yazılır.
+- /admin/monitoring → süreç ve görevler filtrelenip izlenir; timeline görünür.
+- `npm run test:ui:s3` PASSED; terminal sonunda **S3_UI=PASS** görünür.
+
+Lütfen tüm adımları uygula, her kritik adımda kısa Türkçe rapor yaz, PASS olmadan bir sonraki adıma geçme. İş bittiğinde “S3_UI=PASS” yazmayı unutma.
