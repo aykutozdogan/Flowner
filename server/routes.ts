@@ -15,8 +15,8 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "your-refresh-secre
 
 // Middleware for parsing tenant ID
 const parseTenantId = async (req: any, res: any, next: any) => {
-  const tenantDomain = req.headers['x-tenant-id'];
-  if (!tenantDomain) {
+  const tenantIdentifier = req.headers['x-tenant-id'];
+  if (!tenantIdentifier) {
     return res.status(400).json({
       type: "/api/errors/validation",
       title: "Missing Tenant ID",
@@ -26,8 +26,16 @@ const parseTenantId = async (req: any, res: any, next: any) => {
   }
   
   try {
-    // Get tenant UUID from domain
-    const tenant = await storage.getTenantByDomain(tenantDomain);
+    // Handle both domain and UUID formats
+    let tenant;
+    if (tenantIdentifier.includes('-') && tenantIdentifier.length === 36) {
+      // It's a UUID
+      tenant = await storage.getTenant(tenantIdentifier);
+    } else {
+      // It's a domain
+      tenant = await storage.getTenantByDomain(tenantIdentifier);
+    }
+    
     if (!tenant) {
       return res.status(400).json({
         type: "/api/errors/validation",
@@ -38,7 +46,7 @@ const parseTenantId = async (req: any, res: any, next: any) => {
     }
     
     req.tenantId = tenant.id;
-    req.tenantDomain = tenantDomain;
+    req.tenantDomain = tenant.domain;
     next();
   } catch (error) {
     console.error('Tenant lookup error:', error);
@@ -746,13 +754,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         data: forms.map(form => ({
           id: form.id,
+          key: form.key,
           name: form.name,
           description: form.description,
-          version: form.version,
+          latest_version: form.latest_version,
           status: form.status,
           created_at: form.created_at,
           updated_at: form.updated_at,
-          fields_count: Array.isArray((form.schema as any)?.fields) ? (form.schema as any).fields.length : 0,
+          fields_count: 0, // TODO: Get from latest form version
           submissions_count: 0 // TODO: Calculate actual submissions
         })),
         meta: {
@@ -771,6 +780,671 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: "Internal Server Error",
         status: 500,
         detail: "Failed to fetch forms"
+      });
+    }
+  });
+
+  // S3 Form Management API v1
+  /**
+   * @swagger
+   * /v1/forms:
+   *   post:
+   *     summary: Create or upsert form by key
+   *     description: Create a new form or update existing form, creates draft v1
+   *     tags: [Forms v1]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [key, name, schema_json, ui_schema_json]
+   *             properties:
+   *               key:
+   *                 type: string
+   *                 example: "expense_request"
+   *               name:
+   *                 type: string
+   *                 example: "Expense Request Form"
+   *               description:
+   *                 type: string
+   *                 example: "Form for submitting expense requests"
+   *               schema_json:
+   *                 type: object
+   *                 example: {"fields": [{"name": "amount", "type": "number", "required": true}]}
+   *               ui_schema_json:
+   *                 type: object
+   *                 example: {"layout": "grid", "columns": 2}
+   *     responses:
+   *       200:
+   *         description: Form created/updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     form:
+   *                       $ref: '#/components/schemas/Form'
+   *                     version:
+   *                       $ref: '#/components/schemas/FormVersion'
+   */
+  app.post("/api/v1/forms", async (req: any, res) => {
+    try {
+      const { key, name, description, schema_json, ui_schema_json } = req.body;
+
+      if (!key || !name || !schema_json || !ui_schema_json) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Validation Error",
+          status: 400,
+          detail: "key, name, schema_json, and ui_schema_json are required"
+        });
+      }
+
+      // Check if form exists
+      let form = await storage.getFormByKey(key, req.tenantId);
+      
+      if (!form) {
+        // Create new form
+        form = await storage.createForm({
+          tenant_id: req.tenantId,
+          key,
+          name,
+          description,
+          latest_version: 1,
+          status: "draft",
+          created_by: req.user.id
+        });
+      } else {
+        // Update existing form
+        form = await storage.updateForm(form.id, req.tenantId, {
+          name,
+          description,
+          latest_version: form.latest_version + 1
+        });
+      }
+
+      // Create new version
+      const formVersion = await storage.createFormVersion({
+        tenant_id: req.tenantId,
+        form_id: form!.id,
+        version: form!.latest_version,
+        status: "draft",
+        schema_json,
+        ui_schema_json
+      });
+
+      res.json({
+        success: true,
+        data: {
+          form,
+          version: formVersion
+        }
+      });
+    } catch (error) {
+      console.error("Form creation error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to create form"
+      });
+    }
+  });
+
+  /**
+   * @swagger
+   * /v1/forms:
+   *   get:
+   *     summary: List forms
+   *     description: Get list of latest published forms and drafts
+   *     tags: [Forms v1]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *       - name: status
+   *         in: query
+   *         description: Filter by status
+   *         required: false
+   *         schema:
+   *           type: string
+   *           enum: [draft, published, archived]
+   *     responses:
+   *       200:
+   *         description: Forms retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Form'
+   */
+  app.get("/api/v1/forms", async (req: any, res) => {
+    try {
+      const { status } = req.query;
+      const forms = await storage.getForms(req.tenantId, { status });
+      
+      res.json({
+        success: true,
+        data: forms
+      });
+    } catch (error) {
+      console.error("Forms fetch error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to fetch forms"
+      });
+    }
+  });
+
+  /**
+   * @swagger
+   * /v1/forms/{key}:
+   *   get:
+   *     summary: Get form by key
+   *     description: Get latest published form or draft if includeDraft=true
+   *     tags: [Forms v1]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *       - name: key
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *           example: "expense_request"
+   *       - name: includeDraft
+   *         in: query
+   *         description: Include draft versions
+   *         required: false
+   *         schema:
+   *           type: boolean
+   *           default: false
+   *     responses:
+   *       200:
+   *         description: Form retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     form:
+   *                       $ref: '#/components/schemas/Form'
+   *                     version:
+   *                       $ref: '#/components/schemas/FormVersion'
+   */
+  app.get("/api/v1/forms/:key", async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      const { includeDraft } = req.query;
+      
+      const form = await storage.getFormByKey(key, req.tenantId);
+      if (!form) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Form Not Found",
+          status: 404,
+          detail: "Form not found"
+        });
+      }
+
+      // Get latest version
+      const status = includeDraft === 'true' ? undefined : 'published';
+      const latestVersion = await storage.getLatestFormVersion(key, req.tenantId, status);
+      
+      if (!latestVersion && !includeDraft) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Published Version Not Found",
+          status: 404,
+          detail: "No published version found for this form"
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          form,
+          version: latestVersion
+        }
+      });
+    } catch (error) {
+      console.error("Form fetch error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to fetch form"
+      });
+    }
+  });
+
+  /**
+   * @swagger
+   * /v1/forms/{key}/versions:
+   *   post:
+   *     summary: Create new draft version
+   *     description: Create a new draft version of the form
+   *     tags: [Forms v1]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *       - name: key
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [schema_json, ui_schema_json]
+   *             properties:
+   *               schema_json:
+   *                 type: object
+   *                 example: {"fields": [{"name": "amount", "type": "number", "required": true}]}
+   *               ui_schema_json:
+   *                 type: object
+   *                 example: {"layout": "grid", "columns": 2}
+   *     responses:
+   *       200:
+   *         description: Version created successfully
+   */
+  app.post("/api/v1/forms/:key/versions", async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      const { schema_json, ui_schema_json } = req.body;
+
+      if (!schema_json || !ui_schema_json) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Validation Error",
+          status: 400,
+          detail: "schema_json and ui_schema_json are required"
+        });
+      }
+
+      const form = await storage.getFormByKey(key, req.tenantId);
+      if (!form) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Form Not Found",
+          status: 404,
+          detail: "Form not found"
+        });
+      }
+
+      // Increment version and create new draft
+      const newVersion = form.latest_version + 1;
+      
+      // Update form's latest version
+      await storage.updateForm(form.id, req.tenantId, {
+        latest_version: newVersion
+      });
+
+      // Create new version
+      const formVersion = await storage.createFormVersion({
+        tenant_id: req.tenantId,
+        form_id: form.id,
+        version: newVersion,
+        status: "draft",
+        schema_json,
+        ui_schema_json
+      });
+
+      res.json({
+        success: true,
+        data: formVersion
+      });
+    } catch (error) {
+      console.error("Form version creation error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to create form version"
+      });
+    }
+  });
+
+  /**
+   * @swagger
+   * /v1/forms/{key}/publish:
+   *   post:
+   *     summary: Publish draft version
+   *     description: Publish draft version, increment version number
+   *     tags: [Forms v1]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *       - name: key
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: false
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               version:
+   *                 type: integer
+   *                 description: Specific version to publish (defaults to latest)
+   *                 example: 2
+   *     responses:
+   *       200:
+   *         description: Form published successfully
+   */
+  app.post("/api/v1/forms/:key/publish", async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      const { version } = req.body;
+
+      const form = await storage.getFormByKey(key, req.tenantId);
+      if (!form) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Form Not Found",
+          status: 404,
+          detail: "Form not found"
+        });
+      }
+
+      // Determine which version to publish
+      const versionToPublish = version || form.latest_version;
+      
+      // Get the draft version
+      const draftVersion = await storage.getFormVersion(form.id, versionToPublish, req.tenantId);
+      if (!draftVersion) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Version Not Found",
+          status: 404,
+          detail: "Form version not found"
+        });
+      }
+
+      if (draftVersion.status !== 'draft') {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Invalid Status",
+          status: 400,
+          detail: "Only draft versions can be published"
+        });
+      }
+
+      // Publish the version
+      const publishedVersion = await storage.publishFormVersion(
+        form.id,
+        versionToPublish,
+        req.tenantId,
+        req.user.id
+      );
+
+      // Update form status to published
+      await storage.updateForm(form.id, req.tenantId, {
+        status: "published"
+      });
+
+      res.json({
+        success: true,
+        data: publishedVersion,
+        message: "Form published successfully"
+      });
+    } catch (error) {
+      console.error("Form publish error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to publish form"
+      });
+    }
+  });
+
+  /**
+   * @swagger
+   * /v1/forms/{key}/validate:
+   *   post:
+   *     summary: Validate form data
+   *     description: Validate sample data against form schema
+   *     tags: [Forms v1]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *       - name: key
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               data:
+   *                 type: object
+   *                 example: {"amount": 1500, "description": "Taxi fare"}
+   *               version:
+   *                 type: integer
+   *                 description: Version to validate against (defaults to published)
+   *                 example: 2
+   *     responses:
+   *       200:
+   *         description: Validation completed
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 valid:
+   *                   type: boolean
+   *                   example: true
+   *                 errors:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       field:
+   *                         type: string
+   *                         example: "amount"
+   *                       message:
+   *                         type: string
+   *                         example: "Amount is required"
+   */
+  app.post("/api/v1/forms/:key/validate", async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      const { data, version } = req.body;
+
+      if (!data) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Validation Error",
+          status: 400,
+          detail: "data is required"
+        });
+      }
+
+      const form = await storage.getFormByKey(key, req.tenantId);
+      if (!form) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Form Not Found",
+          status: 404,
+          detail: "Form not found"
+        });
+      }
+
+      // Get form version for validation
+      let formVersion;
+      if (version) {
+        formVersion = await storage.getFormVersion(form.id, version, req.tenantId);
+      } else {
+        formVersion = await storage.getLatestFormVersion(key, req.tenantId, 'published');
+      }
+
+      if (!formVersion) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Form Version Not Found",
+          status: 404,
+          detail: "Form version not found"
+        });
+      }
+
+      // TODO: Implement actual validation logic based on schema_json
+      // For now, return basic validation
+      const errors: any[] = [];
+      let valid = true;
+
+      // Basic validation example
+      const schema = formVersion.schema_json as any;
+      if (schema?.fields) {
+        schema.fields.forEach((field: any) => {
+          if (field.required && !data[field.name]) {
+            errors.push({
+              field: field.name,
+              message: `${field.name} is required`
+            });
+            valid = false;
+          }
+        });
+      }
+
+      res.json({
+        success: true,
+        valid,
+        errors
+      });
+    } catch (error) {
+      console.error("Form validation error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to validate form"
+      });
+    }
+  });
+
+  /**
+   * @swagger
+   * /v1/forms/{key}/preview:
+   *   get:
+   *     summary: Get form preview data
+   *     description: Get schema and ui_schema for runtime rendering
+   *     tags: [Forms v1]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *       - name: key
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - name: version
+   *         in: query
+   *         description: Specific version to preview (defaults to published)
+   *         required: false
+   *         schema:
+   *           type: integer
+   *     responses:
+   *       200:
+   *         description: Preview data retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     form:
+   *                       $ref: '#/components/schemas/Form'
+   *                     version:
+   *                       $ref: '#/components/schemas/FormVersion'
+   *                     schema_json:
+   *                       type: object
+   *                     ui_schema_json:
+   *                       type: object
+   */
+  app.get("/api/v1/forms/:key/preview", async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      const { version } = req.query;
+
+      const form = await storage.getFormByKey(key, req.tenantId);
+      if (!form) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Form Not Found",
+          status: 404,
+          detail: "Form not found"
+        });
+      }
+
+      // Get form version for preview
+      let formVersion;
+      if (version) {
+        formVersion = await storage.getFormVersion(form.id, parseInt(version), req.tenantId);
+      } else {
+        formVersion = await storage.getLatestFormVersion(key, req.tenantId, 'published');
+      }
+
+      if (!formVersion) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Form Version Not Found",
+          status: 404,
+          detail: "Form version not found"
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          form,
+          version: formVersion,
+          schema_json: formVersion.schema_json,
+          ui_schema_json: formVersion.ui_schema_json
+        }
+      });
+    } catch (error) {
+      console.error("Form preview error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to get form preview"
       });
     }
   });

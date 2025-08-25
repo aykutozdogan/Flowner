@@ -196,4 +196,22 @@ export class JobScheduler {
     console.log('[JobScheduler] Resuming job processing');
     await this.jobQueue.start();
   }
+
+  async tick(): Promise<void> {
+    console.log('[JobScheduler] Manual tick triggered');
+    
+    try {
+      const jobs = await this.jobQueue.getReadyJobs(10);
+      
+      if (jobs.length > 0) {
+        console.log(`[JobScheduler] Manual tick processing ${jobs.length} jobs`);
+        await this.processBatch(jobs);
+      } else {
+        console.log('[JobScheduler] Manual tick - no jobs to process');
+      }
+    } catch (error) {
+      console.error('[JobScheduler] Error in manual tick:', error);
+      throw error;
+    }
+  }
 }

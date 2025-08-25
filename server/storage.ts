@@ -1,7 +1,7 @@
 import { 
-  tenants, users, forms, workflows, workflowVersions, processInstances, taskInstances, auditLogs, fileAttachments,
-  type Tenant, type User, type Form, type Workflow, type WorkflowVersion, type ProcessInstance, type TaskInstance,
-  type InsertTenant, type InsertUser, type InsertForm, type InsertWorkflow, type InsertWorkflowVersion,
+  tenants, users, forms, formVersions, formData, workflows, workflowVersions, processInstances, taskInstances, auditLogs, fileAttachments,
+  type Tenant, type User, type Form, type FormVersion, type FormData, type Workflow, type WorkflowVersion, type ProcessInstance, type TaskInstance,
+  type InsertTenant, type InsertUser, type InsertForm, type InsertFormVersion, type InsertFormData, type InsertWorkflow, type InsertWorkflowVersion,
   type InsertProcessInstance, type InsertTaskInstance, type UserWithTenant
 } from "@shared/schema";
 import { db } from "./db";
@@ -23,10 +23,21 @@ export interface IStorage {
   // Forms
   getForms(tenantId: string, filters?: { status?: string; search?: string }): Promise<Form[]>;
   getForm(id: string, tenantId: string): Promise<Form | undefined>;
+  getFormByKey(key: string, tenantId: string): Promise<Form | undefined>;
   createForm(form: InsertForm): Promise<Form>;
   updateForm(id: string, tenantId: string, updates: Partial<InsertForm>): Promise<Form | undefined>;
-  publishForm(id: string, tenantId: string, versionNotes?: string): Promise<Form | undefined>;
   deleteForm(id: string, tenantId: string): Promise<boolean>;
+
+  // Form Versions
+  getFormVersions(formId: string, tenantId: string): Promise<FormVersion[]>;
+  getFormVersion(formId: string, version: number, tenantId: string): Promise<FormVersion | undefined>;
+  getLatestFormVersion(formKey: string, tenantId: string, status?: 'draft' | 'published'): Promise<FormVersion | undefined>;
+  createFormVersion(versionData: InsertFormVersion): Promise<FormVersion>;
+  publishFormVersion(formId: string, version: number, tenantId: string, publishedBy: string): Promise<FormVersion | undefined>;
+  
+  // Form Data
+  saveFormData(data: InsertFormData): Promise<FormData>;
+  getFormData(processId?: string, taskId?: string, tenantId?: string): Promise<FormData[]>;
 
   // Workflows
   getWorkflows(tenantId: string, filters?: { status?: string }): Promise<Workflow[]>;
@@ -192,7 +203,6 @@ export class DatabaseStorage implements IStorage {
     const [publishedForm] = await db.update(forms)
       .set({ 
         status: "published", 
-        published_at: sql`now()`,
         updated_at: sql`now()` 
       })
       .where(and(
@@ -212,6 +222,109 @@ export class DatabaseStorage implements IStorage {
         eq(forms.tenant_id, tenantId)
       ));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getFormByKey(key: string, tenantId: string): Promise<Form | undefined> {
+    const [form] = await db.select().from(forms)
+      .where(and(
+        eq(forms.key, key),
+        eq(forms.tenant_id, tenantId),
+        eq(forms.is_deleted, false)
+      ));
+    return form || undefined;
+  }
+
+  // Form Versions
+  async getFormVersions(formId: string, tenantId: string): Promise<FormVersion[]> {
+    return await db.select().from(formVersions)
+      .where(and(
+        eq(formVersions.form_id, formId),
+        eq(formVersions.tenant_id, tenantId)
+      ))
+      .orderBy(desc(formVersions.version));
+  }
+
+  async getFormVersion(formId: string, version: number, tenantId: string): Promise<FormVersion | undefined> {
+    const [formVersion] = await db.select().from(formVersions)
+      .where(and(
+        eq(formVersions.form_id, formId),
+        eq(formVersions.version, version),
+        eq(formVersions.tenant_id, tenantId)
+      ));
+    return formVersion || undefined;
+  }
+
+  async getLatestFormVersion(formKey: string, tenantId: string, status?: 'draft' | 'published'): Promise<FormVersion | undefined> {
+    // First get the form
+    const form = await this.getFormByKey(formKey, tenantId);
+    if (!form) return undefined;
+
+    // Then get the latest version
+    const whereConditions = [
+      eq(formVersions.form_id, form.id),
+      eq(formVersions.tenant_id, tenantId)
+    ];
+
+    if (status) {
+      whereConditions.push(eq(formVersions.status, status));
+    }
+
+    const [latestVersion] = await db.select().from(formVersions)
+      .where(and(...whereConditions))
+      .orderBy(desc(formVersions.version))
+      .limit(1);
+
+    return latestVersion || undefined;
+  }
+
+  async createFormVersion(versionData: InsertFormVersion): Promise<FormVersion> {
+    const [newVersion] = await db.insert(formVersions).values(versionData).returning();
+    return newVersion;
+  }
+
+  async publishFormVersion(formId: string, version: number, tenantId: string, publishedBy: string): Promise<FormVersion | undefined> {
+    const [publishedVersion] = await db.update(formVersions)
+      .set({ 
+        status: "published", 
+        published_at: sql`now()`,
+        published_by: publishedBy
+      })
+      .where(and(
+        eq(formVersions.form_id, formId),
+        eq(formVersions.version, version),
+        eq(formVersions.tenant_id, tenantId)
+      ))
+      .returning();
+    return publishedVersion || undefined;
+  }
+
+  // Form Data
+  async saveFormData(data: InsertFormData): Promise<FormData> {
+    const [newFormData] = await db.insert(formData).values(data).returning();
+    return newFormData;
+  }
+
+  async getFormData(processId?: string, taskId?: string, tenantId?: string): Promise<FormData[]> {
+    const whereConditions = [];
+    
+    if (tenantId) {
+      whereConditions.push(eq(formData.tenant_id, tenantId));
+    }
+    if (processId) {
+      whereConditions.push(eq(formData.process_id, processId));
+    }
+    if (taskId) {
+      whereConditions.push(eq(formData.task_id, taskId));
+    }
+
+    if (whereConditions.length === 0) {
+      // At least one condition is required
+      return [];
+    }
+
+    return await db.select().from(formData)
+      .where(and(...whereConditions))
+      .orderBy(desc(formData.created_at));
   }
 
   // Workflows
@@ -317,44 +430,29 @@ export class DatabaseStorage implements IStorage {
 
   // Process Instances
   async getProcessInstances(tenantId: string, filters?: { status?: string; userId?: string; limit?: number; offset?: number }): Promise<ProcessInstance[]> {
-    let query = db.select().from(processInstances)
-      .where(eq(processInstances.tenant_id, tenantId))
+    let whereConditions = [eq(processInstances.tenant_id, tenantId)];
+
+    if (filters?.status) {
+      whereConditions.push(eq(processInstances.status, filters.status as any));
+    }
+    if (filters?.userId) {
+      whereConditions.push(eq(processInstances.started_by, filters.userId));
+    }
+
+    let baseQuery = db.select().from(processInstances)
+      .where(and(...whereConditions))
       .orderBy(desc(processInstances.started_at));
 
-    // Apply filters
-    if (filters?.status && filters?.userId) {
-      query = db.select().from(processInstances)
-        .where(and(
-          eq(processInstances.tenant_id, tenantId),
-          eq(processInstances.status, filters.status as any),
-          eq(processInstances.started_by, filters.userId)
-        ))
-        .orderBy(desc(processInstances.started_at));
-    } else if (filters?.status) {
-      query = db.select().from(processInstances)
-        .where(and(
-          eq(processInstances.tenant_id, tenantId),
-          eq(processInstances.status, filters.status as any)
-        ))
-        .orderBy(desc(processInstances.started_at));
-    } else if (filters?.userId) {
-      query = db.select().from(processInstances)
-        .where(and(
-          eq(processInstances.tenant_id, tenantId),
-          eq(processInstances.started_by, filters.userId)
-        ))
-        .orderBy(desc(processInstances.started_at));
-    }
-
     // Apply pagination
-    if (filters?.limit) {
-      query = query.limit(filters.limit);
-    }
-    if (filters?.offset) {
-      query = query.offset(filters.offset);
+    if (filters?.limit && filters?.offset) {
+      return await baseQuery.limit(filters.limit).offset(filters.offset);
+    } else if (filters?.limit) {
+      return await baseQuery.limit(filters.limit);
+    } else if (filters?.offset) {
+      return await baseQuery.offset(filters.offset);
     }
 
-    return await query;
+    return await baseQuery;
   }
 
   async getProcessInstance(id: string, tenantId: string): Promise<ProcessInstance | undefined> {
@@ -403,19 +501,20 @@ export class DatabaseStorage implements IStorage {
       whereConditions.push(eq(taskInstances.assignee_role, filters.assigneeRole as any));
     }
 
-    let query = db.select().from(taskInstances)
+    let baseQuery = db.select().from(taskInstances)
       .where(and(...whereConditions))
       .orderBy(desc(taskInstances.created_at));
 
     // Apply pagination
-    if (filters?.limit) {
-      query = query.limit(filters.limit);
-    }
-    if (filters?.offset) {
-      query = query.offset(filters.offset);
+    if (filters?.limit && filters?.offset) {
+      return await baseQuery.limit(filters.limit).offset(filters.offset);
+    } else if (filters?.limit) {
+      return await baseQuery.limit(filters.limit);
+    } else if (filters?.offset) {
+      return await baseQuery.offset(filters.offset);
     }
 
-    return await query;
+    return await baseQuery;
   }
 
   async getTaskInstance(id: string, tenantId: string): Promise<TaskInstance | undefined> {

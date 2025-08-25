@@ -48,19 +48,53 @@ export const users = pgTable("users", {
 export const forms = pgTable("forms", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   tenant_id: uuid("tenant_id").references(() => tenants.id).notNull(),
+  key: varchar("key", { length: 255 }).notNull(), // Form key for referencing
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  version: varchar("version", { length: 50 }).default("1.0.0").notNull(),
+  latest_version: integer("latest_version").default(1).notNull(), // Track latest version number
   status: formStatusEnum("status").default("draft").notNull(),
-  schema: jsonb("schema").notNull(),
   created_by: uuid("created_by").references(() => users.id).notNull(),
-  published_at: timestamp("published_at"),
   is_deleted: boolean("is_deleted").default(false).notNull(),
   created_at: timestamp("created_at").default(sql`now()`).notNull(),
   updated_at: timestamp("updated_at").default(sql`now()`).notNull(),
 }, (table) => ({
+  tenantKeyIdx: index("forms_tenant_key_idx").on(table.tenant_id, table.key),
   tenantStatusIdx: index("forms_tenant_status_idx").on(table.tenant_id, table.status),
   tenantDeletedIdx: index("forms_tenant_deleted_idx").on(table.tenant_id, table.is_deleted),
+}));
+
+// Form Versions table
+export const formVersions = pgTable("form_versions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenant_id: uuid("tenant_id").references(() => tenants.id).notNull(),
+  form_id: uuid("form_id").references(() => forms.id).notNull(),
+  version: integer("version").notNull(),
+  status: formStatusEnum("status").default("draft").notNull(),
+  schema_json: jsonb("schema_json").notNull(), // Form field definitions
+  ui_schema_json: jsonb("ui_schema_json").notNull(), // UI layout and styling
+  created_at: timestamp("created_at").default(sql`now()`).notNull(),
+  published_at: timestamp("published_at"),
+  published_by: uuid("published_by").references(() => users.id),
+}, (table) => ({
+  formVersionIdx: index("form_versions_form_version_idx").on(table.form_id, table.version),
+  tenantIdx: index("form_versions_tenant_idx").on(table.tenant_id),
+}));
+
+// Form Data table - stores submitted form data
+export const formData = pgTable("form_data", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenant_id: uuid("tenant_id").references(() => tenants.id).notNull(),
+  form_key: varchar("form_key", { length: 255 }).notNull(),
+  form_version: integer("form_version").notNull(),
+  process_id: uuid("process_id").references(() => processInstances.id),
+  task_id: uuid("task_id").references(() => taskInstances.id),
+  data_json: jsonb("data_json").notNull(), // Submitted form data
+  created_by: uuid("created_by").references(() => users.id).notNull(),
+  created_at: timestamp("created_at").default(sql`now()`).notNull(),
+}, (table) => ({
+  tenantFormIdx: index("form_data_tenant_form_idx").on(table.tenant_id, table.form_key),
+  processTaskIdx: index("form_data_process_task_idx").on(table.process_id, table.task_id),
+  createdByIdx: index("form_data_created_by_idx").on(table.created_by),
 }));
 
 // Workflows table - keeping existing structure but adding key field
@@ -213,6 +247,8 @@ export const fileAttachments = pgTable("file_attachments", {
 export const tenantsRelations = relations(tenants, ({ many }) => ({
   users: many(users),
   forms: many(forms),
+  formVersions: many(formVersions),
+  formData: many(formData),
   workflows: many(workflows),
   workflowVersions: many(workflowVersions),
   processInstances: many(processInstances),
@@ -245,7 +281,42 @@ export const formsRelations = relations(forms, ({ one, many }) => ({
     fields: [forms.created_by],
     references: [users.id],
   }),
+  versions: many(formVersions),
   taskInstances: many(taskInstances),
+}));
+
+export const formVersionsRelations = relations(formVersions, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [formVersions.tenant_id],
+    references: [tenants.id],
+  }),
+  form: one(forms, {
+    fields: [formVersions.form_id],
+    references: [forms.id],
+  }),
+  publishedBy: one(users, {
+    fields: [formVersions.published_by],
+    references: [users.id],
+  }),
+}));
+
+export const formDataRelations = relations(formData, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [formData.tenant_id],
+    references: [tenants.id],
+  }),
+  processInstance: one(processInstances, {
+    fields: [formData.process_id],
+    references: [processInstances.id],
+  }),
+  taskInstance: one(taskInstances, {
+    fields: [formData.task_id],
+    references: [taskInstances.id],
+  }),
+  createdBy: one(users, {
+    fields: [formData.created_by],
+    references: [users.id],
+  }),
 }));
 
 export const workflowsRelations = relations(workflows, ({ one, many }) => ({
@@ -379,7 +450,17 @@ export const insertFormSchema = createInsertSchema(forms).omit({
   id: true,
   created_at: true,
   updated_at: true,
+});
+
+export const insertFormVersionSchema = createInsertSchema(formVersions).omit({
+  id: true,
+  created_at: true,
   published_at: true,
+});
+
+export const insertFormDataSchema = createInsertSchema(formData).omit({
+  id: true,
+  created_at: true,
 });
 
 export const insertWorkflowSchema = createInsertSchema(workflows).omit({
@@ -429,6 +510,12 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Form = typeof forms.$inferSelect;
 export type InsertForm = z.infer<typeof insertFormSchema>;
+
+export type FormVersion = typeof formVersions.$inferSelect;
+export type InsertFormVersion = z.infer<typeof insertFormVersionSchema>;
+
+export type FormData = typeof formData.$inferSelect;
+export type InsertFormData = z.infer<typeof insertFormDataSchema>;
 
 export type Workflow = typeof workflows.$inferSelect;
 export type InsertWorkflow = z.infer<typeof insertWorkflowSchema>;
