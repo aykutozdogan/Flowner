@@ -1,0 +1,137 @@
+Lütfen TÜM yanıtlarını TÜRKÇE ver.
+
+AMAÇ: 
+1) S4’te kalan tek sorunu (processes.tsx içindeki JSX/Syntax) düzelt, lint+tsc+build+UI testleri PASS olacak şekilde tamamla ve terminale **S4_UI=PASS** yaz.
+2) Ardından S5’i (Form Builder UI + BPMN Designer gelişmiş) uygula, test et, dokümante et ve terminale **S5_UI=PASS** yaz.
+
+DEĞİŞMEZ KURALLAR
+- Source of truth: PLAN.md + S1/S2/S3/S4 çıktıları.
+- Var olan kodu koru; minimal ama doğru değişiklik yap.
+- Her adımda komutları KENDİN çalıştır; FAIL olursa düzelt ve tekrar dene.
+- Tam dosya üret; kısmi diff verme.
+- Raporları docs/ altında oluştur.
+- Bitince iki satır bekliyorum:
+  S4_UI=PASS
+  S5_UI=PASS
+
+────────────────────────────────────────────────────────
+## A) S4 Finalize (Hata düzeltme + PASS)
+
+1) UI hatasını düzelt:
+- Hata: `processes.tsx` içinde Sheet component JSX syntax error (kapanmayan tag/prop spread/yanlış hiyerarşi).
+- Yap:
+  - `npm run lint` ve `npm run typecheck` (veya `tsc -p .`) ile hatayı yakala.
+  - `src/pages/admin/processes.tsx` (veya gerçek yolu) dosyasında Sheet bileşenini MUI/Sheet eşleşmesine uygun şekilde düzelt.
+  - Gerekiyorsa minimal refactor: <Sheet> → <Dialog/Drawer> ya da MUI’nin `<Drawer>` + `<Box>` düzeni; aria-label ve key prop’larını koru.
+
+2) Derleme + smoke:
+- Komutlar:
+  - npm ci || npm i
+  - npm run lint
+  - npm run typecheck
+  - npm run build
+  - npm start & 
+  - sleep 3
+  - npm run test:portal:s4   # bash senaryosu
+  - npm run test:ui:s4       # E2E (Playwright/Cypress)
+- Hepsi geçerse terminale **S4_UI=PASS** yaz.
+- Kısa raporu `docs/s4-sprint-report.md` içine “Fix log” başlığıyla ekle (hangi dosyada ne düzeldi, hangi testler geçildi).
+
+────────────────────────────────────────────────────────
+## B) S5 – Admin & Designer Advanced
+Hedef: Görsel **Form Builder (drag&drop)** + **BPMN Designer (bpmn‑js)** + versiyonlama/diff/undo‑redo + publish flow + gelişmiş özellikler.
+
+### 1) Form Builder UI (drag & drop)
+- Route: `/admin/forms/builder/:key?` 
+- Bileşenler:
+  - Left Palette: alan tipleri (Text, Textarea, Number, Select, Multi‑Select, Date, Time, DateTime, Checkbox, Radio, File, RichText).
+  - Canvas: 12 kolon grid; sürükle‑bırak; section (collapsible) + tab desteği.
+  - Right Properties Panel: label, name(key), placeholder, required, min/max, regex, default, helpText; **conditional görünürlük** (ör. `fields.amount > 1000`), veri kaynağı (Static list / API datasource).
+- İşlevler:
+  - **Undo/Redo** (history stack).
+  - **Versioning**: “Save Draft”, “Publish” (publish → version↑).
+  - **Preview**: runtime render (FormRenderer kullan).
+  - **Diff**: iki versiyon arasında alan bazlı fark (eklenen/silinen/değişen).
+  - **Changelog** girişi: publish sırasında text alanı.
+
+- Backend API genişlet:
+  - GET  /api/v1/forms/:key/versions
+  - GET  /api/v1/forms/:key/versions/:ver
+  - POST /api/v1/forms/:key/publish  { changelog }
+  - (Gerekirse) POST /api/v1/forms/:key/versions (yeni draft kopyası)
+- RBAC: tenant_admin + designer erişebilir.
+
+### 2) BPMN Designer (bpmn-js + properties)
+- Route: `/admin/workflows/designer/:key?`
+- bpmn‑js modeler + properties panel:
+  - Palet: StartEvent, EndEvent, UserTask, ServiceTask, ExclusiveGateway, ParallelGateway, (Opsiyon) TimerEvent.
+  - Properties:
+    - UserTask: name, assigneeRole/assigneeUser, **formKey + formVersion** seçimi (published’lar).
+    - ServiceTask: **type** (‘http’ | ‘handler’):
+      * http: method, url, headers (key:value), bodyTemplate (JSON), timeoutMs, retry(max, backoffMs), authProfileKey?
+      * handler: name, params (JSON).
+    - ExclusiveGateway: expression (vars.*) doğrulaması.
+    - Timer (opsiyonel): dueAt/SLA (ISO süre veya saat).
+  - Özellikler:
+    - **Undo/Redo** (modeler history).
+    - **Diff**: workflow_versions arası fark (XML/JSON karşılaştırma).
+    - **Changelog**: publish sırasında text alanı.
+- Persistans:
+  - workflow_versions.definition_xml (bpmn xml) + definition_json (MVP DSL) birlikte saklanabilir.
+- Backend API genişlet:
+  - GET  /api/v1/workflows/:key/versions
+  - GET  /api/v1/workflows/:key/versions/:ver
+  - POST /api/v1/workflows/:key/publish { changelog }
+- RBAC: tenant_admin + designer.
+
+### 3) Monitoring iyileştirmeleri
+- /admin/processes detay panelinde:
+  - Timeline: process.started, task.created, task.claimed, task.completed, service.executed, formdata.saved, process.completed.
+  - Form submissions: form_data’dan son kayıtları readonly göster.
+  - “Compare” butonu: workflow sürüm farkına hızlı link (designer diff’e).
+
+### 4) Testler (S5)
+- **Unit/Component**:
+  - FormBuilder: drag&drop ekleme/kaldırma, property update, undo/redo.
+  - BPMN Designer: properties formu set/get; userTask’a form bind; serviceTask http config kaydı.
+- **API**:
+  - forms versions list/get; publish w/ changelog.
+  - workflows versions list/get; publish w/ changelog.
+- **E2E (Playwright/Cypress)**:
+  - [FB‑01] Designer (forms): draft oluştur → alan ekle → publish → preview → diff kontrolü.
+  - [WF‑01] BPMN designer: userTask’a form bağla → publish → process start (2500) → approver formu görüp tamamlar → completed.
+  - Scriptler:
+    - package.json’a `"test:ui:s5": "playwright test tests/e2e/s5/*.spec.ts --reporter=line || cypress run --spec 'cypress/e2e/s5/*.cy.ts'"`
+
+### 5) Dokümantasyon
+- README.md:
+  - Form Builder kullanım kılavuzu (drag&drop, properties, publish, diff).
+  - BPMN Designer kullanım kılavuzu (palet, properties, publish, diff).
+- Rapor: `docs/s5-sprint-report.md`
+  - Hedefler, tamamlananlar, ekran URL’leri
+  - API değişiklikleri (forms/workflows versions + publish changelog)
+  - E2E test sonuçları
+  - Bilinen konular ve S6 planı
+  - Son satır: **S5_REPORT=PASS**
+
+### 6) Çalıştırma Sırası (sen uygula, raporla)
+- S4 finalize:
+  - npm run lint && npm run typecheck && npm run build
+  - npm start &; sleep 3
+  - npm run test:portal:s4
+  - npm run test:ui:s4
+  - Hepsi geçince: **S4_UI=PASS**
+- S5 geliştirme:
+  - npm run build
+  - npm start &; sleep 3
+  - npm run test:ui:s5
+  - Hepsi geçince terminale: **S5_UI=PASS**
+  - Raporları docs/ altına yaz ve dosya ağacını özetle.
+
+KABUL KRİTERLERİ
+- S4’te kalan JSX hatası giderilmiş; lint+tsc+build temiz; S4 smoke/E2E PASS; **S4_UI=PASS**.
+- Form Builder: drag&drop, properties, undo/redo, draft→publish, preview, diff, changelog çalışıyor.
+- BPMN Designer: bpmn‑js modeler; userTask form bind; serviceTask http/handler; exclusive/parallel gateway; undo/redo; diff; publish w/ changelog.
+- Monitoring’de timeline ve form submissions görünür.
+- S5 testleri PASS; terminal çıktısında **S5_UI=PASS**.
+- `docs/s5-sprint-report.md` oluşturulmuş; sonunda **S5_REPORT=PASS** bulunur.

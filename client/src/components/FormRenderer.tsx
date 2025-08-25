@@ -298,7 +298,9 @@ export function FormRenderer({ schema, uiSchema, value, onSubmit, outcomes = [],
                   fullWidth: true,
                   error: !!error,
                   helperText: error,
-                  'data-testid': `date-${field.name}`
+                  inputProps: {
+                    'data-testid': `date-${field.name}`
+                  }
                 }
               }}
             />

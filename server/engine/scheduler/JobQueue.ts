@@ -202,8 +202,7 @@ export class JobQueue {
       const { JobExecutor } = await import('./JobExecutor');
       const { ProcessStateManager } = await import('../runtime/ProcessStateManager');
       
-      const stateManager = new ProcessStateManager();
-      const jobExecutor = new JobExecutor(stateManager);
+      const jobExecutor = new JobExecutor();
       
       // Execute job properly through JobExecutor
       await jobExecutor.executeJob(job);

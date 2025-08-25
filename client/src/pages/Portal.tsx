@@ -73,55 +73,49 @@ export function Portal() {
 
       {/* Stats Cards */}
       {meta && (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Assignment color="primary" />
-                  <Box>
-                    <Typography variant="h6">{meta.counts.pending}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Bekleyen Task'lar
-                    </Typography>
-                  </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 3, mb: 4 }}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Assignment color="primary" />
+                <Box>
+                  <Typography variant="h6">{meta.counts.pending}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Bekleyen Task'lar
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+              </Box>
+            </CardContent>
+          </Card>
           
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <CheckCircle color="success" />
-                  <Box>
-                    <Typography variant="h6">{meta.counts.completed}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Tamamlanan Task'lar
-                    </Typography>
-                  </Box>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <CheckCircle color="success" />
+                <Box>
+                  <Typography variant="h6">{meta.counts.completed}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Tamamlanan Task'lar
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+              </Box>
+            </CardContent>
+          </Card>
           
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Schedule color="warning" />
-                  <Box>
-                    <Typography variant="h6">{meta.counts.overdue}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Süresi Geçen Task'lar
-                    </Typography>
-                  </Box>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Schedule color="warning" />
+                <Box>
+                  <Typography variant="h6">{meta.counts.overdue}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Süresi Geçen Task'lar
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
       )}
 
       {/* Tasks List */}
@@ -146,10 +140,9 @@ export function Portal() {
           </Box>
         )}
         
-        <Grid container spacing={2}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: 2 }}>
           {tasks.map((task) => (
-            <Grid item xs={12} md={6} lg={4} key={task.id}>
-              <Card variant="outlined">
+            <Card variant="outlined" key={task.id}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                     <Assignment fontSize="small" color="primary" />
@@ -213,9 +206,8 @@ export function Portal() {
                   </Button>
                 </CardActions>
               </Card>
-            </Grid>
           ))}
-        </Grid>
+        </Box>
       </Paper>
     </Box>
   );

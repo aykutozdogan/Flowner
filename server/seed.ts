@@ -110,8 +110,7 @@ async function seed() {
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  await seed();
-  process.exit(0);
+  seed().then(() => process.exit(0)).catch((err) => { console.error(err); process.exit(1); });
 }
 
 export { seed };

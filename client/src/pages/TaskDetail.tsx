@@ -43,7 +43,7 @@ export function TaskDetail() {
     enabled: !!id
   });
 
-  const task: TaskData = taskResponse?.data;
+  const task: TaskData = (taskResponse as any)?.data;
 
   // Form schema sorgusu
   const { data: formResponse, isLoading: formLoading, error: formError } = useQuery({

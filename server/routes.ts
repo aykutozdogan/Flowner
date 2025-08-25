@@ -1,4 +1,16 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
+
+declare module 'express' {
+  interface Request {
+    user?: {
+      id: string;
+      role: string;
+      tenantId?: string;
+    };
+    tenantId?: string;
+    tenantDomain?: string;
+  }
+}
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ProcessRuntime, JobScheduler, type BpmnDefinition } from "./engine";
@@ -14,7 +26,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "your-refresh-secret-key";
 
 // Middleware for parsing tenant ID
-const parseTenantId = async (req: any, res: any, next: any) => {
+const parseTenantId = async (req: Request, res: any, next: any) => {
   const tenantIdentifier = req.headers['x-tenant-id'];
   if (!tenantIdentifier) {
     return res.status(400).json({
@@ -60,7 +72,7 @@ const parseTenantId = async (req: any, res: any, next: any) => {
 };
 
 // Middleware for JWT authentication
-const authenticateToken = async (req: any, res: any, next: any) => {
+const authenticateToken = async (req: Request, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
