@@ -1,0 +1,190 @@
+Lütfen TÜM yanıtlarını TÜRKÇE ver.
+
+AMAÇ:
+A) S5’te kalan küçük eksikleri otomatik düzelt, test et ve raporla (PASS).
+B) S6’da frontend’i **iki ayrı uygulama**ya ayır (admin-app & portal-app), entegrasyonları ve observability’yi kur, prod hazırlığını yap, test et ve raporla (PASS).
+
+DEĞİŞMEZ KURALLAR
+- Source of truth: PLAN.md + S1..S5 raporları + kod
+- Var olan kodu koru; minimal ama doğru değişiklik yap
+- Tam dosya üret; kısmi diff verme
+- Gerekli her adımda komutları KENDİN çalıştır; FAIL ise düzeltip tekrar dene
+- Sprint raporlarını docs/ altında oluştur
+- İş bittiğinde terminale şu dört satırı yaz:
+  S5_UI=PASS
+  S5_REPORT=PASS
+  S6_UI=PASS
+  S6_REPORT=PASS
+
+────────────────────────────────────────────────────────
+A) S5 FİNALIZE (ÖN KOŞUL DÜZELTMELERİ)
+
+1) /login sonrası ROL TABANLI YÖNLENDİRME
+- Başarılı login’de: (rollere me’yi çek veya token’dan oku)
+  - tenant_admin | designer → /admin/dashboard
+  - user | approver → /portal/tasks
+- Opsiyon: ?redirectTo= parametresine öncelik ver
+- Auth guard: route yetkisizse uygun köke yönlendir
+
+2) ADMIN: FORM & BPM TANIMLAMA
+- /admin/forms ve /admin/forms/builder/:key? → draft create, drag&drop alan ekle, preview, publish (changelog)
+- /admin/workflows ve /admin/workflows/designer/:key? → bpmn-js; UserTask’ta formKey+formVersion seçimi; publish (changelog)
+- Versiyon listeleme ve diff görünümü
+
+3) MENÜ & RBAC (User/Approver ayrımı zorunlu değil; görünürlük doğru olmalı)
+- Admin (tenant_admin/designer): Forms, Workflows, Processes/Monitoring, Tenants, Users, Settings
+- User/Approver: Inbox/Tasks, My Processes (ops.), Profile
+- Header: tenant seçici, dil, tema
+
+4) ADMIN: Yeni Tenant & Yeni Kullanıcı
+- /admin/tenants: liste, “Yeni Tenant” formu (name, domain, description)
+  - API: POST/GET/PUT (ops. DELETE soft)
+- /admin/users: liste, “Yeni Kullanıcı” formu (email, password, roles[])
+  - API: POST/GET/PUT (ops. reset/disable)
+- Benzersizlik, ProblemDetails hata gösterimi
+
+5) S5 SMOKE + UI TEST
+- tests/s5-smoke.sh: admin login → form draft+publish → workflow publish (userTask↔form bind) →
+  start(2500) → approver /portal/tasks → form doldur → complete → process completed
+  → Son satır: S5_SMOKE=PASS
+- tests/e2e/s5/*.spec.ts: login redirect, builder/designer açılıyor, portal task detail render & submit, tenants/users ekranı “Yeni …” diyalogları
+- package.json: 
+  "test:smoke:s5": "bash tests/s5-smoke.sh",
+  "test:ui:s5": "playwright test tests/e2e/s5 --reporter=line || cypress run --spec 'cypress/e2e/s5/*.cy.ts'"
+
+6) ÇALIŞTIR & DOĞRULA
+- npm ci || npm i
+- npm run lint && npm run typecheck && npm run build
+- npm start &; sleep 3
+- npm run test:smoke:s5
+- npm run test:ui:s5
+- Geçince terminale yaz: S5_UI=PASS
+- docs/s5-sprint-report.md dosyasını üret (yapılan düzeltmeler, test özetleri, kalan minör notlar)
+- Rapor sonunda: S5_REPORT=PASS
+
+────────────────────────────────────────────────────────
+B) S6 — FRONTEND’İ İKİ AYRI UYGULAMAYA AYIR
+
+1) Monorepo (npm workspaces veya pnpm):
+  /apps/admin-app      → Admin Panel
+  /apps/portal-app     → User Portal
+  /packages/shared-ui  → Ortak UI (FormRenderer, Theme, i18n)
+  /packages/shared-core→ Auth client, API client, RBAC utils, tipler
+- Admin route’lar admin-app’e; Portal route’lar portal-app’e taşınmalı
+- FormRenderer shared-ui’da kalmalı
+
+2) ENV & CORS
+- .env örnekleri:
+  ADMIN_APP_BASE_URL=http://localhost:5174
+  PORTAL_APP_BASE_URL=http://localhost:5175
+  API_BASE_URL=http://localhost:5000
+  CORS_ALLOWLIST=http://localhost:5174,http://localhost:5175
+- Backend CORS allowlist’i uygula (helmet + cors)
+
+3) Scriptler
+- root package.json:
+  "build:admin", "dev:admin", "build:portal", "dev:portal", "dev:all"
+- Ayrım sonrası lint+typecheck+build temiz olmalı
+- S4/S5’ten taşınan JSX hatalarını düzelt (özellikle admin processes sayfası)
+
+4) Smoke (S6 split)
+- tests/s6-split-smoke.sh:
+  - admin-app ve portal-app build & up
+  - /health, /__meta/routes
+  - CORS: 5174/5175 kaynaklarından istek başarılı
+  - Son satır: S6_SPLIT_SMOKE=PASS
+
+────────────────────────────────────────────────────────
+C) ENTEGRASYONLAR
+
+1) Webhook’lar (tenant bazlı konfig)
+- Olaylar: process.started, task.created/claimed/completed, formdata.saved, process.completed
+- İmza: HMAC-SHA256 (X-Webhook-Signature)
+- Retry: exponential backoff; failed_webhooks tablosu
+- Test ucu: POST /__meta/webhook/test {event}
+
+2) API Key (tenant bazlı)
+- Tablo: api_keys(id, tenant_id, key_hash, scopes, created_at, revoked_at)
+- Uçlar: POST /api/v1/keys, GET /api/v1/keys, DELETE /api/v1/keys/:id
+- “Authorization: ApiKey <key>” desteği
+- Rate limit: tenant ve key bazlı; 429 + Retry-After
+
+3) Güvenlik Sertleştirme
+- JWT süreleri, refresh revocation list
+- Security headers, input validation
+- Hassas alanlar at-rest encryption
+
+────────────────────────────────────────────────────────
+D) OBSERVABILITY
+
+1) Loglama (JSON)
+- Pino benzeri: timestamp, level, message, traceId, spanId, tenantId, userId
+
+2) OpenTelemetry
+- Traces: /auth/login, /processes/start, userTask.complete, serviceTask.http
+- Metrics: request_count, latency_histogram, error_count, engine_tick_ms, queue_depth
+- Exporter: OTLP (dev’de console/in-memory)
+
+3) Dashboard & Alerts
+- Dashboard: API latency p50/p95, error rate, queue depth
+- Uyarılar: p95 > 500ms, 5xx > %1, webhook failure artışı
+
+────────────────────────────────────────────────────────
+E) PROD HAZIRLIĞI
+
+1) CI/CD (GitHub Actions)
+- install → lint → typecheck → unit → e2e → build → db:migrate → docker build/push → deploy
+- Artefaktlar: admin-app build, portal-app build, backend image, migration bundle
+- Ortamlar: dev/test/prod secrets
+
+2) Migration & Seed
+- Versiyonlu migration; pre-deploy check, post-deploy seed
+- Enum/DDL değişikliklerinde backward compatibility
+
+3) Backup/Restore
+- Günlük pg_dump → S3; restore provası (ayrı test DB) + smoke test
+
+4) SLO
+- Hedef: p95 < 300ms, error rate < %1 (dev ölçümü)
+- docs/s6-sprint-report.md içine kısa SLO raporu
+
+────────────────────────────────────────────────────────
+F) TEST & RAPOR
+
+1) Testler
+- chmod +x tests/s6-split-smoke.sh || true
+- tests/s6-webhook-e2e.sh: imza doğrulama + retry → S6_WEBHOOK=PASS
+- UI basic e2e (admin/portal açılışı) → S6_UI=PASS
+
+2) Komutlar
+- npm run build:admin && npm run build:portal
+- npm run dev:all &; sleep 3
+- npm run test:s6:split
+- npm run test:s6:webhook
+- npm run test:s6:ui
+- Hepsi geçince terminale yaz:
+  S6_UI=PASS
+
+3) Raporlar
+- README.md: iki app’in build/çalıştırma talimatı; URL’ler; CORS/env
+- docs/s6-sprint-report.md:
+  - Mimari değişiklik: iki app + shared paketler
+  - Entegrasyonlar: webhook, api key, rate limit
+  - Observability: log/metric/trace, dashboard & alerts
+  - CI/CD, migration, backup/restore sonuçları
+  - SLO kısa raporu
+  - Son satır: S6_REPORT=PASS
+
+────────────────────────────────────────────────────────
+KABUL KRİTERLERİ
+- S5 düzeltmeleri uygulandı; /login redirect, builder/designer çalışır, menüler role göre doğru; /admin/tenants & /admin/users ile yeni kayıt oluşturulabiliyor.
+- S5 smoke ve UI testleri PASS → terminalde S5_UI=PASS; rapor: S5_REPORT=PASS.
+- Frontend iki ayrı uygulama (admin-app & portal-app) + shared paketler ile çalışıyor; CORS & env doğru.
+- Webhook’lar imzalı ve retry’lı; API key yönetimi & rate limit aktif.
+- OpenTelemetry traces/metrics yayında; JSON loglar korelasyonlu.
+- CI/CD, migration, backup/restore ve SLO raporu hazır.
+- Terminalde: 
+  S5_UI=PASS
+  S5_REPORT=PASS
+  S6_UI=PASS
+  S6_REPORT=PASS
