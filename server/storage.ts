@@ -1,7 +1,7 @@
 import { 
-  tenants, users, forms, workflows, processInstances, taskInstances, auditLogs, fileAttachments,
-  type Tenant, type User, type Form, type Workflow, type ProcessInstance, type TaskInstance,
-  type InsertTenant, type InsertUser, type InsertForm, type InsertWorkflow,
+  tenants, users, forms, workflows, workflowVersions, processInstances, taskInstances, auditLogs, fileAttachments,
+  type Tenant, type User, type Form, type Workflow, type WorkflowVersion, type ProcessInstance, type TaskInstance,
+  type InsertTenant, type InsertUser, type InsertForm, type InsertWorkflow, type InsertWorkflowVersion,
   type InsertProcessInstance, type InsertTaskInstance, type UserWithTenant
 } from "@shared/schema";
 import { db } from "./db";
@@ -31,19 +31,33 @@ export interface IStorage {
   // Workflows
   getWorkflows(tenantId: string, filters?: { status?: string }): Promise<Workflow[]>;
   getWorkflow(id: string, tenantId: string): Promise<Workflow | undefined>;
+  getWorkflowById(id: string, tenantId: string): Promise<Workflow | undefined>;
   createWorkflow(workflow: InsertWorkflow): Promise<Workflow>;
   updateWorkflow(id: string, tenantId: string, updates: Partial<InsertWorkflow>): Promise<Workflow | undefined>;
   publishWorkflow(id: string, tenantId: string, versionNotes?: string): Promise<Workflow | undefined>;
+  
+  // Workflow Versions
+  createWorkflowVersion(versionData: {
+    tenantId: string;
+    workflowId: string;
+    version: number;
+    definitionJson: any;
+    status: "draft" | "published";
+    publishedBy: string;
+  }): Promise<WorkflowVersion>;
+  getLatestWorkflowVersion(workflowId: string, tenantId: string): Promise<WorkflowVersion | undefined>;
 
   // Process Instances
-  getProcessInstances(tenantId: string, filters?: { status?: string; userId?: string }): Promise<ProcessInstance[]>;
+  getProcessInstances(tenantId: string, filters?: { status?: string; userId?: string; limit?: number; offset?: number }): Promise<ProcessInstance[]>;
   getProcessInstance(id: string, tenantId: string): Promise<ProcessInstance | undefined>;
+  getProcessInstanceById(id: string, tenantId: string): Promise<ProcessInstance | undefined>;
   createProcessInstance(processInstance: InsertProcessInstance): Promise<ProcessInstance>;
   updateProcessInstance(id: string, tenantId: string, updates: Partial<ProcessInstance>): Promise<ProcessInstance | undefined>;
 
   // Task Instances
-  getTaskInstances(tenantId: string, filters?: { status?: string; assigneeId?: string }): Promise<TaskInstance[]>;
+  getTaskInstances(tenantId: string, filters?: { status?: string; assigneeId?: string; processId?: string; assigneeRole?: string; limit?: number; offset?: number }): Promise<TaskInstance[]>;
   getTaskInstance(id: string, tenantId: string): Promise<TaskInstance | undefined>;
+  getTaskInstanceById(id: string, tenantId: string): Promise<TaskInstance | undefined>;
   createTaskInstance(taskInstance: InsertTaskInstance): Promise<TaskInstance>;
   updateTaskInstance(id: string, tenantId: string, updates: Partial<TaskInstance>): Promise<TaskInstance | undefined>;
   completeTask(id: string, tenantId: string, outcome: string, formData: any, completedBy: string): Promise<TaskInstance | undefined>;
@@ -232,6 +246,10 @@ export class DatabaseStorage implements IStorage {
     return workflow || undefined;
   }
 
+  async getWorkflowById(id: string, tenantId: string): Promise<Workflow | undefined> {
+    return this.getWorkflow(id, tenantId);
+  }
+
   async createWorkflow(workflow: InsertWorkflow): Promise<Workflow> {
     const [newWorkflow] = await db.insert(workflows).values(workflow).returning();
     return newWorkflow;
@@ -265,38 +283,75 @@ export class DatabaseStorage implements IStorage {
     return publishedWorkflow || undefined;
   }
 
+  // Workflow Versions
+  async createWorkflowVersion(versionData: {
+    tenantId: string;
+    workflowId: string;
+    version: number;
+    definitionJson: any;
+    status: "draft" | "published";
+    publishedBy: string;
+  }): Promise<WorkflowVersion> {
+    const [newVersion] = await db.insert(workflowVersions).values({
+      tenant_id: versionData.tenantId,
+      workflow_id: versionData.workflowId,
+      version: versionData.version,
+      definition_json: versionData.definitionJson,
+      status: versionData.status,
+      published_by: versionData.publishedBy,
+    }).returning();
+    return newVersion;
+  }
+
+  async getLatestWorkflowVersion(workflowId: string, tenantId: string): Promise<WorkflowVersion | undefined> {
+    const [version] = await db.select().from(workflowVersions)
+      .where(and(
+        eq(workflowVersions.workflow_id, workflowId),
+        eq(workflowVersions.tenant_id, tenantId),
+        eq(workflowVersions.status, "published")
+      ))
+      .orderBy(desc(workflowVersions.version))
+      .limit(1);
+    return version || undefined;
+  }
+
   // Process Instances
-  async getProcessInstances(tenantId: string, filters?: { status?: string; userId?: string }): Promise<ProcessInstance[]> {
+  async getProcessInstances(tenantId: string, filters?: { status?: string; userId?: string; limit?: number; offset?: number }): Promise<ProcessInstance[]> {
     let query = db.select().from(processInstances)
       .where(eq(processInstances.tenant_id, tenantId))
       .orderBy(desc(processInstances.started_at));
 
+    // Apply filters
     if (filters?.status && filters?.userId) {
-      return await db.select().from(processInstances)
+      query = db.select().from(processInstances)
         .where(and(
           eq(processInstances.tenant_id, tenantId),
           eq(processInstances.status, filters.status as any),
           eq(processInstances.started_by, filters.userId)
         ))
         .orderBy(desc(processInstances.started_at));
-    }
-
-    if (filters?.status) {
-      return await db.select().from(processInstances)
+    } else if (filters?.status) {
+      query = db.select().from(processInstances)
         .where(and(
           eq(processInstances.tenant_id, tenantId),
           eq(processInstances.status, filters.status as any)
         ))
         .orderBy(desc(processInstances.started_at));
-    }
-
-    if (filters?.userId) {
-      return await db.select().from(processInstances)
+    } else if (filters?.userId) {
+      query = db.select().from(processInstances)
         .where(and(
           eq(processInstances.tenant_id, tenantId),
           eq(processInstances.started_by, filters.userId)
         ))
         .orderBy(desc(processInstances.started_at));
+    }
+
+    // Apply pagination
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+    }
+    if (filters?.offset) {
+      query = query.offset(filters.offset);
     }
 
     return await query;
@@ -309,6 +364,10 @@ export class DatabaseStorage implements IStorage {
         eq(processInstances.tenant_id, tenantId)
       ));
     return processInstance || undefined;
+  }
+
+  async getProcessInstanceById(id: string, tenantId: string): Promise<ProcessInstance | undefined> {
+    return this.getProcessInstance(id, tenantId);
   }
 
   async createProcessInstance(processInstance: InsertProcessInstance): Promise<ProcessInstance> {
@@ -328,37 +387,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Task Instances
-  async getTaskInstances(tenantId: string, filters?: { status?: string; assigneeId?: string }): Promise<TaskInstance[]> {
-    let query = db.select().from(taskInstances)
-      .where(eq(taskInstances.tenant_id, tenantId))
-      .orderBy(desc(taskInstances.created_at));
-
-    if (filters?.status && filters?.assigneeId) {
-      return await db.select().from(taskInstances)
-        .where(and(
-          eq(taskInstances.tenant_id, tenantId),
-          eq(taskInstances.status, filters.status as any),
-          eq(taskInstances.assignee_id, filters.assigneeId)
-        ))
-        .orderBy(desc(taskInstances.created_at));
-    }
+  async getTaskInstances(tenantId: string, filters?: { status?: string; assigneeId?: string; processId?: string; assigneeRole?: string; limit?: number; offset?: number }): Promise<TaskInstance[]> {
+    let whereConditions = [eq(taskInstances.tenant_id, tenantId)];
 
     if (filters?.status) {
-      return await db.select().from(taskInstances)
-        .where(and(
-          eq(taskInstances.tenant_id, tenantId),
-          eq(taskInstances.status, filters.status as any)
-        ))
-        .orderBy(desc(taskInstances.created_at));
+      whereConditions.push(eq(taskInstances.status, filters.status as any));
+    }
+    if (filters?.assigneeId) {
+      whereConditions.push(eq(taskInstances.assignee_id, filters.assigneeId));
+    }
+    if (filters?.processId) {
+      whereConditions.push(eq(taskInstances.process_id, filters.processId));
+    }
+    if (filters?.assigneeRole) {
+      whereConditions.push(eq(taskInstances.assignee_role, filters.assigneeRole as any));
     }
 
-    if (filters?.assigneeId) {
-      return await db.select().from(taskInstances)
-        .where(and(
-          eq(taskInstances.tenant_id, tenantId),
-          eq(taskInstances.assignee_id, filters.assigneeId)
-        ))
-        .orderBy(desc(taskInstances.created_at));
+    let query = db.select().from(taskInstances)
+      .where(and(...whereConditions))
+      .orderBy(desc(taskInstances.created_at));
+
+    // Apply pagination
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+    }
+    if (filters?.offset) {
+      query = query.offset(filters.offset);
     }
 
     return await query;
@@ -371,6 +425,10 @@ export class DatabaseStorage implements IStorage {
         eq(taskInstances.tenant_id, tenantId)
       ));
     return taskInstance || undefined;
+  }
+
+  async getTaskInstanceById(id: string, tenantId: string): Promise<TaskInstance | undefined> {
+    return this.getTaskInstance(id, tenantId);
   }
 
   async createTaskInstance(taskInstance: InsertTaskInstance): Promise<TaskInstance> {

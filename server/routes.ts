@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { ProcessRuntime, JobScheduler, type BpmnDefinition } from "./engine";
+import { eq, and, desc } from "drizzle-orm";
+import { processInstances, taskInstances, workflows, workflowVersions } from "@shared/schema";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
@@ -72,6 +75,13 @@ const loginSchema = z.object({
 const refreshTokenSchema = z.object({
   refresh_token: z.string().min(1),
 });
+
+// Initialize Workflow Engine
+const processRuntime = new ProcessRuntime();
+const jobScheduler = new JobScheduler();
+
+// Start job scheduler
+jobScheduler.start().catch(console.error);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoints
@@ -411,6 +421,339 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: "Internal Server Error",
         status: 500,
         detail: "Failed to fetch task inbox"
+      });
+    }
+  });
+
+  // ========================================
+  // WORKFLOW ENGINE API ROUTES
+  // ========================================
+
+  // Workflow Publishing API
+  app.post("/api/workflows/:id/publish", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { id: workflowId } = req.params;
+      const { version = "1.0.0" } = req.body;
+      
+      // Get workflow
+      const workflow = await storage.getWorkflowById(workflowId, req.tenantId);
+      if (!workflow) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Workflow Not Found",
+          status: 404,
+          detail: "Workflow not found"
+        });
+      }
+
+      // Create workflow version with JSON DSL
+      const versionData = {
+        tenantId: req.tenantId,
+        workflowId,
+        version: parseInt(version.replace(/\./g, "")), // Convert "1.0.0" to 100
+        definitionJson: JSON.parse(workflow.bpmn_xml), // Assume BPMN XML is actually JSON DSL
+        status: "published" as const,
+        publishedBy: req.user.id,
+      };
+
+      await storage.createWorkflowVersion(versionData);
+      
+      // Update workflow status
+      await storage.updateWorkflow(workflowId, req.tenantId, {
+        status: "published",
+        published_at: new Date(),
+      });
+
+      console.log(`[Engine API] Workflow ${workflowId} published as version ${versionData.version}`);
+      res.json({
+        success: true,
+        message: "Workflow published successfully",
+        version: versionData.version
+      });
+    } catch (error) {
+      console.error("Error publishing workflow:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to publish workflow"
+      });
+    }
+  });
+
+  // Process Management API
+  app.get("/api/processes", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const processes = await storage.getProcessInstances(req.tenantId, {
+        limit: parseInt(req.query.limit as string) || 50,
+        offset: parseInt(req.query.offset as string) || 0,
+        status: req.query.status as any,
+      });
+
+      res.json(processes);
+    } catch (error) {
+      console.error("Error fetching processes:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error", 
+        status: 500,
+        detail: "Failed to fetch processes"
+      });
+    }
+  });
+
+  app.post("/api/processes", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { workflowId, name, variables = {} } = req.body;
+      
+      // Validate required fields
+      if (!workflowId || !name) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Validation Error",
+          status: 400,
+          detail: "workflowId and name are required"
+        });
+      }
+
+      // Get published workflow version
+      const workflowVersion = await storage.getLatestWorkflowVersion(workflowId, req.tenantId);
+      if (!workflowVersion) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Published Workflow Not Found",
+          status: 404,
+          detail: "No published version found for this workflow"
+        });
+      }
+
+      // Start process using engine
+      const processInstance = await processRuntime.startProcess({
+        tenantId: req.tenantId,
+        workflowId,
+        workflowVersion: workflowVersion.version,
+        bpmnDefinition: workflowVersion.definition_json as BpmnDefinition,
+        name,
+        variables,
+        startedBy: req.user.id,
+      });
+
+      console.log(`[Engine API] Process started: ${processInstance.id} from workflow ${workflowId}`);
+      res.json(processInstance);
+    } catch (error) {
+      console.error("Error starting process:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to start process"
+      });
+    }
+  });
+
+  app.get("/api/processes/:id", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { id: processId } = req.params;
+      
+      const process = await storage.getProcessInstanceById(processId, req.tenantId);
+      if (!process) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Process Not Found",
+          status: 404,
+          detail: "Process not found"
+        });
+      }
+
+      // Get associated tasks
+      const tasks = await storage.getTaskInstances(req.tenantId, { processId });
+
+      res.json({
+        ...process,
+        tasks
+      });
+    } catch (error) {
+      console.error("Error fetching process:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to fetch process"
+      });
+    }
+  });
+
+  app.post("/api/processes/:id/cancel", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { id: processId } = req.params;
+      
+      await processRuntime.cancelProcess(processId, req.tenantId);
+      
+      console.log(`[Engine API] Process cancelled: ${processId}`);
+      res.json({
+        success: true,
+        message: "Process cancelled successfully"
+      });
+    } catch (error) {
+      console.error("Error cancelling process:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to cancel process"
+      });
+    }
+  });
+
+  // Task Management API
+  app.get("/api/engine/tasks", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const filters: any = {
+        limit: parseInt(req.query.limit as string) || 50,
+        offset: parseInt(req.query.offset as string) || 0,
+      };
+
+      // Role-based filtering
+      if (req.user.role !== 'tenant_admin') {
+        // Non-admin users only see tasks assigned to their role or directly to them
+        filters.assigneeRole = req.user.role;
+        filters.assigneeId = req.user.id;
+      }
+
+      if (req.query.status) {
+        filters.status = req.query.status;
+      }
+
+      const tasks = await storage.getTaskInstances(req.tenantId, filters);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching engine tasks:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to fetch tasks"
+      });
+    }
+  });
+
+  app.post("/api/engine/tasks/:id/complete", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { id: taskId } = req.params;
+      const { outcome, formData = {} } = req.body;
+      
+      // Check task ownership/assignment
+      const task = await storage.getTaskInstanceById(taskId, req.tenantId);
+      if (!task) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Task Not Found",
+          status: 404,
+          detail: "Task not found"
+        });
+      }
+
+      // Check if user can complete this task
+      const canComplete = task.assignee_id === req.user.id || 
+                         task.assignee_role === req.user.role ||
+                         req.user.role === 'tenant_admin';
+
+      if (!canComplete) {
+        return res.status(403).json({
+          type: "/api/errors/forbidden",
+          title: "Forbidden",
+          status: 403,
+          detail: "You are not authorized to complete this task"
+        });
+      }
+
+      // Complete task using engine
+      await processRuntime.completeTask({
+        taskId,
+        tenantId: req.tenantId,
+        userId: req.user.id,
+        outcome,
+        formData,
+      });
+
+      console.log(`[Engine API] Task completed: ${taskId} by user ${req.user.id}`);
+      res.json({
+        success: true,
+        message: "Task completed successfully"
+      });
+    } catch (error) {
+      console.error("Error completing task:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to complete task"
+      });
+    }
+  });
+
+  app.post("/api/engine/tasks/:id/assign", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { id: taskId } = req.params;
+      const { assigneeId } = req.body;
+      
+      // Only admin and approvers can reassign tasks
+      if (!['tenant_admin', 'approver'].includes(req.user.role)) {
+        return res.status(403).json({
+          type: "/api/errors/forbidden",
+          title: "Forbidden",
+          status: 403,
+          detail: "You are not authorized to assign tasks"
+        });
+      }
+
+      await storage.updateTaskInstance(taskId, req.tenantId, {
+        assignee_id: assigneeId,
+        status: 'assigned'
+      });
+
+      console.log(`[Engine API] Task assigned: ${taskId} to user ${assigneeId}`);
+      res.json({
+        success: true,
+        message: "Task assigned successfully"
+      });
+    } catch (error) {
+      console.error("Error assigning task:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to assign task"
+      });
+    }
+  });
+
+  // Engine Statistics API
+  app.get("/api/engine/stats", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      // Only admin can access engine stats
+      if (req.user.role !== 'tenant_admin') {
+        return res.status(403).json({
+          type: "/api/errors/forbidden",
+          title: "Forbidden",
+          status: 403,
+          detail: "Admin access required"
+        });
+      }
+
+      const stats = await jobScheduler.getSchedulerStats();
+      
+      res.json({
+        scheduler: stats,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error fetching engine stats:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to fetch engine statistics"
       });
     }
   });

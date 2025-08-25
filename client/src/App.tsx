@@ -8,6 +8,10 @@ import { CssBaseline } from '@mui/material';
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
+import Workflows from "@/pages/workflows";
+import Processes from "@/pages/processes";
+import Tasks from "@/pages/tasks";
+import EngineStats from "@/pages/engine-stats";
 
 // Create Material-UI theme matching the design reference
 const theme = createTheme({
@@ -91,6 +95,10 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/workflows" component={Workflows} />
+      <Route path="/processes" component={Processes} />
+      <Route path="/tasks" component={Tasks} />
+      <Route path="/engine/stats" component={EngineStats} />
       <Route path="/" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>

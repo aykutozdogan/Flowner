@@ -1,0 +1,135 @@
+LÜTFEN TÜM YANITLARINI TÜRKÇE VER.
+
+Rolün: Kıdemli full‑stack mühendisi + workflow engine geliştiricisi.
+Amaç: PLAN.md’ye SADIK KALARAK S2’de BPMN Engine MVP’yi uçtan uca çalışır hale getir:
+- Tanım → Yayınlama → Süreç başlatma → Adımların yürütülmesi → Görev tamamlama → Süreç bitirme
+- Persistans: PostgreSQL (Drizzle/Prisma hangi ORM aktifse onu kullan)
+- Kuyruk/Zamanlayıcı: Redis varsa BullMQ, yoksa in‑memory güvenilir işleyici
+- Observability: JSON log + basit trace id; audit trail zorunlu
+
+DEĞİŞMEZ KURALLAR
+- Source of truth = PLAN.md + S1 çıktıları (multi‑tenant, RBAC, JWT, X-Tenant-Id).
+- Var olan dosyaları KORU; minimal ve anlamlı değişikliklerle ilerle.
+- Tam dosya üret; kısmi diff verme. Her adımı kendin çalıştır/test et. Hata olursa düzelt ve tekrar dene.
+- İş bittiğinde terminale: **S2_ENGINE=PASS** yaz.
+
+────────────────────────────────────────────────────────────────────────────
+
+0) ÖN KOŞULLAR
+- S1’deki auth ve tenant altyapısı aynı kalsın (X-Tenant-Id zorunlu).
+- DB erişimi hazır olmalı. Yoksa docker-compose.dev.yml ile postgres’i ayağa kaldır.
+- .env’yi güncelle (gerekirse):
+  ENGINE_CONCURRENCY=4
+  ENGINE_RETRY_MAX=3
+  ENGINE_RETRY_BACKOFF_MS=1000
+
+1) VERİ MODELİ (gerekli tablo/delta’lar)
+- workflows(id, tenant_id, key, name, latest_version, published_at, created_at, is_deleted)
+- workflow_versions(id, tenant_id, workflow_id, version, definition_json, status: 'draft'|'published', created_at, published_by)
+- process_instances(id, tenant_id, workflow_id, workflow_version, status: 'created'|'running'|'suspended'|'completed'|'terminated'|'failed', started_by, started_at, completed_at, variables_json)
+- task_instances(id, tenant_id, process_id, type: 'user'|'service', name, status: 'created'|'assigned'|'claimed'|'in_progress'|'completed'|'rejected'|'escalated'|'failed'|'cancelled', assignee_user_id, assignee_role, due_at, sla_hours, outcome, output_json, created_at, updated_at)
+- engine_jobs(id, tenant_id, process_id, task_id, kind:'service_exec'|'timer'|'retry', run_at, attempts, max_attempts, status:'queued'|'running'|'done'|'dead', payload_json, idempotency_key, created_at)
+- audit_logs(id, tenant_id, actor_user_id, action, target_type, target_id, details_json, trace_id, created_at)
+- attachments(… mevcutsa dokunma)
+
+NOT: ORM olarak Drizzle kullanıyorsan şemayı oraya; Prisma ise schema.prisma’ya ekle. Gerekli migration’ı üret ve uygula. Indexler: (tenant_id), (process_id), (task_id), engine_jobs(run_at,status).
+
+2) WORKFLOW TANIM FORMATı (MVP JSON DSL)
+- BPMN 2.0 tam pars etmeye gerek yok; MVP için JSON tabanlı bir DSL oluştur:
+{
+  "key": "expense_approval",
+  "name": "Expense Approval",
+  "version": 1,
+  "nodes": [
+    { "id":"start", "type":"start", "next":"check_amount" },
+    { "id":"check_amount", "type":"exclusiveGateway", "expression":"vars.amount <= 1000 ? 'auto_approve' : 'manager_task'" },
+    { "id":"auto_approve", "type":"serviceTask", "service": { "type":"handler", "name":"AutoApproveHandler", "params":{} }, "next":"end" },
+    { "id":"manager_task", "type":"userTask", "name":"Manager Approval", "formId":"frm_expense_v1", "assigneeRole":"approver",
+      "outcomes":[{"key":"approve"},{"key":"reject"}],
+      "nextByOutcome":{"approve":"end","reject":"end"} },
+    { "id":"end", "type":"end" }
+  ]
+}
+- expression güvenliği için **safe‑eval** veya kendi küçük değerlendiricini yaz (yalnızca vars.* ve outcome/ctx erişimi). `eval` kullanma.
+- ServiceTask `service.type` 'http' veya 'handler':
+  - http: { method,url,headers,bodyTemplate, timeoutMs, retry:{max,backoffMs}, authProfileKey? }
+  - handler: { name, params } → kayıtlı local handler çağrılır (registry)
+
+3) ENGINE ÇALIŞTIRMA KATMANI
+- engine/ içinde:
+  - registry/handlers.ts → { AutoApproveHandler(vars, params, ctx) { … } } gibi basit örnek; log yaz ve true döndür.
+  - services/httpClient.ts → fetch/axios ile çağrı; idempotency key header’ı ekle; 4xx retry yapma, 5xx/network retry.
+  - runtime/engine.ts → public API: publishWorkflow(draftJson) → version artır+published; startProcess(workflowKey, vars, startedBy); runNext(processId) (iç durumuna göre bir sonraki node’u yürütür); completeUserTask(taskId, outcome, data, actor)
+  - runtime/executor.ts → node yürütücüleri (start, end, exclusiveGateway, userTask, serviceTask). Exclusive: expression sonucu tek next id döndürmeli.
+  - runtime/scheduler.ts → engine_jobs tablosunu periyodik tarayan worker; due job’ları çalıştırır. (Redis yoksa setInterval; Redis varsa BullMQ queue)
+- Concurrency: ENV ENGINE_CONCURRENCY kadar paralel iş; aynı processId üzerinde dağıtık kilit (db düzeyinde FOR UPDATE SKIP LOCKED veya “advisory lock” yoksa optimistic kontrol) — MVP’de aynı process’te tek yürütücü yeterli.
+
+4) BACKEND API’LERİ (REST v1)
+- **Workflow Yönetimi (designer tarafı)**
+  - POST /api/v1/workflows  (Create or upsert by key, draft)
+  - POST /api/v1/workflows/:key/publish  (Draft → Published; version artır)
+  - GET  /api/v1/workflows (list latest published)
+  - GET  /api/v1/workflows/:key (get latest published with version)
+
+- **Süreç & Görev**
+  - POST /api/v1/processes/start  { workflowKey, variables } → processId
+  - GET  /api/v1/processes/:id  → durum, current node, variables
+  - GET  /api/v1/tasks/my  → (user or role) atanan açık userTask’lar (claimable + assigned)
+  - POST /api/v1/tasks/:id/claim
+  - POST /api/v1/tasks/:id/complete  { outcome, data } → gateway’e göre devam
+  - POST /api/v1/tasks/:id/reassign { toUserId | toRole } (tenant_admin/designer yetkisi)
+  - (Opsiyon) POST /api/v1/tasks/:id/comment  { text } → audit’e yaz
+
+- **Engine Yönetimi**
+  - POST /api/v1/engine/tick  → scheduler’ı tetikleyen admin ucu (dev amaçlı)
+  - GET  /api/v1/engine/jobs?status=queued|running|dead
+
+- Tüm uçlar X‑Tenant‑Id zorunlu; koruma: [Authorize], RBAC: workflows publish = designer/tenant_admin, tasks opsiyonları user/approver rolüne göre.
+
+5) AUDIT & LOG
+- Her olay için audit_logs’a yaz:
+  - workflow.published, process.started, task.created, task.assigned, task.claimed, task.completed, service.executed, process.completed, error.occurred
+- Log satırlarında: traceId (uuid), tenantId, userId, action, targetId.
+
+6) DEMO SENARYO (uçtan uca)
+- “Expense Approval” workflow’u seed et veya publish API’siyle oluştur (yukarıdaki JSON).
+- Başlatma: POST /api/v1/processes/start  { workflowKey:"expense_approval", variables:{ amount: 750 } } → auto_approve yolundan **serviceTask** çalışır ve süreç **end**’e gider.
+- İkinci deneme: amount: 2500 → **userTask** oluştur (Manager Approval); approver rolündeki kullanıcı **/tasks/my**’da görür, **claim** eder, **complete {outcome:'approve'}** gönderir → süreç end.
+- Her iki akış için audit kaydı ve process status=completed olmalı.
+
+7) FRONTEND (sadece bağlayıcı uçlar; büyük UI geliştirme yok)
+- Admin Panel: “Publish workflow” formu → POST /workflows + /publish
+- User Portal: Inbox → GET /tasks/my; Task detayında “Complete” butonu outcome seçtirerek POST /tasks/:id/complete
+- Dashboard’daki KPI’lar gerçek API’dan gelsin: /analytics/summary AÇIKTAN DB’yi kullanıyor olmalı (process count vs.)
+
+8) TESTLER (Jest + Supertest) — S2 Smoke
+- tests/engine/*.test.ts:
+  [A] Publish workflow (expense_approval) → 201 + version=1
+  [B] Start with amount=750 → process completed (auto approve path)
+  [C] Start with amount=2500 → userTask created (Manager Approval)
+  [D] List my tasks (approver) → task available; claim + complete(outcome='approve') → process completed
+  [E] Audit logs contain events (process.started, task.completed, process.completed)
+- package.json’a: "test:engine": "jest --runInBand --detectOpenHandles tests/engine"
+
+Çalıştırma:
+  npm run build
+  npm start &   # 5000’de çalışıyor
+  sleep 3
+  npm run test:engine
+
+9) KABUL KRİTERLERİ
+- Migration/DB şema güncel; engine tabloları oluşmuş.
+- Publish/Start/Task/My/Claim/Complete uçları **çalışıyor**.
+- ServiceTask (handler) ve ExclusiveGateway yürütme **çalışıyor**.
+- İki demo senaryosu (<=1000 auto approve, >1000 manager approval) **PASS**.
+- Audit loglarda olaylar kaydediliyor.
+- `npm run test:engine` PASSED; terminalin sonunda **S2_ENGINE=PASS** görünür.
+
+10) RAPORLAMA
+- README.md’ye “S2 – Workflow Engine MVP” çalışma talimatları ve demo çağrıları eklendi.
+- Sprint2.Report.md dosyasına özet yaz:
+  - DB değişiklikleri
+  - API uçları
+  - Demo senaryoları sonuçları
+  - Test sonucunun özeti (passed kaç test)
+  - Sonraki adım önerisi: Timer/SLA/escalation, HTTP ServiceTask, field‑level permissions vb.

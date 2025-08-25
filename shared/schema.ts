@@ -10,6 +10,10 @@ export const processStatusEnum = pgEnum("process_status", ["running", "completed
 export const taskStatusEnum = pgEnum("task_status", ["pending", "completed", "cancelled", "assigned"]);
 export const formStatusEnum = pgEnum("form_status", ["draft", "published", "archived"]);
 export const workflowStatusEnum = pgEnum("workflow_status", ["draft", "published", "archived"]);
+export const workflowVersionStatusEnum = pgEnum("workflow_version_status", ["draft", "published"]);
+export const taskTypeEnum = pgEnum("task_type", ["user", "service"]);
+export const jobStatusEnum = pgEnum("job_status", ["queued", "running", "done", "dead"]);
+export const jobKindEnum = pgEnum("job_kind", ["service_exec", "timer", "retry"]);
 
 // Tenants table
 export const tenants = pgTable("tenants", {
@@ -59,7 +63,7 @@ export const forms = pgTable("forms", {
   tenantDeletedIdx: index("forms_tenant_deleted_idx").on(table.tenant_id, table.is_deleted),
 }));
 
-// Workflows table
+// Workflows table - keeping existing structure but adding key field
 export const workflows = pgTable("workflows", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   tenant_id: uuid("tenant_id").references(() => tenants.id).notNull(),
@@ -67,8 +71,9 @@ export const workflows = pgTable("workflows", {
   description: text("description"),
   version: varchar("version", { length: 50 }).default("1.0.0").notNull(),
   status: workflowStatusEnum("status").default("draft").notNull(),
-  bpmn_xml: text("bpmn_xml").notNull(),
+  bpmn_xml: text("bpmn_xml").notNull(), // Keep existing field, will store JSON DSL here
   config: jsonb("config").default({}),
+  key: varchar("key", { length: 255 }), // Add key field for engine (nullable for backward compatibility)
   created_by: uuid("created_by").references(() => users.id).notNull(),
   published_at: timestamp("published_at"),
   is_deleted: boolean("is_deleted").default(false).notNull(),
@@ -77,16 +82,33 @@ export const workflows = pgTable("workflows", {
 }, (table) => ({
   tenantStatusIdx: index("workflows_tenant_status_idx").on(table.tenant_id, table.status),
   tenantDeletedIdx: index("workflows_tenant_deleted_idx").on(table.tenant_id, table.is_deleted),
+  tenantKeyIdx: index("workflows_tenant_key_idx").on(table.tenant_id, table.key),
 }));
 
-// Process Instances table
+// Workflow Versions table
+export const workflowVersions = pgTable("workflow_versions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenant_id: uuid("tenant_id").references(() => tenants.id).notNull(),
+  workflow_id: uuid("workflow_id").references(() => workflows.id).notNull(),
+  version: integer("version").notNull(),
+  definition_json: jsonb("definition_json").notNull(), // JSON DSL format
+  status: workflowVersionStatusEnum("status").default("draft").notNull(),
+  created_at: timestamp("created_at").default(sql`now()`).notNull(),
+  published_by: uuid("published_by").references(() => users.id),
+}, (table) => ({
+  workflowVersionIdx: index("workflow_versions_workflow_version_idx").on(table.workflow_id, table.version),
+  tenantIdx: index("workflow_versions_tenant_idx").on(table.tenant_id),
+}));
+
+// Process Instances table - keeping existing structure but adding workflow_version
 export const processInstances = pgTable("process_instances", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   tenant_id: uuid("tenant_id").references(() => tenants.id).notNull(),
   workflow_id: uuid("workflow_id").references(() => workflows.id).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   status: processStatusEnum("status").default("running").notNull(),
-  variables: jsonb("variables").default({}),
+  variables: jsonb("variables").default({}), // Keep existing field name
+  workflow_version: integer("workflow_version").default(1), // Add new field (nullable for backward compatibility)
   started_by: uuid("started_by").references(() => users.id).notNull(),
   started_at: timestamp("started_at").default(sql`now()`).notNull(),
   completed_at: timestamp("completed_at"),
@@ -98,23 +120,27 @@ export const processInstances = pgTable("process_instances", {
   startedByIdx: index("process_instances_started_by_idx").on(table.started_by),
 }));
 
-// Task Instances table
+// Task Instances table - keeping existing structure but adding engine fields
 export const taskInstances = pgTable("task_instances", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   tenant_id: uuid("tenant_id").references(() => tenants.id).notNull(),
   process_id: uuid("process_id").references(() => processInstances.id).notNull(),
-  task_key: varchar("task_key", { length: 255 }).notNull(), // BPMN element ID
+  task_key: varchar("task_key", { length: 255 }).notNull(), // Keep existing BPMN element ID
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   form_id: uuid("form_id").references(() => forms.id),
-  assignee_id: uuid("assignee_id").references(() => users.id),
-  status: taskStatusEnum("status").default("pending").notNull(),
+  assignee_id: uuid("assignee_id").references(() => users.id), // Keep existing field name
+  status: taskStatusEnum("status").default("pending").notNull(), // Update enum values but keep default
   priority: integer("priority").default(1).notNull(),
-  due_date: timestamp("due_date"),
-  form_data: jsonb("form_data").default({}),
+  due_date: timestamp("due_date"), // Keep existing field name
+  form_data: jsonb("form_data").default({}), // Keep existing field name
   outcome: varchar("outcome", { length: 100 }),
   completed_by: uuid("completed_by").references(() => users.id),
   completed_at: timestamp("completed_at"),
+  // Add engine fields
+  type: taskTypeEnum("type"), // Add new field (nullable for backward compatibility)
+  assignee_role: userRoleEnum("assignee_role"), // Add new field (nullable)
+  sla_hours: integer("sla_hours"), // Add new field (nullable)
   created_at: timestamp("created_at").default(sql`now()`).notNull(),
   updated_at: timestamp("updated_at").default(sql`now()`).notNull(),
 }, (table) => ({
@@ -122,6 +148,26 @@ export const taskInstances = pgTable("task_instances", {
   processIdx: index("task_instances_process_idx").on(table.process_id),
   assigneeIdx: index("task_instances_assignee_idx").on(table.assignee_id),
   assigneeStatusIdx: index("task_instances_assignee_status_idx").on(table.assignee_id, table.status),
+}));
+
+// Engine Jobs table
+export const engineJobs = pgTable("engine_jobs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenant_id: uuid("tenant_id").references(() => tenants.id).notNull(),
+  process_id: uuid("process_id").references(() => processInstances.id).notNull(),
+  task_id: uuid("task_id").references(() => taskInstances.id),
+  kind: jobKindEnum("kind").notNull(),
+  run_at: timestamp("run_at").default(sql`now()`).notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  max_attempts: integer("max_attempts").default(3).notNull(),
+  status: jobStatusEnum("status").default("queued").notNull(),
+  payload_json: jsonb("payload_json").default({}),
+  idempotency_key: varchar("idempotency_key", { length: 255 }),
+  created_at: timestamp("created_at").default(sql`now()`).notNull(),
+}, (table) => ({
+  tenantIdx: index("engine_jobs_tenant_idx").on(table.tenant_id),
+  runAtStatusIdx: index("engine_jobs_run_at_status_idx").on(table.run_at, table.status),
+  processIdx: index("engine_jobs_process_idx").on(table.process_id),
 }));
 
 // Audit Logs table
@@ -168,8 +214,10 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   users: many(users),
   forms: many(forms),
   workflows: many(workflows),
+  workflowVersions: many(workflowVersions),
   processInstances: many(processInstances),
   taskInstances: many(taskInstances),
+  engineJobs: many(engineJobs),
   auditLogs: many(auditLogs),
   fileAttachments: many(fileAttachments),
 }));
@@ -205,11 +253,23 @@ export const workflowsRelations = relations(workflows, ({ one, many }) => ({
     fields: [workflows.tenant_id],
     references: [tenants.id],
   }),
-  createdBy: one(users, {
-    fields: [workflows.created_by],
+  versions: many(workflowVersions),
+  processInstances: many(processInstances),
+}));
+
+export const workflowVersionsRelations = relations(workflowVersions, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [workflowVersions.tenant_id],
+    references: [tenants.id],
+  }),
+  workflow: one(workflows, {
+    fields: [workflowVersions.workflow_id],
+    references: [workflows.id],
+  }),
+  publishedBy: one(users, {
+    fields: [workflowVersions.published_by],
     references: [users.id],
   }),
-  processInstances: many(processInstances),
 }));
 
 export const processInstancesRelations = relations(processInstances, ({ one, many }) => ({
@@ -253,6 +313,22 @@ export const taskInstancesRelations = relations(taskInstances, ({ one, many }) =
     relationName: "completedTasks",
   }),
   fileAttachments: many(fileAttachments),
+  engineJobs: many(engineJobs),
+}));
+
+export const engineJobsRelations = relations(engineJobs, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [engineJobs.tenant_id],
+    references: [tenants.id],
+  }),
+  processInstance: one(processInstances, {
+    fields: [engineJobs.process_id],
+    references: [processInstances.id],
+  }),
+  taskInstance: one(taskInstances, {
+    fields: [engineJobs.task_id],
+    references: [taskInstances.id],
+  }),
 }));
 
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
@@ -309,14 +385,16 @@ export const insertFormSchema = createInsertSchema(forms).omit({
 export const insertWorkflowSchema = createInsertSchema(workflows).omit({
   id: true,
   created_at: true,
-  updated_at: true,
   published_at: true,
+});
+
+export const insertWorkflowVersionSchema = createInsertSchema(workflowVersions).omit({
+  id: true,
+  created_at: true,
 });
 
 export const insertProcessInstanceSchema = createInsertSchema(processInstances).omit({
   id: true,
-  created_at: true,
-  updated_at: true,
   started_at: true,
   completed_at: true,
 });
@@ -325,7 +403,11 @@ export const insertTaskInstanceSchema = createInsertSchema(taskInstances).omit({
   id: true,
   created_at: true,
   updated_at: true,
-  completed_at: true,
+});
+
+export const insertEngineJobSchema = createInsertSchema(engineJobs).omit({
+  id: true,
+  created_at: true,
 });
 
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
@@ -351,11 +433,17 @@ export type InsertForm = z.infer<typeof insertFormSchema>;
 export type Workflow = typeof workflows.$inferSelect;
 export type InsertWorkflow = z.infer<typeof insertWorkflowSchema>;
 
+export type WorkflowVersion = typeof workflowVersions.$inferSelect;
+export type InsertWorkflowVersion = z.infer<typeof insertWorkflowVersionSchema>;
+
 export type ProcessInstance = typeof processInstances.$inferSelect;
 export type InsertProcessInstance = z.infer<typeof insertProcessInstanceSchema>;
 
 export type TaskInstance = typeof taskInstances.$inferSelect;
 export type InsertTaskInstance = z.infer<typeof insertTaskInstanceSchema>;
+
+export type EngineJob = typeof engineJobs.$inferSelect;
+export type InsertEngineJob = z.infer<typeof insertEngineJobSchema>;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;

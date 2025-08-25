@@ -9,6 +9,9 @@ import {
   IntegrationInstructions as IntegrationsIcon,
   Settings as SettingsIcon,
   MoreVert as MoreVertIcon,
+  Assignment as TaskIcon,
+  PlayCircleOutline as ProcessIcon,
+  Monitor as MonitoringIcon,
 } from '@mui/icons-material';
 import { useLocation } from 'wouter';
 
@@ -43,7 +46,8 @@ const menuSections = [
   {
     title: 'MANAGEMENT',
     items: [
-      { key: 'process-inbox', label: 'Process Inbox', icon: InboxIcon, path: '/inbox' },
+      { key: 'processes', label: 'Processes', icon: ProcessIcon, path: '/processes' },
+      { key: 'tasks', label: 'Task Inbox', icon: TaskIcon, path: '/tasks' },
       { key: 'analytics', label: 'Analytics', icon: AnalyticsIcon, path: '/analytics' },
       { key: 'users-roles', label: 'Users & Roles', icon: PeopleIcon, path: '/users' },
     ]
@@ -51,6 +55,7 @@ const menuSections = [
   {
     title: 'SYSTEM',
     items: [
+      { key: 'engine-stats', label: 'Engine Stats', icon: MonitoringIcon, path: '/engine/stats' },
       { key: 'integrations', label: 'Integrations', icon: IntegrationsIcon, path: '/integrations' },
       { key: 'settings', label: 'Settings', icon: SettingsIcon, path: '/settings' },
     ]
