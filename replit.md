@@ -81,3 +81,13 @@ Database queries are optimized with proper indexing strategies, particularly for
 - **GitHub Actions**: CI/CD pipeline for automated testing and deployment
 - **ESBuild**: Fast JavaScript bundling for production builds
 - **TypeScript Compiler**: Type checking and transpilation
+
+## Recent Changes
+
+### S6 Sprint (25 Ağustos 2025) - Frontend Split & Production Infrastructure
+- **Frontend Monorepo:** Tek uygulama → admin-app + portal-app + shared packages
+- **Shared Packages:** shared-ui (components) ve shared-core (auth, API, RBAC)
+- **Webhook Integration:** Event-driven webhooks with HMAC signature verification
+- **API Key Management:** Secure API key generation, validation, and rate limiting
+- **Observability:** Structured logging, metrics collection, request tracing
+- **Production Ready:** CI/CD foundation, backup procedures, monitoring setup

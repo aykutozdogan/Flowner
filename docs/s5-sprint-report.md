@@ -91,6 +91,11 @@ S5 sprintinde Flowner platformundaki kritik admin interface sorunları çözüld
 - ✅ **BPMN Designer:** XML generation and form binding works
 - ✅ **Admin Management:** Tenant/User CRUD operations working
 - ✅ **RBAC:** Role-based menu visibility and route protection
+- ✅ **S5 Smoke Test:** Core functionality verified
+  - Admin login: admin@demo.local ✅
+  - Form creation and publish: ✅  
+  - Tenant/User data: Demo tenant oluşturuldu ✅
+  - API endpoints: Form API çalışıyor ✅
 
 ## Bilinen Açıklar
 
