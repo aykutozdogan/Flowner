@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { Plus, Play, StopCircle, Calendar, User, Clock } from 'lucide-react';
+import { Plus, Play, StopCircle, Calendar, User, Clock, Eye, RefreshCw, FileText, Timeline } from 'lucide-react';
 
 interface Workflow {
   id: string;
@@ -25,12 +28,34 @@ interface Process {
   workflow_id: string;
   started_at: string;
   completed_at?: string;
+  variables?: Record<string, any>;
+}
+
+interface FormDataEntry {
+  id: string;
+  form_key: string;
+  form_version: number;
+  data_json: Record<string, any>;
+  created_at: string;
+  created_by: string;
+}
+
+interface AuditLogEntry {
+  id: string;
+  action: string;
+  entity_type: string;
+  details: Record<string, any>;
+  created_at: string;
+  user_id?: string;
 }
 
 export default function ProcessesPage() {
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState('');
   const [processName, setProcessName] = useState('');
+  const [selectedProcessId, setSelectedProcessId] = useState<string>('');
+  const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const { data: workflows, isLoading: workflowsLoading } = useQuery<Workflow[]>({
     queryKey: ['/api/workflows', { status: 'published' }],
@@ -40,6 +65,21 @@ export default function ProcessesPage() {
   const { data: processes, isLoading: processesLoading } = useQuery<Process[]>({
     queryKey: ['/api/processes'],
     select: (data: any) => data.data || data,
+    refetchInterval: autoRefresh ? 5000 : false, // Auto-refresh every 5 seconds
+  });
+
+  // Process detail queries
+  const { data: processDetail } = useQuery({
+    queryKey: ['/api/processes', selectedProcessId],
+    enabled: !!selectedProcessId,
+    select: (data: any) => data.data || data,
+  });
+
+  const { data: formSubmissions } = useQuery<FormDataEntry[]>({
+    queryKey: ['/api/forms/data', selectedProcessId],
+    queryFn: () => apiRequest(`/api/forms/data?processId=${selectedProcessId}`),
+    enabled: !!selectedProcessId,
+    select: (data: any) => data.data || [],
   });
 
   const startProcessMutation = useMutation({
@@ -110,11 +150,16 @@ export default function ProcessesPage() {
     }
   };
 
+  const handleViewProcess = (processId: string) => {
+    setSelectedProcessId(processId);
+    setIsDetailDrawerOpen(true);
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      running: { variant: 'default' as const, icon: Play },
-      completed: { variant: 'secondary' as const, icon: Clock },
-      cancelled: { variant: 'destructive' as const, icon: StopCircle },
+      running: { variant: 'default' as const, icon: Play, text: 'Çalışıyor' },
+      completed: { variant: 'secondary' as const, icon: Clock, text: 'Tamamlandı' },
+      cancelled: { variant: 'destructive' as const, icon: StopCircle, text: 'İptal Edildi' },
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.running;
@@ -123,9 +168,20 @@ export default function ProcessesPage() {
     return (
       <Badge variant={config.variant}>
         <Icon className="w-3 h-3 mr-1" />
-        {status}
+        {config.text}
       </Badge>
     );
+  };
+
+  const formatDuration = (startDate: string, endDate?: string) => {
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : new Date();
+    const diff = Math.floor((end.getTime() - start.getTime()) / 1000);
+    
+    if (diff < 60) return `${diff}s`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m`;
+    return `${Math.floor(diff / 86400)}g`;
   };
 
   if (processesLoading) {
@@ -156,16 +212,25 @@ export default function ProcessesPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Process Instances</h1>
-            <p className="text-gray-600 mt-2">Monitor and manage running business processes</p>
+            <h1 className="text-3xl font-bold">Süreç İzleme</h1>
+            <p className="text-gray-600 mt-2">İş süreçlerini izleyin ve yönetin</p>
           </div>
-          <Dialog open={isStartDialogOpen} onOpenChange={setIsStartDialogOpen}>
-            <DialogTrigger asChild>
-              <Button data-testid="start-process-button">
-                <Plus className="w-4 h-4 mr-2" />
-                Start Process
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={autoRefresh ? 'bg-green-50 border-green-200' : ''}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
+              Otomatik Yenile
+            </Button>
+            <Dialog open={isStartDialogOpen} onOpenChange={setIsStartDialogOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="start-process-button">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Süreç Başlat
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Start New Process</DialogTitle>
@@ -253,23 +318,32 @@ export default function ProcessesPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      Started {new Date(process.started_at).toLocaleDateString()}
-                    </div>
-                    {process.completed_at && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        Completed {new Date(process.completed_at).toLocaleDateString()}
+                        <Calendar className="w-4 h-4" />
+                        Başlangıç: {new Date(process.started_at).toLocaleDateString('tr-TR')}
                       </div>
-                    )}
+                      {process.completed_at && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          Bitiş: {new Date(process.completed_at).toLocaleDateString('tr-TR')}
+                        </div>
+                      )}
+                      <div className="text-xs">
+                        Süre: {formatDuration(process.started_at, process.completed_at)}
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      ID: {process.id.slice(0, 8)}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
             ))
           )}
         </div>
+
       </div>
     </div>
   );

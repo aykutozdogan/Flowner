@@ -1,0 +1,114 @@
+Lütfen TÜM yanıtlarını TÜRKÇE ver.
+
+ÖN KABUL: Frontend’de Admin ve User Portal ayrımı tek React app içinde tamamlandı:
+- /admin/* (Admin Panel), /portal/* (User Portal)
+- RBAC default yönlendirme: tenant_admin/designer → /admin/dashboard; approver/user → /portal/inbox veya /portal/tasks
+- Sol menü role göre görünüyor; Header’da tenant seçici + dil/tema var.
+Bunu yapılmış KABUL EDEREK geri kalan tüm S4 işlerini tek oturumda tamamla.
+
+ROLÜN: Kıdemli full‑stack geliştirici + teslimat ajanı. 
+AMAÇ: S4’te **User Portal’da form doldurup User Task tamamlama** akışını uçtan uca çalışır hale getir; süreç izleme ekranlarını tamamla; smoke/E2E testleri PASS yap; raporu yaz.
+
+DEĞİŞMEZ KURALLAR
+- Source of truth = PLAN.md + S1/S2/S3 çıktıları.
+- Var olan kodu KORU; minimal fakat doğru değişiklik yap.
+- Tam dosya üret; kısmi diff verme. Her kritik adımda komutları KENDİN çalıştır; FAIL ise düzeltip yeniden dene.
+- İş bittiğinde terminale: **S4_UI=PASS** yaz.
+
+────────────────────────────────────────────────────────
+
+1) BACKEND — TASK ↔ FORM ENTEGRASYONU
+- task_instances modelini kontrol et; yoksa alanları ekle:
+  - form_key (text), form_version (int)
+- UserTask oluşturulurken (designer’da bağlandığı varsayımıyla) form_key ve form_version alanlarını task’a yaz.
+  - Eğer workflow tanımında form bilgisi yoksa: Manager Approval userTask için varsayılan olarak
+    form_key='expense_request', form_version=latest published (geçici fallback) kullan.
+- API genişlet:
+  - GET  /api/v1/tasks/:id → task temel bilgilerine `formKey` ve `formVersion` alanlarını ekle.
+  - GET  /api/v1/forms/:key/preview?version=N → versiyon parametresiyle schema/ui_schema döndür (yoksa latest published).
+  - POST /api/v1/tasks/:id/complete { outcome, data }:
+      • data → form_data tablosuna (form_key, form_version, process_id, task_id, data_json, created_by) yaz.
+      • task status → completed; process akışı gateway’e göre ilerlesin.
+- Audit:
+  - formdata.saved, task.completed, process.completed olaylarını audit_logs’a yaz.
+- ProblemDetails hata modeli tutarlı kalsın.
+
+2) FRONTEND — USER PORTAL: Dinamik Task Detayı
+- Route: /portal/tasks/:id
+- Akış:
+  - Task GET ile `formKey` + `formVersion` çek.
+  - Preview API ile schema/ui_schema al → **FormRenderer** ile dinamik render et.
+  - Outcome seçimi + form submit → `tasks/:id/complete` çağır.
+  - Başarılı submit: toast → /portal/tasks listesi refresh; süreç ilerlemesini göster.
+- RBAC: rol yetkisiz ise 403 uyarı ekranı.
+
+3) FRONTEND — FormRenderer Bileşeni (React + MUI)
+- Props: { schema, uiSchema, value?, onSubmit }
+- Alan tipleri (MVP): Text, Textarea, Number, Select, Multi-Select, Date, Time, DateTime, Checkbox, Radio, File, RichText
+- Özellikler:
+  - Required / min / max / regex validasyon (UI tarafında)
+  - Conditional görünürlük: `when`/`expression` (ör. fields.amount > 1000) desteği
+  - Hata paneli (kullanıcı dostu)
+- UI:
+  - 12 kolon grid düzeni; section (collapsible), tab opsiyonu.
+  - Submit ve Cancel butonları; outcome seçimi için Menu/Select.
+
+4) ADMIN — Process Monitoring Genişletmesi
+- /admin/processes (veya /admin/monitoring) ekranında:
+  - Liste: processId, workflowKey, status, startedAt, completedAt, currentNode, duration
+  - Detay çekmece/panel:
+    • Audit timeline (process.started → task.created → task.completed → process.completed → formdata.saved)
+    • Form submissions (form_data’dan son kayıtlar, readonly JSON veya tablo görünüm)
+  - Auto‑refresh (polling 5sn) veya “Refresh” tuşu
+
+5) DEMO SENARYOLARI (seed veya UI üzerinden)
+- Expense Approval workflow’u hazır kabul.
+- Form: expense_request (amount:Number required, description:Text, category:Select)
+- Senaryo A (Auto approve):
+  - Admin → /admin/processes → Start: { amount: 750 } → process status=completed
+- Senaryo B (User Task + Form):
+  - Admin → Start: { amount: 2500, description:"Taxi", category:"travel" }
+  - Approver → /portal/tasks → ilgili görevi aç → form alanları render → doldur → approve → process completed
+
+6) TEST & OTOMASYON
+- **API/Script Smoke (bash)**: `tests/s4-portal-flow.sh`
+  - Admin login → start process (2500) → Approver login → my-tasks → task/:id/complete (approve with form data) → process status=completed
+  - Çıktı sonunda: S4_PORTAL_FLOW=PASS
+- **UI E2E (Playwright/Cypress)**: `npm run test:ui:s4`
+  - [A] Admin publish + start (2500) → Approver login → /portal/tasks → form render → submit → process completed
+  - [B] Admin start (750) → auto completed
+  - Tüm testler PASS; son satır: S4_UI=PASS
+- package.json'a gerekli script’leri ekle:
+  - "test:ui:s4": "playwright test tests/e2e/s4/*.spec.ts --reporter=line || cypress run --spec 'cypress/e2e/s4/*.cy.ts'"
+  - "test:portal:s4": "bash tests/s4-portal-flow.sh"
+
+7) README & DOKÜMANTASYON
+- README.md → S4 kullanım kılavuzu:
+  - URL’ler: /admin/*, /portal/*; RBAC yönlendirme
+  - Demo kullanıcılar & tenant başlığı
+  - Senaryo A/B adımları
+  - Test komutları: `npm run test:portal:s4`, `npm run test:ui:s4`
+- `docs/s4-sprint-report.md` dosyasını oluştur:
+  - Hedefler, yapılanlar (backend API değişiklikleri, FormRenderer, monitoring)
+  - Senaryo sonuçları (A/B)
+  - Test özetleri (PASS/FAIL sayıları)
+  - Bilinen konular ve S5 hedefleri
+  - Son satır: S4_REPORT=PASS
+
+8) ÇALIŞTIRMA SIRASI (sen uygula, sonuçları raporla)
+- Derle/başlat:
+  - npm run build
+  - npm start &  (veya aynı komutu kullandığın servis)
+  - sleep 3
+- Testler:
+  - chmod +x tests/s4-portal-flow.sh
+  - npm run test:portal:s4
+  - npm run test:ui:s4
+- Hepsi PASS ise terminale büyük harflerle yaz:
+  **S4_UI=PASS**
+
+KABUL KRİTERLERİ
+- /portal/tasks/:id ekranında form dinamik render edilir; submit → form_data DB’ye kaydedilir; task.complete → process ilerler.
+- /admin/processes detayında submission geçmişi ve audit timeline görünür.
+- `npm run test:portal:s4` ve `npm run test:ui:s4` PASSED; terminalde **S4_UI=PASS** görünür.
+- `docs/s4-sprint-report.md` oluşturulmuş ve S4_REPORT=PASS içerir.
