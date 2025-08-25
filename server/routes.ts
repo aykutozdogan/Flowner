@@ -290,9 +290,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
-      const tenantDomain = req.headers['x-tenant-id'] as string;
+      const tenantIdentifier = req.headers['x-tenant-id'] as string;
 
-      if (!tenantDomain) {
+      if (!tenantIdentifier) {
         return res.status(400).json({
           type: "/api/errors/validation",
           title: "Missing Tenant ID",
@@ -301,8 +301,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get tenant UUID from domain
-      const tenant = await storage.getTenantByDomain(tenantDomain);
+      // Handle both domain and UUID formats
+      let tenant;
+      if (tenantIdentifier.includes('-') && tenantIdentifier.length === 36) {
+        // It's a UUID
+        tenant = await storage.getTenant(tenantIdentifier);
+      } else {
+        // It's a domain
+        tenant = await storage.getTenantByDomain(tenantIdentifier);
+      }
+      
       if (!tenant) {
         return res.status(400).json({
           type: "/api/errors/validation",
