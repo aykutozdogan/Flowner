@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { CheckCircle, Clock, AlertCircle, User, Calendar, FileText } from 'lucide-react';
+import { useRouter } from 'next/navigation'; // Assuming next/navigation for routing
 
 interface Task {
   id: string;
@@ -24,6 +25,7 @@ interface Task {
 }
 
 export default function TasksPage() {
+  const router = useRouter(); // Initialize router
   const [activeTab, setActiveTab] = useState('all');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -97,10 +99,10 @@ export default function TasksPage() {
       completed: { variant: 'secondary' as const, icon: CheckCircle },
       cancelled: { variant: 'destructive' as const, icon: AlertCircle },
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     const Icon = config.icon;
-    
+
     return (
       <Badge variant={config.variant}>
         <Icon className="w-3 h-3 mr-1" />
@@ -120,6 +122,10 @@ export default function TasksPage() {
       taskId: task.id, 
       outcome 
     });
+  };
+
+  const handleCardClick = (taskId: string) => {
+    router.push(`/tasks/${taskId}`); // Navigate to task detail page
   };
 
   if (isLoading) {
@@ -188,7 +194,12 @@ export default function TasksPage() {
               </Card>
             ) : (
               filteredTasks.map((task) => (
-                <Card key={task.id} data-testid={`task-card-${task.id}`}>
+                <Card 
+                  key={task.id} 
+                  data-testid={`task-card-${task.id}`}
+                  className="cursor-pointer hover:shadow-lg hover:bg-accent" // Added Tailwind classes for hover effect
+                  onClick={() => handleCardClick(task.id)}
+                >
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
@@ -207,7 +218,10 @@ export default function TasksPage() {
                             <DialogTrigger asChild>
                               <Button
                                 size="sm"
-                                onClick={() => setSelectedTask(task)}
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent card click from navigating
+                                  setSelectedTask(task);
+                                }}
                                 data-testid={`complete-task-${task.id}`}
                               >
                                 <CheckCircle className="w-4 h-4 mr-2" />
@@ -228,14 +242,20 @@ export default function TasksPage() {
                                 <div className="flex justify-end gap-2">
                                   <Button 
                                     variant="outline"
-                                    onClick={() => handleCompleteTask(task, 'rejected')}
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // Prevent dialog buttons from triggering card click
+                                      handleCompleteTask(task, 'rejected');
+                                    }}
                                     disabled={completeTaskMutation.isPending}
                                     data-testid="reject-task"
                                   >
                                     Reject
                                   </Button>
                                   <Button
-                                    onClick={() => handleCompleteTask(task, 'approved')}
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // Prevent dialog buttons from triggering card click
+                                      handleCompleteTask(task, 'approved');
+                                    }}
                                     disabled={completeTaskMutation.isPending}
                                     data-testid="approve-task"
                                   >
