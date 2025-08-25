@@ -7,6 +7,7 @@ import { processInstances, taskInstances, workflows, workflowVersions } from "@s
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
+import { specs, swaggerUi } from "./swagger";
 
 // JWT Secret (should be in environment variable in production)
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -107,7 +108,37 @@ const jobScheduler = new JobScheduler();
 jobScheduler.start().catch(console.error);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Swagger API Documentation
+  app.use('/api-docs', swaggerUi.serve);
+  app.get('/api-docs', swaggerUi.setup(specs, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Flowner API Documentation',
+    swaggerOptions: {
+      docExpansion: 'none',
+      filter: true,
+      showRequestHeaders: true,
+      persistAuthorization: true
+    }
+  }));
+
   // Health check endpoints
+  /**
+   * @swagger
+   * /health:
+   *   get:
+   *     summary: Health check endpoint
+   *     description: Check the health status of the API and its services
+   *     tags: [Health]
+   *     security: []
+   *     responses:
+   *       200:
+   *         description: Service is healthy
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/HealthStatus'
+   */
   app.get("/api/health", (req, res) => {
     res.json({
       status: "healthy",
@@ -126,10 +157,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  /**
+   * @swagger
+   * /health/ready:
+   *   get:
+   *     summary: Readiness check
+   *     description: Check if the service is ready to accept requests
+   *     tags: [Health]
+   *     security: []
+   *     responses:
+   *       200:
+   *         description: Service is ready
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: string
+   *                   example: ready
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   */
   app.get("/api/health/ready", (req, res) => {
     res.json({ status: "ready", timestamp: new Date().toISOString() });
   });
 
+  /**
+   * @swagger
+   * /health/live:
+   *   get:
+   *     summary: Liveness check
+   *     description: Check if the service is alive
+   *     tags: [Health]
+   *     security: []
+   *     responses:
+   *       200:
+   *         description: Service is alive
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: string
+   *                   example: live
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   */
   app.get("/api/health/live", (req, res) => {
     res.json({ status: "live", timestamp: new Date().toISOString() });
   });
@@ -174,6 +251,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Authentication routes
+  /**
+   * @swagger
+   * /auth/login:
+   *   post:
+   *     summary: User login
+   *     description: Authenticate user and return access token
+   *     tags: [Authentication]
+   *     security: []
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/LoginRequest'
+   *     responses:
+   *       200:
+   *         description: Login successful
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/LoginResponse'
+   *       400:
+   *         description: Invalid input or missing tenant
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Invalid credentials
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
@@ -295,6 +408,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /auth/refresh:
+   *   post:
+   *     summary: Refresh access token
+   *     description: Generate new access token using refresh token
+   *     tags: [Authentication]
+   *     security: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/RefreshRequest'
+   *     responses:
+   *       200:
+   *         description: Token refreshed successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     access_token:
+   *                       type: string
+   *                       example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+   *                     expires_in:
+   *                       type: integer
+   *                       example: 3600
+   *       401:
+   *         description: Invalid refresh token
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.post("/api/auth/refresh", async (req, res) => {
     try {
       const { refresh_token } = refreshTokenSchema.parse(req.body);
@@ -379,6 +533,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Engine tick endpoint for dev purposes
+  /**
+   * @swagger
+   * /engine/tick:
+   *   post:
+   *     summary: Trigger engine tick
+   *     description: Manually trigger workflow engine processing (admin only)
+   *     tags: [Engine]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *     responses:
+   *       200:
+   *         description: Engine tick executed successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: 'Engine tick executed'
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       403:
+   *         description: Forbidden - admin role required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.post('/api/engine/tick', async (req: any, res) => {
     try {
       // Only admin can manually trigger engine tick
@@ -402,6 +586,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /auth/me:
+   *   get:
+   *     summary: Get current user profile
+   *     description: Retrieve authenticated user's profile information
+   *     tags: [Authentication]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *     responses:
+   *       200:
+   *         description: User profile retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/UserProfile'
+   *       401:
+   *         description: Unauthorized - invalid or missing token
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.get("/api/auth/me", async (req: any, res) => {
     const user = req.user;
     res.json({
@@ -458,6 +665,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Forms management
+  /**
+   * @swagger
+   * /forms:
+   *   get:
+   *     summary: List forms
+   *     description: Retrieve list of forms for the tenant
+   *     tags: [Forms]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *       - name: status
+   *         in: query
+   *         description: Filter by form status
+   *         schema:
+   *           type: string
+   *           enum: [draft, published, archived]
+   *       - name: search
+   *         in: query
+   *         description: Search forms by name
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Forms retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Form'
+   *                 meta:
+   *                   type: object
+   *                   properties:
+   *                     pagination:
+   *                       type: object
+   *                       properties:
+   *                         page:
+   *                           type: integer
+   *                           example: 1
+   *                         limit:
+   *                           type: integer
+   *                           example: 20
+   *                         total:
+   *                           type: integer
+   *                           example: 15
+   *                         pages:
+   *                           type: integer
+   *                           example: 1
+   */
   app.get("/api/forms", async (req: any, res) => {
     try {
       const { status, search } = req.query;
@@ -497,6 +758,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task inbox
+  /**
+   * @swagger
+   * /tasks/inbox:
+   *   get:
+   *     summary: Get task inbox
+   *     description: Retrieve tasks assigned to the current user or available for assignment
+   *     tags: [Tasks]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *       - name: status
+   *         in: query
+   *         description: Filter by task status
+   *         schema:
+   *           type: string
+   *           enum: [pending, completed, cancelled]
+   *           default: pending
+   *       - name: assigned_to
+   *         in: query
+   *         description: Filter by assignment
+   *         schema:
+   *           type: string
+   *           enum: [me, all]
+   *     responses:
+   *       200:
+   *         description: Task inbox retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Task'
+   *                 meta:
+   *                   type: object
+   *                   properties:
+   *                     counts:
+   *                       type: object
+   *                       properties:
+   *                         pending:
+   *                           type: integer
+   *                           example: 5
+   *                         completed:
+   *                           type: integer
+   *                           example: 12
+   *                         overdue:
+   *                           type: integer
+   *                           example: 2
+   */
   app.get("/api/tasks/inbox", async (req: any, res) => {
     try {
       const { status = "pending", assigned_to } = req.query;
@@ -608,6 +922,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Process Management API
+  /**
+   * @swagger
+   * /processes:
+   *   get:
+   *     summary: List process instances
+   *     description: Retrieve list of process instances for the tenant
+   *     tags: [Processes]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *       - name: limit
+   *         in: query
+   *         description: Maximum number of results
+   *         schema:
+   *           type: integer
+   *           default: 50
+   *       - name: offset
+   *         in: query
+   *         description: Number of results to skip
+   *         schema:
+   *           type: integer
+   *           default: 0
+   *       - name: status
+   *         in: query
+   *         description: Filter by process status
+   *         schema:
+   *           type: string
+   *           enum: [running, completed, cancelled, failed]
+   *     responses:
+   *       200:
+   *         description: Process instances retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Process'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.get("/api/processes", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const processes = await storage.getProcessInstances(req.tenantId, {
@@ -628,6 +985,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /processes:
+   *   post:
+   *     summary: Start new process
+   *     description: Start a new process instance from a published workflow
+   *     tags: [Processes]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [workflowId, name]
+   *             properties:
+   *               workflowId:
+   *                 type: string
+   *                 description: ID of the workflow to start
+   *                 example: 'wfl_123456'
+   *               name:
+   *                 type: string
+   *                 description: Name for the process instance
+   *                 example: 'Expense Request - John Doe'
+   *               variables:
+   *                 type: object
+   *                 description: Initial process variables
+   *                 example:
+   *                   amount: 1500
+   *                   requestor: 'John Doe'
+   *     responses:
+   *       200:
+   *         description: Process started successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Process'
+   *       400:
+   *         description: Invalid input
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: Workflow not found or not published
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.post("/api/processes", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { workflowId, name, variables = {} } = req.body;
