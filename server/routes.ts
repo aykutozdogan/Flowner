@@ -2196,13 +2196,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Tenants Management API
   app.get("/api/v1/tenants", parseTenantId, authenticateToken, async (req, res) => {
     try {
-      // Only tenant_admin can manage tenants
-      if (req.user.role !== 'tenant_admin') {
+      // Only tenant_admin and designer can manage tenants
+      if (!['tenant_admin', 'designer'].includes(req.user.role)) {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
           status: 403,
-          detail: "Only tenant administrators can access tenant management"
+          detail: "Only tenant administrators and designers can access tenant management"
         });
       }
 
@@ -2224,13 +2224,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/v1/tenants", parseTenantId, authenticateToken, async (req, res) => {
     try {
-      // Only tenant_admin can create tenants
-      if (req.user.role !== 'tenant_admin') {
+      // Only tenant_admin and designer can create tenants
+      if (!['tenant_admin', 'designer'].includes(req.user.role)) {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
           status: 403,
-          detail: "Only tenant administrators can create tenants"
+          detail: "Only tenant administrators and designers can create tenants"
         });
       }
 
@@ -2271,13 +2271,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Users Management API  
   app.get("/api/v1/users", parseTenantId, authenticateToken, async (req, res) => {
     try {
-      // Only tenant_admin can manage users
-      if (req.user.role !== 'tenant_admin') {
+      // Only tenant_admin and designer can manage users
+      if (!['tenant_admin', 'designer'].includes(req.user.role)) {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
           status: 403,
-          detail: "Only tenant administrators can access user management"
+          detail: "Only tenant administrators and designers can access user management"
         });
       }
 
@@ -2299,13 +2299,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/v1/users", parseTenantId, authenticateToken, async (req, res) => {
     try {
-      // Only tenant_admin can create users
-      if (req.user.role !== 'tenant_admin') {
+      // Only tenant_admin and designer can create users
+      if (!['tenant_admin', 'designer'].includes(req.user.role)) {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
           status: 403,
-          detail: "Only tenant administrators can create users"
+          detail: "Only tenant administrators and designers can create users"
         });
       }
 
