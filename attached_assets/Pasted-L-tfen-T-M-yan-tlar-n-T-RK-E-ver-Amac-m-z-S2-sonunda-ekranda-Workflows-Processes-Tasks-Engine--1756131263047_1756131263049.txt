@@ -1,0 +1,118 @@
+Lütfen TÜM yanıtlarını TÜRKÇE ver. Amacımız S2 sonunda ekranda “Workflows, Processes, Tasks, Engine Stats” menülerini görebilmek ve Admin/User portal ayrımını netleştirmek. Ayrıca demo Expense Approval’ı UI’dan publish + start edip tamamlayacağız.
+
+KURALLAR
+- Source of truth = PLAN.md + S1/S2 çıktıları.
+- Var olan kodu KORU; eksik olanı ekle, bozuk olanı düzelt.
+- Her adımda komutları KENDİN çalıştır; başarısızsa düzelt ve yeniden dene.
+- Bittiğinde terminale: **S2_UI=PASS** yaz.
+
+────────────────────────────────
+
+1) BACKEND INTROSPECTION (durum tespiti)
+- Aşağıdaki read‑only uçları ekle:
+  - GET /api/v1/__meta/routes → mevcut API route’larının listesi (yöntem, yol, auth, rol gereksinimi).
+  - GET /api/v1/__meta/engine  → engine istatistikleri (queue size, running jobs, dead jobs, last tick time).
+  - GET /api/v1/__meta/seed    → seed var mı, kaç workflow/version, kaç process/task var kısa özet.
+- /health ve /readiness zaten var; bunları kullan.
+- Çalıştır: npm run build && npm start &; ardından bu üç meta ucu çağır ve konsola dökümleri yaz.
+
+2) FRONTEND NAVİGASYON (menüleri görünür yap)
+- Sol menüde şu öğeler zorunlu görünsün (RBAC ile role göre göster/gizle):
+  - Dashboard
+  - Workflows (Admin/Designer)
+  - Processes (Admin/Designer)
+  - Tasks (User/Approver + Admin/Designer)
+  - Engine Stats (Admin)
+  - Settings (Admin)
+- Her menü item’i gerçek bir route’a gitsin:
+  - /admin/workflows   (liste + “Publish” butonu)
+  - /admin/processes   (filtre/sıralama + detay modal)
+  - /portal/tasks      (kullanıcının atandığı görevler; claim/complete akışı)
+  - /admin/engine      (Engine Stats: meta/engine verisini göster)
+- Header’a global arama kutusu + “tenant seçici” badge + “Dil/Tema” kısa erişim koy.
+- Menü aktifliği (selected state) ve breadcrumb çalışsın.
+
+3) PORTAL AYRIMI (yapılandırma)
+- Eğer monorepo tek frontend app ise: iki namespace kullan:
+  - “Admin Panel” = `/admin/*`
+  - “User Portal” = `/portal/*`
+  RBAC ile login olan kullanıcının rolüne göre **default landing**:
+  - tenant_admin/designer → /admin/dashboard
+  - approver/user → /portal/inbox (veya /portal/tasks)
+- Eğer iki ayrı app tercih etmek daha kolaysa (zaman durumuna göre sen seç):
+  - apps/admin (React+MUI) ve apps/portal (React+MUI PWA)
+  - Ortak UI kitini shared/ altında tut.
+- Hangi yaklaşımı seçtiğini raporla (tek app içinde iki namespace genelde daha hızlı).
+
+4) WORKFLOWS EKRANI (Publish + Version)
+- /admin/workflows sayfasında:
+  - Liste: key, name, latestVersion, status, publishedAt.
+  - Butonlar: “Create Draft”, “Publish Latest Draft”.
+  - Demo: “expense_approval” draft yoksa JSON DSL’den hızlı bir taslak oluştur.
+  - Publish akışı: POST /api/v1/workflows/:key/publish; başarılıysa toast + liste güncellensin.
+- “View JSON” modal ile definition_json göster.
+
+5) PROCESSES EKRANI (Başlat + Detay)
+- /admin/processes:
+  - “Start Process” butonu: workflowKey + vars JSON girebileceğim küçük bir dialog.
+  - Liste: id, workflowKey, status, startedBy, startedAt, completedAt.
+  - Satırda “View” → sağ panel/çekmece ile timeline: audit_logs (process.started, task.created, task.completed, process.completed).
+- Quick action: “Start Expense Approval (amount=750)” ve “Start Expense Approval (amount=2500)”.
+
+6) TASKS (User Portal)
+- /portal/tasks:
+  - “Benim görevlerim” listesi: id, processId, name, due, status.
+  - Satırda “Open” → task detay paneli:
+    - Eğer userTask ise outcomes (approve/reject) butonları
+    - “Claim” butonu (claimable ise)
+    - “Complete” butonu outcome seçerek POST /api/v1/tasks/:id/complete
+  - Submit sonrası toast + list refresh.
+
+7) ENGINE STATS (Admin)
+- /admin/engine:
+  - meta/engine verilerini kartlarda göster: active jobs, queued, dead, last tick.
+  - “Tick Now” butonu: POST /api/v1/engine/tick (dev amaçlı tetikleme).
+  - Son 20 engine_jobs tablosu kaydı (kind, run_at, attempts, status).
+
+8) RBAC & GÖRÜNÜRLÜK
+- Role bazlı görünürlük matrix:
+  - tenant_admin: Dashboard, Workflows, Processes, Tasks, Engine, Settings
+  - designer:     Dashboard, Workflows, Processes, Tasks
+  - approver:     Dashboard, Tasks
+  - user:         Dashboard, Tasks
+- Yanlış rol/erişimde 403 ekranı + “geri dön” butonu.
+- Girişte rolüne göre uygun default route’a yönlendir.
+
+9) DEMO KOŞUMU (uçtan uca)
+- Admin olarak login ol:
+  1) /admin/workflows → expense_approval’ı **Publish** et (yoksa oluştur + publish).
+  2) /admin/processes → “Start Expense Approval (amount=750)” → otomatik onay yolundan **completed** beklenir.
+  3) /admin/processes → “Start Expense Approval (amount=2500)” → approver rolüne gidecek User Task oluştur.
+- Approver olarak login ol:
+  4) /portal/tasks → ilgili task’ı gör, **Claim** et, **Approve** ile **Complete** et.
+- Her adımda toast + audit timeline güncellensin.
+
+10) UI SMOKE TEST (Playwright veya Cypress)
+- Basit e2e senaryosu ekle:
+  [A] Admin login → workflows publish → process start (750) → process completed.
+  [B] Admin login → process start (2500) → Approver login → task complete → process completed.
+- package.json’a “test:ui” script’i ekle ve çalıştır:
+  npm run test:ui
+- Tüm testler geçerse terminale **S2_UI=PASS** yaz.
+
+11) README & BAŞLATMA TALİMATLARI
+- README’de “Uygulama URL ve sayfaları” bölümü:
+  - Admin Panel:  http://localhost:5173/admin
+  - User Portal:  http://localhost:5173/portal
+  - Backend API:  http://localhost:5000
+  - Swagger (varsa): http://localhost:5000/docs
+  - Demo loginler: admin@demo.local / Passw0rd!, approver@demo.local / Approver123!
+- “Demo senaryosu adımları”nı maddeler halinde yaz.
+
+KABUL KRİTERLERİ
+- Sol menüde Workflows, Processes, Tasks, Engine Stats görülebilir ve tıklanınca açılır.
+- Admin ve User için ayrı iniş sayfaları (namespace veya ayrı app) çalışır.
+- Publish → Start → Complete akışları hem UI hem API’da çalışır.
+- UI smoke testleri PASS; terminalde **S2_UI=PASS** görünür.
+
+Lütfen tüm adımları uygula ve bitince kısa Türkçe rapor yaz.

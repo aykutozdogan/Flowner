@@ -111,6 +111,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "live", timestamp: new Date().toISOString() });
   });
 
+  // Backend introspection endpoints (no auth required for debugging)
+  app.get('/__meta/routes', (req, res) => {
+    const routes = [
+      { method: 'GET', path: '/api/health', auth: false, roles: [] },
+      { method: 'GET', path: '/api/health/ready', auth: false, roles: [] },
+      { method: 'GET', path: '/api/health/live', auth: false, roles: [] },
+      { method: 'GET', path: '/api/v1/__meta/routes', auth: false, roles: [] },
+      { method: 'GET', path: '/api/v1/__meta/engine', auth: false, roles: [] },
+      { method: 'GET', path: '/api/v1/__meta/seed', auth: true, roles: ['tenant_admin', 'designer', 'approver', 'user'] },
+      { method: 'POST', path: '/api/auth/login', auth: false, roles: [] },
+      { method: 'POST', path: '/api/auth/refresh', auth: false, roles: [] },
+      { method: 'GET', path: '/api/auth/me', auth: true, roles: ['tenant_admin', 'designer', 'approver', 'user'] },
+      { method: 'GET', path: '/api/workflows', auth: true, roles: ['tenant_admin', 'designer'] },
+      { method: 'POST', path: '/api/workflows/:id/publish', auth: true, roles: ['tenant_admin', 'designer'] },
+      { method: 'GET', path: '/api/processes', auth: true, roles: ['tenant_admin', 'designer', 'approver'] },
+      { method: 'POST', path: '/api/processes', auth: true, roles: ['tenant_admin', 'designer'] },
+      { method: 'POST', path: '/api/processes/:id/cancel', auth: true, roles: ['tenant_admin', 'designer'] },
+      { method: 'GET', path: '/api/engine/tasks', auth: true, roles: ['tenant_admin', 'designer', 'approver', 'user'] },
+      { method: 'POST', path: '/api/engine/tasks/:id/complete', auth: true, roles: ['tenant_admin', 'designer', 'approver', 'user'] },
+      { method: 'POST', path: '/api/engine/tasks/:id/assign', auth: true, roles: ['tenant_admin', 'approver'] },
+      { method: 'GET', path: '/api/engine/stats', auth: true, roles: ['tenant_admin'] },
+      { method: 'POST', path: '/api/engine/tick', auth: true, roles: ['tenant_admin'] },
+    ];
+    res.json({ routes, timestamp: new Date().toISOString() });
+  });
+
+  app.get('/__meta/engine', async (req, res) => {
+    try {
+      const stats = await jobScheduler.getSchedulerStats();
+      res.json({
+        scheduler: stats,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Engine meta error:', error);
+      res.status(500).json({ error: 'Failed to get engine stats' });
+    }
+  });
+
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -275,6 +314,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Protected routes (require authentication and tenant validation)
   app.use("/api", parseTenantId);
   app.use("/api", authenticateToken);
+
+  // Protected meta endpoint (requires auth)
+  app.get('/__meta/seed', async (req: any, res) => {
+    try {
+      const tenantId = req.tenantId;
+      
+      const workflows = await storage.getWorkflows(tenantId);
+      const processes = await storage.getProcessInstances(tenantId, { limit: 1000, offset: 0 });
+      const tasks = await storage.getTaskInstances(tenantId, { limit: 1000, offset: 0 });
+      const forms = await storage.getForms(tenantId);
+
+      res.json({
+        summary: {
+          workflows: workflows.length,
+          processes: processes.length,
+          tasks: tasks.length,
+          forms: forms.length,
+        },
+        demo: {
+          seedExists: workflows.some((w: any) => w.key === 'expense_approval'),
+          expenseWorkflowId: workflows.find((w: any) => w.key === 'expense_approval')?.id,
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Seed meta error:', error);
+      res.status(500).json({ error: 'Failed to get seed stats' });
+    }
+  });
+
+  // Engine tick endpoint for dev purposes
+  app.post('/api/engine/tick', async (req: any, res) => {
+    try {
+      // Only admin can manually trigger engine tick
+      if (req.user.role !== 'tenant_admin') {
+        return res.status(403).json({
+          type: "/api/errors/forbidden",
+          title: "Forbidden",
+          status: 403,
+          detail: "You are not authorized to trigger engine tick"
+        });
+      }
+
+      await jobScheduler.tick();
+      res.json({ 
+        message: 'Engine tick executed',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Manual engine tick error:', error);
+      res.status(500).json({ error: 'Failed to execute engine tick' });
+    }
+  });
 
   app.get("/api/auth/me", async (req: any, res) => {
     const user = req.user;
