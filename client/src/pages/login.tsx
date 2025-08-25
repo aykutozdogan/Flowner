@@ -11,7 +11,7 @@ import {
   CircularProgress 
 } from '@mui/material';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/api';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -27,9 +27,12 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await apiRequest('POST', '/api/auth/login', {
-        email,
-        password
+      const response = await apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: {
+          email,
+          password
+        }
       });
 
       const data = await response.json();

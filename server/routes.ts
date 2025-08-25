@@ -13,9 +13,9 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "your-refresh-secret-key";
 
 // Middleware for parsing tenant ID
-const parseTenantId = (req: any, res: any, next: any) => {
-  const tenantId = req.headers['x-tenant-id'];
-  if (!tenantId) {
+const parseTenantId = async (req: any, res: any, next: any) => {
+  const tenantDomain = req.headers['x-tenant-id'];
+  if (!tenantDomain) {
     return res.status(400).json({
       type: "/api/errors/validation",
       title: "Missing Tenant ID",
@@ -23,8 +23,31 @@ const parseTenantId = (req: any, res: any, next: any) => {
       detail: "X-Tenant-Id header is required"
     });
   }
-  req.tenantId = tenantId;
-  next();
+  
+  try {
+    // Get tenant UUID from domain
+    const tenant = await storage.getTenantByDomain(tenantDomain);
+    if (!tenant) {
+      return res.status(400).json({
+        type: "/api/errors/validation",
+        title: "Invalid Tenant",
+        status: 400,
+        detail: "Tenant not found"
+      });
+    }
+    
+    req.tenantId = tenant.id;
+    req.tenantDomain = tenantDomain;
+    next();
+  } catch (error) {
+    console.error('Tenant lookup error:', error);
+    return res.status(500).json({
+      type: "/api/errors/internal",
+      title: "Internal Server Error",
+      status: 500,
+      detail: "Failed to resolve tenant"
+    });
+  }
 };
 
 // Middleware for JWT authentication
@@ -154,9 +177,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
-      const tenantId = req.headers['x-tenant-id'] as string;
+      const tenantDomain = req.headers['x-tenant-id'] as string;
 
-      if (!tenantId) {
+      if (!tenantDomain) {
         return res.status(400).json({
           type: "/api/errors/validation",
           title: "Missing Tenant ID",
@@ -165,8 +188,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Get tenant UUID from domain
+      const tenant = await storage.getTenantByDomain(tenantDomain);
+      if (!tenant) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Invalid Tenant",
+          status: 400,
+          detail: "Tenant not found"
+        });
+      }
+
       // Find user by email and tenant
-      const user = await storage.getUserByEmail(email, tenantId);
+      const user = await storage.getUserByEmail(email, tenant.id);
       if (!user || !user.is_active) {
         return res.status(401).json({
           type: "/api/errors/auth",
@@ -188,8 +222,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get tenant info
-      const tenant = await storage.getTenant(user.tenant_id);
-      if (!tenant || !tenant.is_active) {
+      const userTenant = await storage.getTenant(user.tenant_id);
+      if (!userTenant || !userTenant.is_active) {
         return res.status(401).json({
           type: "/api/errors/auth",
           title: "Tenant Inactive",

@@ -8,14 +8,36 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
   url: string,
-  data?: unknown | undefined,
+  options: {
+    method?: string;
+    body?: unknown;
+    headers?: Record<string, string>;
+  } = {},
 ): Promise<Response> {
+  const { method = "GET", body, headers = {} } = options;
+  
+  // Get auth token and tenant from localStorage
+  const token = localStorage.getItem("access_token");
+  const tenantId = localStorage.getItem("tenant_id") || "demo.local";
+  
+  const reqHeaders: Record<string, string> = {
+    ...headers,
+    "X-Tenant-Id": tenantId,
+  };
+  
+  if (token) {
+    reqHeaders["Authorization"] = `Bearer ${token}`;
+  }
+  
+  if (body) {
+    reqHeaders["Content-Type"] = "application/json";
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    headers: reqHeaders,
+    body: body ? JSON.stringify(body) : undefined,
     credentials: "include",
   });
 
@@ -29,7 +51,22 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = queryKey.join("/") as string;
+    
+    // Get auth token and tenant from localStorage
+    const token = localStorage.getItem("access_token");
+    const tenantId = localStorage.getItem("tenant_id") || "demo.local";
+    
+    const headers: Record<string, string> = {
+      "X-Tenant-Id": tenantId,
+    };
+    
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(url, {
+      headers,
       credentials: "include",
     });
 
