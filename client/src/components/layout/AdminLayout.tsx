@@ -9,7 +9,7 @@ interface AdminLayoutProps {
   user?: any;
 }
 
-export default function AdminLayout({ children, user }: AdminLayoutProps) {
+function AdminLayout({ children, user }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
 
@@ -113,3 +113,6 @@ export default function AdminLayout({ children, user }: AdminLayoutProps) {
     </Box>
   );
 }
+
+export { AdminLayout };
+export default AdminLayout;
