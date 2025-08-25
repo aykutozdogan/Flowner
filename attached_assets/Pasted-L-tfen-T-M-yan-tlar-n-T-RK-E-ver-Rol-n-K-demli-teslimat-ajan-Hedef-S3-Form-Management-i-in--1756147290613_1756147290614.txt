@@ -1,0 +1,65 @@
+Lütfen TÜM yanıtlarını TÜRKÇE ver.
+
+Rolün: Kıdemli teslimat ajanı. Hedef: S3 Form Management için
+1) S3 smoke testlerini OLUŞTUR ve ÇALIŞTIR (PASS olana dek düzelt),
+2) Ardından S3 sprint raporunu yaz: docs/s3-sprint-report.md.
+
+DEĞİŞMEZ KURALLAR
+- Source of truth = PLAN.md + S1/S2 çıktı ve kararları.
+- Var olan kodu koru; minimal ve anlamlı değişiklik yap.
+- Her kritik adımda komutları kendin çalıştır; hata varsa düzelt ve tekrar dene.
+- Tam dosya üret; kısmi diff verme.
+- Testler PASS olmadan rapora “TAMAMLANDI” yazma.
+
+────────────────────────────────────────────────
+
+0) ÖN KOŞUL KONTROL
+- API ayakta mı? `/health` ve `/__meta/routes` çalışıyor mu? Prefix `/api/v1` mi `/api` mi, otomatik tespit et.
+- Gerekirse .env ve seed (admin@demo.local / Passw0rd!, tenant: demo.local) doğrula.
+
+1) S3 FORM API SMOKE TESTLERİ — OLUŞTUR
+- tests/s3-form-api-test.sh (bash, çalıştırılabilir)
+  - Otomatik prefix tespiti: `/api/v1` → `/api` → `""`
+  - Admin login → token al (token alanı: accessToken|access|token dener)
+  - Form create (draft v1): key’ye timestamp ekle (çakışmayı önle)
+  - List & Get
+  - Validate (pozitif ve negatif)
+  - Publish (draft→published)
+  - Preview (schema/ui_schema özet)
+  - Son satır: `S3_FORM_API=PASS`
+- tests/s3-form-api.test.ts (Jest + Supertest) — hafif API testleri:
+  - /forms create → 201/200
+  - /forms/:key publish → 200
+  - /forms/:key/preview → 200 ve beklenen alanlar
+
+2) TESTLERİ ÇALIŞTIR ve DÜZELT
+- Komutlar:
+  - `chmod +x tests/s3-form-api-test.sh`
+  - `./tests/s3-form-api-test.sh`
+  - `npm run test` (Jest testleri)
+- Eğer herhangi biri FAIL ederse:
+  - Endpoint yolu/prefix, tenant header, validate/publish davranışı ve response şemalarını düzelt.
+  - Eksik alanlar (schema/ui_schema) veya ProblemDetails uyumsuzlukları varsa gider.
+  - Tekrar çalıştır; PASS olana kadar sürdür.
+
+3) RAPORU YAZ (docs/s3-sprint-report.md)
+- Başlık: “S3 Sprint Raporu — Form Yönetimi ve API”
+- Tarih (bugünün tarihi), Durum (PASS ise ✅ TAMAMLANDI, değilse ❌)
+- Hedefler (madde madde)
+- Tamamlananlar (DB şeması, API uçları, form lifecycle, validasyon, preview)
+- Test Sonuçları:
+  - Script adı ve çıktısı (S3_FORM_API=PASS)
+  - Jest test özeti (kaç passed)
+- Gözlemler: auth/RBAC, tenant izolasyonu, migration/seed, log/audit notu
+- İyileştirme alanları (production migration, conditional validation, schema sözleşmesi)
+- Sonraki sprint (S4) kısa hedefleri
+- Raporu dosyaya kaydet ve kısaca özetle.
+
+KABUL KRİTERLERİ
+- `./tests/s3-form-api-test.sh` sonunda **S3_FORM_API=PASS** görünür.
+- Jest testleri PASS.
+- docs/s3-sprint-report.md eksiksiz yazılmıştır ve PASS durumunu yansıtır.
+
+BİTİŞ
+- Testler PASS olunca terminalde: **S3_TESTS=PASS** yaz.
+- Ardından rapor yazımını doğrula ve oluşturulan/ değişen dosya ağacını paylaş.
