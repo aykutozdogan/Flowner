@@ -1,4 +1,4 @@
-import { 
+import {
   tenants, users, forms, formVersions, formData, workflows, workflowVersions, processInstances, taskInstances, auditLogs, fileAttachments,
   type Tenant, type User, type Form, type FormVersion, type FormData, type Workflow, type WorkflowVersion, type ProcessInstance, type TaskInstance,
   type InsertTenant, type InsertUser, type InsertForm, type InsertFormVersion, type InsertFormData, type InsertWorkflow, type InsertWorkflowVersion,
@@ -6,6 +6,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, count, sql } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 export interface IStorage {
   // Auth & Users
@@ -36,7 +37,7 @@ export interface IStorage {
   getLatestFormVersion(formKey: string, tenantId: string, status?: 'draft' | 'published'): Promise<FormVersion | undefined>;
   createFormVersion(versionData: InsertFormVersion): Promise<FormVersion>;
   publishFormVersion(formId: string, version: number, tenantId: string, publishedBy: string): Promise<FormVersion | undefined>;
-  
+
   // Form Data
   saveFormData(data: InsertFormData): Promise<FormData>;
   getFormData(processId?: string, taskId?: string, tenantId?: string): Promise<FormData[]>;
@@ -49,7 +50,7 @@ export interface IStorage {
   createWorkflow(workflow: InsertWorkflow): Promise<Workflow>;
   updateWorkflow(id: string, tenantId: string, updates: Partial<InsertWorkflow>): Promise<Workflow | undefined>;
   publishWorkflow(id: string, tenantId: string, versionNotes?: string): Promise<Workflow | undefined>;
-  
+
   // Workflow Versions
   createWorkflowVersion(versionData: {
     tenantId: string;
@@ -99,7 +100,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  
+
   // Auth & Users
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -117,9 +118,9 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .leftJoin(tenants, eq(users.tenant_id, tenants.id))
       .where(eq(users.id, id));
-    
+
     if (!result || !result.tenants) return undefined;
-    
+
     return {
       ...result.users,
       tenant: result.tenants
@@ -219,9 +220,9 @@ export class DatabaseStorage implements IStorage {
 
   async publishForm(id: string, tenantId: string, versionNotes?: string): Promise<Form | undefined> {
     const [publishedForm] = await db.update(forms)
-      .set({ 
-        status: "published", 
-        updated_at: sql`now()` 
+      .set({
+        status: "published",
+        updated_at: sql`now()`
       })
       .where(and(
         eq(forms.id, id),
@@ -302,8 +303,8 @@ export class DatabaseStorage implements IStorage {
 
   async publishFormVersion(formId: string, version: number, tenantId: string, publishedBy: string): Promise<FormVersion | undefined> {
     const [publishedVersion] = await db.update(formVersions)
-      .set({ 
-        status: "published", 
+      .set({
+        status: "published",
         published_at: sql`now()`,
         published_by: publishedBy
       })
@@ -324,7 +325,7 @@ export class DatabaseStorage implements IStorage {
 
   async getFormData(processId?: string, taskId?: string, tenantId?: string): Promise<FormData[]> {
     const whereConditions = [];
-    
+
     if (tenantId) {
       whereConditions.push(eq(formData.tenant_id, tenantId));
     }
@@ -410,10 +411,10 @@ export class DatabaseStorage implements IStorage {
 
   async publishWorkflow(id: string, tenantId: string, versionNotes?: string): Promise<Workflow | undefined> {
     const [publishedWorkflow] = await db.update(workflows)
-      .set({ 
-        status: "published", 
+      .set({
+        status: "published",
         published_at: sql`now()`,
-        updated_at: sql`now()` 
+        updated_at: sql`now()`
       })
       .where(and(
         eq(workflows.id, id),
@@ -583,13 +584,13 @@ export class DatabaseStorage implements IStorage {
 
     // Complete the task
     const [completedTask] = await db.update(taskInstances)
-      .set({ 
+      .set({
         status: "completed",
         outcome,
         form_data: formData,
         completed_by: completedBy,
         completed_at: sql`now()`,
-        updated_at: sql`now()` 
+        updated_at: sql`now()`
       })
       .where(and(
         eq(taskInstances.id, id),

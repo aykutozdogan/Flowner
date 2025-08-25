@@ -52,7 +52,22 @@ export default function WorkflowsPage() {
   // Fetch workflows
   const { data: workflows, isLoading, error } = useQuery({
     queryKey: ['/api/v1/workflows'],
-    select: (data: any) => data.data || data,
+    queryFn: async () => {
+      const response = await fetch('/api/v1/workflows', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'X-Tenant-Id': localStorage.getItem('tenant_domain') || 'demo.local',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.data || data;
+    },
   });
 
   const handleNewWorkflow = () => {

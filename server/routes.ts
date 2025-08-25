@@ -2268,6 +2268,177 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Workflows Management API
+  app.get("/api/v1/workflows", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { status } = req.query;
+      const workflows = await storage.getWorkflows(req.tenantId, { status });
+      
+      res.json({
+        success: true,
+        data: workflows
+      });
+    } catch (error) {
+      console.error("Error fetching workflows:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to fetch workflows"
+      });
+    }
+  });
+
+  app.post("/api/v1/workflows", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { key, name, description, bpmn_xml, config, status = 'draft' } = req.body;
+
+      if (!key || !name) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Validation Error",
+          status: 400,
+          detail: "key and name are required"
+        });
+      }
+
+      const workflow = await storage.createWorkflow({
+        tenant_id: req.tenantId,
+        key,
+        name,
+        description,
+        bpmn_xml: bpmn_xml || JSON.stringify({}),
+        config: config || {},
+        status,
+        created_by: req.user.id
+      });
+
+      res.json({
+        success: true,
+        data: workflow
+      });
+    } catch (error) {
+      console.error("Error creating workflow:", error);
+      res.status(500).json({
+        type: "/api/errors/server", 
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to create workflow"
+      });
+    }
+  });
+
+  app.get("/api/v1/workflows/:key", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { key } = req.params;
+      
+      const workflow = await storage.getWorkflowByKey(key, req.tenantId);
+      if (!workflow) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Workflow Not Found",
+          status: 404,
+          detail: "Workflow not found"
+        });
+      }
+
+      res.json({
+        success: true,
+        data: workflow
+      });
+    } catch (error) {
+      console.error("Error fetching workflow:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to fetch workflow"
+      });
+    }
+  });
+
+  app.put("/api/v1/workflows/:key", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { name, description, bpmn_xml, config } = req.body;
+
+      const workflow = await storage.getWorkflowByKey(key, req.tenantId);
+      if (!workflow) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Workflow Not Found",
+          status: 404,
+          detail: "Workflow not found"
+        });
+      }
+
+      const updatedWorkflow = await storage.updateWorkflow(workflow.id, req.tenantId, {
+        name,
+        description,
+        bpmn_xml,
+        config
+      });
+
+      res.json({
+        success: true,
+        data: updatedWorkflow
+      });
+    } catch (error) {
+      console.error("Error updating workflow:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error", 
+        status: 500,
+        detail: "Failed to update workflow"
+      });
+    }
+  });
+
+  app.post("/api/v1/workflows/:key/publish", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { changelog, bpmn_xml, config } = req.body;
+
+      const workflow = await storage.getWorkflowByKey(key, req.tenantId);
+      if (!workflow) {
+        return res.status(404).json({
+          type: "/api/errors/not-found",
+          title: "Workflow Not Found",
+          status: 404,
+          detail: "Workflow not found"
+        });
+      }
+
+      // Update workflow with latest content
+      if (bpmn_xml || config) {
+        await storage.updateWorkflow(workflow.id, req.tenantId, {
+          bpmn_xml,
+          config
+        });
+      }
+
+      // Publish workflow
+      const publishedWorkflow = await storage.updateWorkflow(workflow.id, req.tenantId, {
+        status: "published",
+        published_at: new Date()
+      });
+
+      res.json({
+        success: true,
+        data: publishedWorkflow,
+        message: "Workflow published successfully"
+      });
+    } catch (error) {
+      console.error("Error publishing workflow:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to publish workflow"
+      });
+    }
+  });
+
   // Users Management API  
   app.get("/api/v1/users", parseTenantId, authenticateToken, async (req, res) => {
     try {
