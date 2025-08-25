@@ -1503,6 +1503,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *                           type: integer
    *                           example: 2
    */
+  
+  // My Tasks endpoint (tasks assigned to current user)
+  app.get("/api/tasks/my-tasks", async (req: any, res) => {
+    try {
+      const { status = "pending" } = req.query;
+      
+      // Filter tasks assigned to current user or their role
+      const filters: any = { 
+        status,
+        assigneeId: req.user.id,
+        assigneeRole: req.user.role 
+      };
+
+      const tasks = await storage.getTaskInstances(req.tenantId, filters);
+      
+      res.json(tasks.map(task => ({
+        id: task.id,
+        taskId: task.id, // For backward compatibility
+        name: task.name,
+        description: task.description,
+        processId: task.process_id,
+        status: task.status,
+        priority: task.priority,
+        assigneeRole: task.assignee_role,
+        formId: task.form_id,
+        createdAt: task.created_at,
+        dueDate: task.due_date
+      })));
+    } catch (error) {
+      console.error("My tasks error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error", 
+        status: 500,
+        detail: "Failed to fetch my tasks"
+      });
+    }
+  });
+  
   app.get("/api/tasks/inbox", async (req: any, res) => {
     try {
       const { status = "pending", assigned_to } = req.query;

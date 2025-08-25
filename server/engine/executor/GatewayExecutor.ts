@@ -7,13 +7,18 @@ export class GatewayExecutor {
     context: ExecutionContext
   ): Promise<string[]> {
     console.log(`[GatewayExecutor] Executing exclusive gateway: ${element.id}`);
+    console.log(`[GatewayExecutor] Element properties:`, JSON.stringify(element.properties, null, 2));
+    console.log(`[GatewayExecutor] Context variables:`, JSON.stringify(context.variables, null, 2));
     
     const outgoingFlows = element.outgoing || [];
+    console.log(`[GatewayExecutor] Outgoing flows:`, outgoingFlows);
     
     // For MVP, evaluate simple conditions on sequence flows
     for (const flowId of outgoingFlows) {
       const flow = definition.sequenceFlows.find(f => f.id === flowId);
       if (!flow) continue;
+      
+      console.log(`[GatewayExecutor] Checking flow ${flowId}:`, JSON.stringify(flow, null, 2));
       
       if (!flow.condition) {
         // No condition - take first unconditional path
@@ -22,9 +27,12 @@ export class GatewayExecutor {
       }
       
       // Evaluate condition against process variables
+      console.log(`[GatewayExecutor] Evaluating condition: ${flow.condition}`);
       if (this.evaluateCondition(flow.condition, context.variables)) {
-        console.log(`[GatewayExecutor] Condition met for path: ${flowId}`);
+        console.log(`[GatewayExecutor] Condition met for path: ${flowId} -> ${flow.targetRef}`);
         return [flowId];
+      } else {
+        console.log(`[GatewayExecutor] Condition NOT met for path: ${flowId}`);
       }
     }
     

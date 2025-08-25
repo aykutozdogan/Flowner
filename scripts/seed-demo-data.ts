@@ -17,19 +17,28 @@ const EXPENSE_WORKFLOW_DSL = {
       id: "start-event",
       type: "start-event",
       name: "Start Expense Process",
-      outgoing: ["flow-1"]
+      outgoing: ["flow-to-gateway"]
     },
     {
-      id: "submit-expense",
-      type: "user-task", 
-      name: "Submit Expense",
+      id: "auto-approve-gateway",
+      type: "exclusive-gateway",
+      name: "Auto Approve Check",
       properties: {
-        formRef: "expense-form",
-        assigneeRole: "user",
-        priority: 1
+        conditions: [
+          {
+            id: "auto-approve-path",
+            expression: "${amount} <= 1000",
+            outgoing: "flow-to-finance"
+          },
+          {
+            id: "manual-approve-path", 
+            expression: "${amount} > 1000",
+            outgoing: "flow-to-manager"
+          }
+        ]
       },
-      incoming: ["flow-1"],
-      outgoing: ["flow-2"]
+      incoming: ["flow-to-gateway"],
+      outgoing: ["flow-to-finance", "flow-to-manager"]
     },
     {
       id: "manager-approval",
@@ -40,14 +49,28 @@ const EXPENSE_WORKFLOW_DSL = {
         priority: 2,
         description: "Review and approve/reject expense request"
       },
-      incoming: ["flow-2"],
-      outgoing: ["flow-3"]
+      incoming: ["flow-to-manager"],
+      outgoing: ["flow-from-manager"]
     },
     {
       id: "approval-gateway",
       type: "exclusive-gateway",
       name: "Approved?",
-      incoming: ["flow-3"],
+      properties: {
+        conditions: [
+          {
+            id: "approved-path",
+            expression: "${approved} === true",
+            outgoing: "flow-approved"
+          },
+          {
+            id: "rejected-path",
+            expression: "${approved} === false",
+            outgoing: "flow-rejected"
+          }
+        ]
+      },
+      incoming: ["flow-from-manager"],
       outgoing: ["flow-approved", "flow-rejected"]
     },
     {
@@ -55,18 +78,18 @@ const EXPENSE_WORKFLOW_DSL = {
       type: "service-task",
       name: "Finance Processing",
       properties: {
-        serviceType: "http",
+        serviceType: "script",
         endpoint: "/api/services/process-payment",
         method: "POST"
       },
-      incoming: ["flow-approved"],
-      outgoing: ["flow-4"]
+      incoming: ["flow-to-finance", "flow-approved"],
+      outgoing: ["flow-to-end"]
     },
     {
       id: "approved-end",
       type: "end-event", 
       name: "Expense Approved",
-      incoming: ["flow-4"]
+      incoming: ["flow-to-end"]
     },
     {
       id: "rejected-end",
@@ -77,34 +100,41 @@ const EXPENSE_WORKFLOW_DSL = {
   ],
   sequenceFlows: [
     {
-      id: "flow-1",
+      id: "flow-to-gateway",
       sourceRef: "start-event",
-      targetRef: "submit-expense"
+      targetRef: "auto-approve-gateway"
     },
     {
-      id: "flow-2", 
-      sourceRef: "submit-expense",
-      targetRef: "manager-approval"
+      id: "flow-to-finance",
+      sourceRef: "auto-approve-gateway",
+      targetRef: "finance-processing",
+      condition: "${amount} <= 1000"
     },
     {
-      id: "flow-3",
-      sourceRef: "manager-approval", 
+      id: "flow-to-manager",
+      sourceRef: "auto-approve-gateway",
+      targetRef: "manager-approval", 
+      condition: "${amount} > 1000"
+    },
+    {
+      id: "flow-from-manager",
+      sourceRef: "manager-approval",
       targetRef: "approval-gateway"
     },
     {
       id: "flow-approved",
       sourceRef: "approval-gateway",
       targetRef: "finance-processing",
-      condition: "outcome === 'approved'"
+      condition: "${approved} === true"
     },
     {
       id: "flow-rejected",
-      sourceRef: "approval-gateway", 
+      sourceRef: "approval-gateway",
       targetRef: "rejected-end",
-      condition: "outcome === 'rejected'"
+      condition: "${approved} === false"
     },
     {
-      id: "flow-4",
+      id: "flow-to-end",
       sourceRef: "finance-processing",
       targetRef: "approved-end"
     }
@@ -238,6 +268,7 @@ async function seedDemoData() {
     // Create expense form
     const [expenseForm] = await db.insert(forms).values({
       tenant_id: DEMO_TENANT_ID,
+      key: "expense-form",
       name: "Expense Request Form",
       description: "Form for submitting expense requests",
       schema: EXPENSE_FORM_SCHEMA,

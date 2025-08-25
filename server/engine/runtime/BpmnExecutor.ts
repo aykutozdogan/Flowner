@@ -87,13 +87,176 @@ export class BpmnExecutor {
 
   private async executeExclusiveGateway(element: BpmnElement, definition: BpmnDefinition, context: ExecutionContext): Promise<void> {
     console.log(`[BpmnExecutor] Exclusive gateway: ${element.id}`);
+    console.log(`[BpmnExecutor] Context variables:`, JSON.stringify(context.variables, null, 2));
     
-    // For MVP, take first outgoing flow
-    // In full implementation, evaluate conditions on sequence flows
     const outgoing = element.outgoing || [];
+    console.log(`[BpmnExecutor] Outgoing flows:`, outgoing);
+    
+    // Evaluate conditions on sequence flows
+    for (const flowId of outgoing) {
+      const flow = definition.sequenceFlows.find(f => f.id === flowId);
+      if (!flow) continue;
+      
+      console.log(`[BpmnExecutor] Checking flow ${flowId}: condition="${flow.condition}", targetRef="${flow.targetRef}"`);
+      
+      if (!flow.condition) {
+        // No condition - take unconditional path
+        console.log(`[BpmnExecutor] Taking unconditional path: ${flowId}`);
+        await this.followSequenceFlow(flowId, definition, context);
+        return;
+      }
+      
+      // Evaluate condition against process variables
+      if (this.evaluateCondition(flow.condition, context.variables)) {
+        console.log(`[BpmnExecutor] Condition met for path: ${flowId} -> ${flow.targetRef}`);
+        await this.followSequenceFlow(flowId, definition, context);
+        return;
+      } else {
+        console.log(`[BpmnExecutor] Condition NOT met for path: ${flowId}`);
+      }
+    }
+    
+    // No condition met - take default path (first one)
     if (outgoing.length > 0) {
+      console.log(`[BpmnExecutor] Taking default path: ${outgoing[0]}`);
       await this.followSequenceFlow(outgoing[0], definition, context);
     }
+  }
+
+  private evaluateCondition(condition: string, variables: Record<string, any>): boolean {
+    try {
+      console.log(`[BpmnExecutor] Evaluating condition: "${condition}" with variables:`, variables);
+      
+      // Simple condition evaluation for MVP
+      // Replace variable placeholders - support both ${varName} and variables.varName formats
+      let expression = condition.replace(/\$\{(\w+)\}/g, (match, varName) => {
+        const value = variables[varName];
+        console.log(`[BpmnExecutor] Variable ${varName} = ${value}`);
+        if (typeof value === 'string') {
+          return `"${value}"`;
+        }
+        return value?.toString() || 'null';
+      });
+      
+      // Also support variables.varName format
+      console.log(`[BpmnExecutor] Original expression before variables.X substitution: "${expression}"`);
+      expression = expression.replace(/variables\.(\w+)/g, (match, varName) => {
+        const value = variables[varName];
+        console.log(`[BpmnExecutor] Variable substitution: ${match} -> ${value} (varName: ${varName})`);
+        if (typeof value === 'string') {
+          return `"${value}"`;
+        }
+        const replacement = value?.toString() || 'null';
+        console.log(`[BpmnExecutor] Replacing "${match}" with "${replacement}"`);
+        return replacement;
+      });
+      console.log(`[BpmnExecutor] Expression after variables.X substitution: "${expression}"`);
+      
+      // Handle complex expressions with parentheses and negation
+      // For patterns like !(variables.amount <= 1000)
+      expression = expression.replace(/!\(([^)]+)\)/g, (match, innerExpr) => {
+        console.log(`[BpmnExecutor] Processing negation: ${match} -> ${innerExpr}`);
+        // First evaluate the inner expression, then negate
+        if (this.evaluateSimpleExpression(innerExpr, variables)) {
+          return 'false';
+        } else {
+          return 'true';
+        }
+      });
+      
+      console.log(`[BpmnExecutor] Expression after substitution: "${expression}"`);
+      
+      // Handle comparison operators
+      if (expression.includes('<=')) {
+        const [left, right] = expression.split('<=').map(s => s.trim());
+        const result = Number(this.parseValue(left)) <= Number(this.parseValue(right));
+        console.log(`[BpmnExecutor] <= evaluation: ${left} <= ${right} = ${result}`);
+        return result;
+      }
+      
+      if (expression.includes('>=')) {
+        const [left, right] = expression.split('>=').map(s => s.trim());
+        const result = Number(this.parseValue(left)) >= Number(this.parseValue(right));
+        console.log(`[BpmnExecutor] >= evaluation: ${left} >= ${right} = ${result}`);
+        return result;
+      }
+      
+      if (expression.includes('>')) {
+        const [left, right] = expression.split('>').map(s => s.trim());
+        const result = Number(this.parseValue(left)) > Number(this.parseValue(right));
+        console.log(`[BpmnExecutor] > evaluation: ${left} > ${right} = ${result}`);
+        return result;
+      }
+      
+      if (expression.includes('<')) {
+        const [left, right] = expression.split('<').map(s => s.trim());
+        const result = Number(this.parseValue(left)) < Number(this.parseValue(right));
+        console.log(`[BpmnExecutor] < evaluation: ${left} < ${right} = ${result}`);
+        return result;
+      }
+      
+      if (expression.includes('===')) {
+        const [left, right] = expression.split('===').map(s => s.trim());
+        const result = this.parseValue(left) === this.parseValue(right);
+        console.log(`[BpmnExecutor] === evaluation: ${left} === ${right} = ${result}`);
+        return result;
+      }
+      
+      // Try evaluating as boolean literal after all transformations
+      if (expression === 'true') return true;
+      if (expression === 'false') return false;
+      
+      console.warn(`[BpmnExecutor] Unrecognized condition format: ${condition}`);
+      return false;
+    } catch (error) {
+      console.error(`[BpmnExecutor] Error evaluating condition: ${condition}`, error);
+      return false;
+    }
+  }
+
+  private evaluateSimpleExpression(expression: string, variables: Record<string, any>): boolean {
+    // Substitute variables in the expression
+    let substituted = expression.replace(/variables\.(\w+)/g, (match, varName) => {
+      const value = variables[varName];
+      return value?.toString() || 'null';
+    });
+
+    // Handle comparison operators
+    if (substituted.includes('<=')) {
+      const [left, right] = substituted.split('<=').map(s => s.trim());
+      return Number(this.parseValue(left)) <= Number(this.parseValue(right));
+    }
+    
+    if (substituted.includes('>=')) {
+      const [left, right] = substituted.split('>=').map(s => s.trim());
+      return Number(this.parseValue(left)) >= Number(this.parseValue(right));
+    }
+    
+    if (substituted.includes('>')) {
+      const [left, right] = substituted.split('>').map(s => s.trim());
+      return Number(this.parseValue(left)) > Number(this.parseValue(right));
+    }
+    
+    if (substituted.includes('<')) {
+      const [left, right] = substituted.split('<').map(s => s.trim());
+      return Number(this.parseValue(left)) < Number(this.parseValue(right));
+    }
+    
+    if (substituted.includes('===')) {
+      const [left, right] = substituted.split('===').map(s => s.trim());
+      return this.parseValue(left) === this.parseValue(right);
+    }
+
+    return false;
+  }
+
+  private parseValue(value: string): any {
+    if (value === 'null' || value === 'undefined') return null;
+    if (value.startsWith('"') && value.endsWith('"')) return value.slice(1, -1);
+    if (!isNaN(Number(value))) return Number(value);
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
   }
 
   private async executeParallelGateway(element: BpmnElement, definition: BpmnDefinition, context: ExecutionContext): Promise<void> {
