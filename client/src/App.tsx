@@ -1,19 +1,23 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
+import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import NotFound from "@/pages/not-found";
-import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
 import Workflows from "@/pages/workflows";
 import Processes from "@/pages/processes";
 import Tasks from "@/pages/tasks";
 import EngineStats from "@/pages/engine-stats";
-import { Portal } from "@/pages/Portal";
-import { TaskDetail } from "@/pages/TaskDetail";
+import PortalInbox from "@/pages/portal/PortalInbox";
+import PortalTaskDetail from "@/pages/portal/PortalTaskDetail";
+import { AdminLayout } from '@/components/layout/AdminLayout';
+import { PortalLayout } from '@/components/layout/PortalLayout';
 
 // Create Material-UI theme matching the design reference
 const theme = createTheme({
@@ -93,18 +97,84 @@ const theme = createTheme({
   ],
 });
 
+function RootRedirect() {
+  const { isAuthenticated, getDefaultRoute } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+  
+  return <Redirect to={getDefaultRoute()} />;
+}
+
 function Router() {
   return (
     <Switch>
+      {/* Public Routes */}
       <Route path="/login" component={Login} />
-      <Route path="/workflows" component={Workflows} />
-      <Route path="/processes" component={Processes} />
-      <Route path="/tasks" component={Tasks} />
-      <Route path="/engine/stats" component={EngineStats} />
-      <Route path="/portal/tasks/:id" component={TaskDetail} />
-      <Route path="/portal/tasks" component={Portal} />
-      <Route path="/portal" component={Portal} />
-      <Route path="/" component={Dashboard} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin/dashboard">
+        <ProtectedRoute requireAdmin>
+          <AdminDashboard />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/admin/workflows">
+        <ProtectedRoute requireAdmin>
+          <AdminLayout>
+            <Workflows />
+          </AdminLayout>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/admin/processes">
+        <ProtectedRoute requireAdmin>
+          <AdminLayout>
+            <Processes />
+          </AdminLayout>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/admin/tasks">
+        <ProtectedRoute requireAdmin>
+          <AdminLayout>
+            <Tasks />
+          </AdminLayout>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/admin/analytics">
+        <ProtectedRoute requireAdmin>
+          <AdminLayout>
+            <EngineStats />
+          </AdminLayout>
+        </ProtectedRoute>
+      </Route>
+      
+      {/* Portal Routes */}
+      <Route path="/portal/inbox">
+        <ProtectedRoute requirePortal>
+          <PortalInbox />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/portal/tasks/:id">
+        <ProtectedRoute requirePortal>
+          <PortalTaskDetail />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/portal/tasks">
+        <ProtectedRoute requirePortal>
+          <PortalInbox />
+        </ProtectedRoute>
+      </Route>
+      
+      {/* Root Redirect */}
+      <Route path="/" component={RootRedirect} />
+      
+      {/* 404 */}
       <Route component={NotFound} />
     </Switch>
   );
@@ -115,10 +185,12 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

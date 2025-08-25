@@ -45,12 +45,19 @@ export default function Login() {
         localStorage.setItem('tenant_id', data.data.user.tenant_id);
 
         toast({
-          title: "Login Successful",
-          description: `Welcome back, ${data.data.user.name}!`,
+          title: "Giriş Başarılı",
+          description: `Hoş geldiniz, ${data.data.user.name}!`,
         });
 
-        // Redirect to dashboard
-        setLocation('/');
+        // Role-based redirect
+        const userRole = data.data.user.role;
+        if (userRole === 'tenant_admin' || userRole === 'designer') {
+          setLocation('/admin/dashboard');
+        } else if (userRole === 'approver' || userRole === 'user') {
+          setLocation('/portal/inbox');
+        } else {
+          setLocation('/');
+        }
       } else {
         setError(data.detail || 'Login failed');
       }
