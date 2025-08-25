@@ -18,7 +18,9 @@ import {
   PlayArrow,
   BarChart,
   Description,
-  Settings
+  Settings,
+  Business,
+  People
 } from '@mui/icons-material';
 
 const SIDEBAR_WIDTH = 240;
@@ -59,6 +61,18 @@ const adminMenuItems = [
     icon: <BarChart />, 
     path: '/admin/analytics',
     testId: 'nav-admin-analytics'
+  },
+  { 
+    text: 'Kiracılar', 
+    icon: <Business />, 
+    path: '/admin/tenants',
+    testId: 'nav-admin-tenants'
+  },
+  { 
+    text: 'Kullanıcılar', 
+    icon: <People />, 
+    path: '/admin/users',
+    testId: 'nav-admin-users'
   },
   { 
     text: 'Ayarlar', 

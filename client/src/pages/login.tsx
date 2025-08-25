@@ -21,6 +21,10 @@ export default function Login() {
   const [error, setError] = useState('');
   const { toast } = useToast();
 
+  // Get redirectTo parameter from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirectTo = urlParams.get('redirectTo');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -49,14 +53,19 @@ export default function Login() {
           description: `Hoş geldiniz, ${data.data.user.name}!`,
         });
 
-        // Role-based redirect
-        const userRole = data.data.user.role;
-        if (userRole === 'tenant_admin' || userRole === 'designer') {
-          setLocation('/admin/dashboard');
-        } else if (userRole === 'approver' || userRole === 'user') {
-          setLocation('/portal/inbox');
+        // Handle redirect - redirectTo param takes priority
+        if (redirectTo) {
+          setLocation(redirectTo);
         } else {
-          setLocation('/');
+          // Role-based redirect
+          const userRole = data.data.user.role;
+          if (userRole === 'tenant_admin' || userRole === 'designer') {
+            setLocation('/admin/dashboard');
+          } else if (userRole === 'approver' || userRole === 'user') {
+            setLocation('/portal/tasks');
+          } else {
+            setLocation('/');
+          }
         }
       } else {
         setError(data.detail || 'Login failed');

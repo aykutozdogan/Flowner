@@ -20,16 +20,18 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  Visibility as ViewIcon,
+  Publish as PublishIcon
 } from '@mui/icons-material';
 
-interface Workflow {
+interface Form {
   id: string;
-  key?: string;
+  key: string;
   name: string;
-  description?: string;
+  description: string;
+  latest_version: number;
   status: 'draft' | 'published' | 'archived';
-  version: string;
   created_at: string;
   updated_at: string;
 }
@@ -46,22 +48,21 @@ const STATUS_COLORS = {
   archived: 'default'
 } as const;
 
-export default function WorkflowsPage() {
+export default function FormsPage() {
   const [, setLocation] = useLocation();
 
-  // Fetch workflows
-  const { data: workflows, isLoading, error } = useQuery({
-    queryKey: ['/api/v1/workflows'],
+  // Fetch forms
+  const { data: forms, isLoading, error } = useQuery({
+    queryKey: ['/api/v1/forms'],
     select: (data: any) => data.data || data,
   });
 
-  const handleNewWorkflow = () => {
-    setLocation('/admin/workflows/designer');
+  const handleNewForm = () => {
+    setLocation('/admin/forms/builder');
   };
 
-  const handleEditWorkflow = (workflowKey: string | undefined) => {
-    const key = workflowKey || 'new';
-    setLocation(`/admin/workflows/designer/${key}`);
+  const handleEditForm = (formKey: string) => {
+    setLocation(`/admin/forms/builder/${formKey}`);
   };
 
   if (isLoading) {
@@ -76,7 +77,7 @@ export default function WorkflowsPage() {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">
-          İş akışları yüklenirken hata oluştu: {(error as any)?.message}
+          Formlar yüklenirken hata oluştu: {(error as any)?.message}
         </Alert>
       </Box>
     );
@@ -86,15 +87,15 @@ export default function WorkflowsPage() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1">
-          İş Akışı Yönetimi
+          Form Yönetimi
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={handleNewWorkflow}
-          data-testid="button-new-workflow"
+          onClick={handleNewForm}
+          data-testid="button-new-form"
         >
-          Yeni İş Akışı
+          Yeni Form
         </Button>
       </Box>
 
@@ -104,7 +105,8 @@ export default function WorkflowsPage() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>İş Akışı Adı</TableCell>
+                  <TableCell>Form Adı</TableCell>
+                  <TableCell>Anahtar</TableCell>
                   <TableCell>Açıklama</TableCell>
                   <TableCell>Versiyon</TableCell>
                   <TableCell>Durum</TableCell>
@@ -113,46 +115,51 @@ export default function WorkflowsPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {workflows?.map((workflow: Workflow) => (
-                  <TableRow key={workflow.id} data-testid={`workflow-row-${workflow.id}`}>
+                {forms?.map((form: Form) => (
+                  <TableRow key={form.id} data-testid={`form-row-${form.key}`}>
                     <TableCell>
                       <Typography variant="subtitle2">
-                        {workflow.name}
+                        {form.name}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {workflow.description || '-'}
+                        {form.key}
                       </Typography>
                     </TableCell>
-                    <TableCell>v{workflow.version}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {form.description || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>v{form.latest_version}</TableCell>
                     <TableCell>
                       <Chip
-                        label={STATUS_LABELS[workflow.status]}
-                        color={STATUS_COLORS[workflow.status]}
+                        label={STATUS_LABELS[form.status]}
+                        color={STATUS_COLORS[form.status]}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
-                      {new Date(workflow.updated_at).toLocaleDateString('tr-TR')}
+                      {new Date(form.updated_at).toLocaleDateString('tr-TR')}
                     </TableCell>
                     <TableCell>
                       <IconButton
-                        onClick={() => handleEditWorkflow(workflow.key)}
+                        onClick={() => handleEditForm(form.key)}
                         size="small"
                         title="Düzenle"
-                        data-testid={`button-edit-workflow-${workflow.id}`}
+                        data-testid={`button-edit-form-${form.key}`}
                       >
                         <EditIcon />
                       </IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
-                {(!workflows || workflows.length === 0) && (
+                {(!forms || forms.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
+                    <TableCell colSpan={7} align="center">
                       <Typography color="text.secondary">
-                        Henüz iş akışı bulunmuyor
+                        Henüz form bulunmuyor
                       </Typography>
                     </TableCell>
                   </TableRow>

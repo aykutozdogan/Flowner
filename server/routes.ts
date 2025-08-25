@@ -2193,6 +2193,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Tenants Management API
+  app.get("/api/v1/tenants", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      // Only tenant_admin can manage tenants
+      if (req.user.role !== 'tenant_admin') {
+        return res.status(403).json({
+          type: "/api/errors/forbidden",
+          title: "Forbidden",
+          status: 403,
+          detail: "Only tenant administrators can access tenant management"
+        });
+      }
+
+      const tenants = await storage.getAllTenants();
+      res.json({
+        success: true,
+        data: tenants
+      });
+    } catch (error) {
+      console.error("Error fetching tenants:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to fetch tenants"
+      });
+    }
+  });
+
+  app.post("/api/v1/tenants", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      // Only tenant_admin can create tenants
+      if (req.user.role !== 'tenant_admin') {
+        return res.status(403).json({
+          type: "/api/errors/forbidden",
+          title: "Forbidden",
+          status: 403,
+          detail: "Only tenant administrators can create tenants"
+        });
+      }
+
+      const { name, domain, settings = {}, branding = {} } = req.body;
+
+      if (!name?.trim() || !domain?.trim()) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Validation Error",
+          status: 400,
+          detail: "Tenant name and domain are required"
+        });
+      }
+
+      const tenant = await storage.createTenant({
+        name: name.trim(),
+        domain: domain.trim(),
+        settings,
+        branding,
+        is_active: true
+      });
+
+      res.status(201).json({
+        success: true,
+        data: tenant
+      });
+    } catch (error) {
+      console.error("Error creating tenant:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to create tenant"
+      });
+    }
+  });
+
+  // Users Management API  
+  app.get("/api/v1/users", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      // Only tenant_admin can manage users
+      if (req.user.role !== 'tenant_admin') {
+        return res.status(403).json({
+          type: "/api/errors/forbidden",
+          title: "Forbidden",
+          status: 403,
+          detail: "Only tenant administrators can access user management"
+        });
+      }
+
+      const users = await storage.getUsersByTenant(req.tenantId);
+      res.json({
+        success: true,
+        data: users
+      });
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error", 
+        status: 500,
+        detail: "Failed to fetch users"
+      });
+    }
+  });
+
+  app.post("/api/v1/users", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      // Only tenant_admin can create users
+      if (req.user.role !== 'tenant_admin') {
+        return res.status(403).json({
+          type: "/api/errors/forbidden",
+          title: "Forbidden",
+          status: 403,
+          detail: "Only tenant administrators can create users"
+        });
+      }
+
+      const { email, name, password, role = 'user' } = req.body;
+
+      if (!email?.trim() || !name?.trim() || !password?.trim()) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Validation Error",
+          status: 400,
+          detail: "Email, name, and password are required"
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const user = await storage.createUser({
+        email: email.trim(),
+        name: name.trim(),
+        password: hashedPassword,
+        role,
+        tenant_id: req.tenantId,
+        is_active: true
+      });
+
+      // Don't return password in response
+      const { password: _, ...userResponse } = user;
+
+      res.status(201).json({
+        success: true,
+        data: userResponse
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({
+        type: "/api/errors/server",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to create user"
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

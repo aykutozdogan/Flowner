@@ -1,0 +1,153 @@
+Lütfen TÜM yanıtlarını TÜRKÇE ver.
+
+AMAÇ (S5 Fix + Report):
+Aşağıdaki eksikleri tek oturumda düzelt, test et ve raporla:
+1) /login sonrası yönlendirme yapılmıyor → rol tabanlı redirect ekle.
+2) Admin tarafında **Form** ve **BPM (Workflow)** tanımlama çalışmıyor → builder/designer ekranlarını çalışır hale getir.
+3) Menü/RBAC: User & Approver ayrımı zorunlu değil; menüler role göre doğru görünmeli ve çalışmalı.
+4) Admin’de **Yeni Tenant** ve **Yeni Kullanıcı** oluşturma ekranları yok → ekle.
+5) Tüm düzeltmelerden sonra **S5 sprint raporunu** `docs/s5-sprint-report.md` dosyasına yaz.
+Bitince terminale:
+  S5_UI=PASS
+  S5_REPORT=PASS
+yaz.
+
+DEĞİŞMEZ KURALLAR
+- Source of truth: PLAN.md + S1..S4 çıktıları.
+- Var olan kodu koru; minimal ama doğru değişiklik yap.
+- Tam dosya üret; kısmi diff verme.
+- Komutları kendin çalıştır; FAIL olursa düzelt ve tekrar dene.
+
+────────────────────────────────────────────────────────
+A) LOGIN → ROL TABANLI YÖNLENDİRME
+
+1) Başarılı login’de yanıt JWT + user.roles içeriyor olmalı. Eğer yoksa /api/v1/auth/me çağrısıyla rolleri al.
+2) Redirect kuralı:
+   - tenant_admin veya designer → /admin/dashboard
+   - user veya approver → /portal/tasks  (User/Approver ayrımı UI’de şart değil; tek menü yeter)
+3) “redirectTo” query param desteği: /login?redirectTo=/portal/tasks → öncelik bu parametrede.
+4) Auth guard: yetkisiz rol, route erişemiyorsa uygun sayfaya yönlendir.
+
+Test:
+- Admin ile login → otomatik /admin/dashboard
+- Approver/User ile login → otomatik /portal/tasks
+
+────────────────────────────────────────────────────────
+B) ADMIN: FORM & BPM TANIMLAMA (ÇALIŞIR HALE GETİR)
+
+Form:
+- Route: /admin/forms ve /admin/forms/builder/:key?
+- İşlevler:
+  - Yeni form oluştur (draft), alan ekle (Text/Number/Select/Date/RichText), özellik paneli (required/min/max/regex/placeholder/help).
+  - Preview ve Publish (draft→published). Publish’te versiyon↑ ve changelog metni iste.
+  - Versiyon listesi ve diff görünümü (eklenen/silinen/değişen alan).
+
+BPM (Workflow):
+- Route: /admin/workflows ve /admin/workflows/designer/:key?
+- bpmn-js modeler + properties:
+  - Palet: StartEvent, EndEvent, UserTask, ServiceTask(HTTP/Handler), Exclusive/Parallel Gateway
+  - UserTask’ta **formKey + formVersion** seçici (published formlar)
+  - Publish (draft→published) + changelog
+- Kaydetme yükünde XML + opsiyonel JSON DSL sakla.
+
+Test:
+- “expense_request” formu oluştur, publish et.
+- “expense_approval” workflow’unda UserTask’a form bağla, publish et.
+
+────────────────────────────────────────────────────────
+C) MENÜ & RBAC (User/Approver ayrımı şart değil)
+
+1) Sol menüler role göre:
+   - tenant_admin/designer: Forms, Workflows, Processes/Monitoring, Tenants, Users, Settings
+   - user/approver: Inbox/Tasks, My Processes (opsiyonel), Profile
+2) Menüler gerçekten ilgili route’a gidiyor ve sayfalar hata vermeden açılıyor.
+3) Header: tenant seçici (varsa), dil ve tema anahtarı.
+
+Test:
+- Admin hesapta tüm admin menüleri görünüyor ve çalışıyor.
+- User/Approver hesapta yalnız portal menüleri görünüyor ve çalışıyor.
+
+────────────────────────────────────────────────────────
+D) ADMIN → YENİ TENANT & YENİ KULLANICI OLUŞTURMA
+
+Tenant Management:
+- Route: /admin/tenants
+- Liste + “Yeni Tenant” butonu → form (name, domain, description…)
+- API:
+  - POST /api/v1/tenants
+  - GET /api/v1/tenants
+  - PUT /api/v1/tenants/:id
+  - (İsteğe bağlı) DELETE /api/v1/tenants/:id (soft delete)
+
+User Management:
+- Route: /admin/users
+- Liste + “Yeni Kullanıcı” butonu → form (email, password, roles[], optional displayName)
+- API:
+  - POST /api/v1/users
+  - GET /api/v1/users
+  - PUT /api/v1/users/:id
+  - (Opsiyon) reset password / disable
+
+Validasyon ve Hata Yönetimi:
+- ProblemDetails formatında hata gösterimi.
+- Domain/Email benzersizliği ve tenant_id zorunluluğu.
+
+Test:
+- Yeni tenant oluştur → yeni user ekle → bu kullanıcı ile login ol ve RBAC yönlendirmesini doğrula.
+
+────────────────────────────────────────────────────────
+E) OTOMATİK TESTLER & SMOKE
+
+1) Bash smoke (tests/s5-smoke.sh):
+   - Admin login → /forms create/publish → /workflows publish (userTask ↔ form bind)
+   - Başlat (amount=2500) → approver login → /portal/tasks → complete (approve) → process completed
+   - Son satır: S5_SMOKE=PASS
+
+2) UI e2e (Playwright/Cypress) (tests/e2e/s5/*.spec.ts):
+   - Login redirect (admin→/admin/dashboard, user→/portal/tasks)
+   - Admin → form builder publish & workflow designer publish
+   - Portal → task detail form render & submit → process completed
+   - Admin → Tenants & Users sayfaları açılır ve “Yeni …” diyalogları çalışır
+   - Komut: `npm run test:ui:s5`
+   - PASS olursa rapora ekle.
+
+3) Paket komutları:
+   - package.json:
+     "test:smoke:s5": "bash tests/s5-smoke.sh",
+     "test:ui:s5": "playwright test tests/e2e/s5 --reporter=line || cypress run --spec 'cypress/e2e/s5/*.cy.ts'"
+
+Komut sırası:
+- npm ci || npm i
+- npm run lint && npm run typecheck
+- npm run build
+- npm start &; sleep 3
+- npm run test:smoke:s5
+- npm run test:ui:s5
+- Hepsi geçince terminale **S5_UI=PASS** yaz.
+
+────────────────────────────────────────────────────────
+F) RAPOR: docs/s5-sprint-report.md
+
+İçerik:
+- Başlık: “S5 Sprint Raporu — Admin/Portal Düzeltmeleri & Builder/Designer”
+- Tarih ve Durum (PASS)
+- Sorun listesi ve yapılan düzeltmeler:
+  - Login redirect (rol tabanlı)
+  - Form builder ve BPM designer çalışır hale getirildi
+  - Menü/RBAC sadeleştirildi (User/Approver ayrımı şart değil)
+  - Tenant + User yönetimi eklendi
+- Ekran URL’leri (Admin ve Portal)
+- Test özetleri (smoke + e2e, PASS sayıları)
+- Bilinen açıklar (varsa küçük UI kusurları)
+- Son satır: **S5_REPORT=PASS**
+
+────────────────────────────────────────────────────────
+KABUL KRİTERLERİ (hepsi sağlanmalı)
+- /login sonrası doğru role göre otomatik yönlendirme çalışıyor.
+- /admin/forms ve /admin/workflows builder/designer ekranları açılıyor, draft→publish ve form bind çalışıyor.
+- Menü/RBAC: admin rolleri admin menülerini; user/approver portal menülerini görüyor ve route’lar çalışıyor.
+- /admin/tenants ve /admin/users sayfalarında “Yeni …” oluşturma akışları çalışıyor.
+- `npm run test:smoke:s5` ve `npm run test:ui:s5` **PASS**.
+- Terminal çıktısı:
+  S5_UI=PASS
+  S5_REPORT=PASS

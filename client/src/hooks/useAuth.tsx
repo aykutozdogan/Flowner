@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (hasAdminAccess()) {
       return '/admin/dashboard';
     } else if (hasPortalAccess()) {
-      return '/portal/inbox';
+      return '/portal/tasks';
     }
     
     return '/login';

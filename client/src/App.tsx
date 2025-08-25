@@ -18,6 +18,9 @@ import PortalInbox from "@/pages/portal/PortalInbox";
 import PortalTaskDetail from "@/pages/portal/PortalTaskDetail";
 import FormBuilderPage from "@/pages/admin/FormBuilderPage";
 import BpmnDesignerPage from "@/pages/admin/BpmnDesignerPage";
+import FormsPage from "@/pages/admin/FormsPage";
+import TenantsPage from "@/pages/admin/TenantsPage";
+import UsersPage from "@/pages/admin/UsersPage";
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { PortalLayout } from '@/components/layout/PortalLayout';
 
@@ -122,10 +125,34 @@ function Router() {
         </ProtectedRoute>
       </Route>
       
+      <Route path="/admin/forms">
+        <ProtectedRoute requireAdmin>
+          <AdminLayout>
+            <FormsPage />
+          </AdminLayout>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/admin/workflows">
         <ProtectedRoute requireAdmin>
           <AdminLayout>
             <Workflows />
+          </AdminLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/admin/tenants">
+        <ProtectedRoute requireAdmin>
+          <AdminLayout>
+            <TenantsPage />
+          </AdminLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/admin/users">
+        <ProtectedRoute requireAdmin>
+          <AdminLayout>
+            <UsersPage />
           </AdminLayout>
         </ProtectedRoute>
       </Route>
@@ -185,7 +212,9 @@ function Router() {
       
       <Route path="/portal/tasks">
         <ProtectedRoute requirePortal>
-          <PortalInbox />
+          <PortalLayout>
+            <PortalInbox />
+          </PortalLayout>
         </ProtectedRoute>
       </Route>
       
