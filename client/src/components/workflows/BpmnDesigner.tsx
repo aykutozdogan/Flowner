@@ -29,7 +29,8 @@ import {
   Settings as SettingsIcon,
   ExpandMore as ExpandMoreIcon,
   Add as AddIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Menu as MenuIcon
 } from '@mui/icons-material';
 
 // BPMN.js imports
