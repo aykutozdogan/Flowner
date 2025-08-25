@@ -42,6 +42,7 @@ interface AdminSidebarProps {
   open: boolean;
   onClose: () => void;
   user?: any;
+  onPinChange?: (pinned: boolean) => void;
 }
 
 const SIDEBAR_PIN_KEY = 'admin_sidebar_pinned';
@@ -99,7 +100,7 @@ const menuGroups: MenuGroup[] = [
   }
 ];
 
-export default function AdminSidebar({ open, onClose, user }: AdminSidebarProps) {
+export default function AdminSidebar({ open, onClose, user, onPinChange }: AdminSidebarProps) {
   const [location, setLocation] = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Dashboard', 'Tasarım & Geliştirme']);
   const [isPinned, setIsPinned] = useState(() => {
@@ -111,6 +112,7 @@ export default function AdminSidebar({ open, onClose, user }: AdminSidebarProps)
     const newPinned = !isPinned;
     setIsPinned(newPinned);
     localStorage.setItem(SIDEBAR_PIN_KEY, newPinned.toString());
+    onPinChange?.(newPinned);
   };
 
   const toggleGroup = (groupTitle: string) => {

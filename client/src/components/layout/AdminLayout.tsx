@@ -10,7 +10,9 @@ interface AdminLayoutProps {
 }
 
 function AdminLayout({ children, user }: AdminLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    return localStorage.getItem('admin_sidebar_pinned') === 'true';
+  });
   const theme = useTheme();
 
   return (
@@ -96,6 +98,9 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
         open={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 
         user={user}
+        onPinChange={(pinned) => {
+          if (!pinned) setSidebarOpen(false);
+        }}
       />
 
       {/* Main Content */}
@@ -104,8 +109,13 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
         sx={{ 
           flexGrow: 1, 
           mt: 8, // AppBar height offset
+          ml: () => {
+            const isPinned = localStorage.getItem('admin_sidebar_pinned') === 'true';
+            return isPinned && sidebarOpen ? '280px' : 0;
+          },
           bgcolor: '#f8fafc',
-          minHeight: 'calc(100vh - 64px)'
+          minHeight: 'calc(100vh - 64px)',
+          transition: 'margin-left 0.3s ease'
         }}
       >
         {children}
