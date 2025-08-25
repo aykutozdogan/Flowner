@@ -1,0 +1,53 @@
+# Flowner – Proje Planı (Kaynak Gerçeklik)
+
+## Vizyon & MVP
+- Tek platformdan tüm süreç ve formları tanımlayıp çalıştırmak.
+- MVP: Form + Flow tanımı; Flow içinde API/SQL çalıştırma; kullanıcıya onaya yönlendirme.
+- Hedef kullanıcı: İç kullanıcılar.
+
+## Mimari (3 Parça)
+1. **Backend** (.NET 8, C#, PostgreSQL, Swagger)  
+   - Multi-tenant (single DB + `tenant_id`), sıkı izolasyon.  
+   - Auth: E-posta/Şifre + Google/Microsoft OAuth; RBAC roller (`tenant_admin`, `designer`, `approver`, `user`).  
+   - REST v1, ProblemDetails, Serilog + OpenTelemetry.  
+   - BPMN Engine (IHostedService + Hangfire).  
+
+2. **Admin Panel** (React.js + MUI)  
+   - Form & BPM tasarlama (drag-drop, Undo/Redo, diff, changelog).  
+   - Menü/ekran görünürlüğü role/permission.  
+   - Liste ekranı: kolon seçimi, preset/export.  
+   - Tema light/dark + tenant branding.  
+
+3. **User Portal** (React.js PWA)  
+   - Inbox, süreç başlatma, kayıt listeleri, detay ekranı.  
+   - Yorum/ek dosya, bildirim (in-app + e-posta).  
+   - PWA installable; offline cache (liste & detay read-only).  
+
+## Teknik Özellikler
+- **BPMN MVP:** Start/End, User Task, Service Task (HTTP + C# handler), Exclusive/Parallel Gateway. Timer opsiyonel.  
+- **Service Task:** HTTP çağrısı (URL, method, headers, body, retry/backoff, auth), Backend içi C# handler.  
+- **User Task:** Form sürümü bağlama, assignment (role/user), SLA & escalation, reassign, yorum/ek, outcomes, field-level izin.  
+- **Sürümleme:** Form/Workflow draft & published; aktif instancelar eski sürümle tamamlanır; Undo/Redo + diff.  
+- **Durum Yönetimi:** Process & Task instance state tablosu; audit log (traceId/spanId/tenantId/userId).  
+- **Depolama:** S3 uyumlu (örn. MinIO/AWS); limit 25 MB/ek; ClamAV taraması; UUID+hash; tenant izolasyonu.  
+- **Entegrasyonlar:** ERP/CRM/SSO/SMS/E-posta connector’ler; imzalı webhooks + retry/idempotency; tenant bazlı API key/secret.  
+- **Güvenlik:** Rate limiting (tenant + user), sıkı CORS allowlist, at-rest encryption (AES-GCM), zorunlu audit.  
+- **Performans:** Redis cache (auth tokens, lookups, published forms/workflows).  
+- **Arama:** Postgres FTS (tsvector); büyüyünce OpenSearch/Meilisearch.  
+- **CI/CD:** GitHub Actions, Docker, dev/test/prod ortamları.  
+- **Test:** Backend (unit/integration), Frontend (component/e2e), BPM senaryo testleri.  
+- **Standartlar:** ESLint/Prettier, .editorconfig, Conventional Commits, lint+format check.  
+
+## Sprint Planı
+- **S0 – Docs:** `docs/` iskeleti, roadmap, mimari açıklamalar.  
+- **S1 – Backend:** Solution, EF Core + Postgres, Auth + RBAC, Serilog + OTel, Health, Redis/Hangfire.  
+- **S2 – Engine:** BPMN Engine MVP (Start/End, User/Service Task, Gateways).  
+- **S3 – Admin:** React+MUI skeleton, Form Designer, BPMN Designer.  
+- **S4 – Portal:** React PWA skeleton, Inbox/List/Detail, Offline cache.  
+- **S5 – Glue:** Form↔Workflow bağlama, izinler, audit trail.  
+- **S6 – CI/CD:** GitHub Actions, docker build/test, seed data, acceptance checklist.  
+
+## Kabul Kriterleri
+- Docs = “source of truth” → kod docs dışına çıkamaz.  
+- Tüm dosyalar/endpointler **tam içerik** üretilecek; diff asla değil.  
+- Her sprint sonunda smoke test → PASS olmalı.  
