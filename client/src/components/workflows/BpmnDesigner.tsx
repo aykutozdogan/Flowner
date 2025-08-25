@@ -114,6 +114,7 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [changelog, setChangelog] = useState('');
   const [tabValue, setTabValue] = useState(0);
+  const [paletteCollapsed, setPaletteCollapsed] = useState(false);
 
   // Available forms for UserTask assignment
   const [availableForms, setAvailableForms] = useState<Array<{
@@ -129,15 +130,51 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
       container: containerRef.current,
       keyboard: {
         bindTo: window
-      }
+      },
+      additionalModules: [
+        // Custom palette module can be added here
+      ]
     });
 
     modelerRef.current = modeler;
+
+    // Customize palette after modeler is ready
+    const customizePalette = () => {
+      try {
+        const palette = modeler.get('palette');
+        const canvas = modeler.get('canvas');
+        
+        // Add custom palette styling
+        const paletteContainer = document.querySelector('.djs-palette');
+        if (paletteContainer) {
+          paletteContainer.setAttribute('style', `
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+          `);
+          
+          // Add tooltips and descriptions
+          const entries = paletteContainer.querySelectorAll('.entry');
+          entries.forEach((entry: any) => {
+            const title = entry.getAttribute('title');
+            if (title) {
+              entry.setAttribute('data-tooltip', getElementDescription(title));
+            }
+          });
+        }
+      } catch (error) {
+        console.log('Palette customization not available:', error);
+      }
+    };
 
     // Load initial diagram
     const loadDiagram = async () => {
       try {
         await modeler.importXML(initialDefinition || defaultBpmnXml);
+        
+        // Customize palette after diagram load
+        setTimeout(customizePalette, 500);
         
         // Add event listeners
         const eventBus = modeler.get('eventBus');
@@ -157,6 +194,20 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
       modeler.destroy();
     };
   }, [initialDefinition]);
+
+  const getElementDescription = (elementType: string): string => {
+    const descriptions: Record<string, string> = {
+      'Create StartEvent': 'Sürecin başlangıç noktası',
+      'Create EndEvent': 'Sürecin bitiş noktası',
+      'Create Task': 'Genel görev elementi',
+      'Create UserTask': 'Kullanıcı görevi - Form ile tamamlanır',
+      'Create ServiceTask': 'Servis görevi - Otomatik işlem',
+      'Create ExclusiveGateway': 'Karar noktası - Tek yol seçimi',
+      'Create ParallelGateway': 'Paralel işlem - Çoklu yol',
+      'Create SubProcess': 'Alt süreç - Gruplandırma'
+    };
+    return descriptions[elementType] || elementType;
+  };
 
   const handleSave = async () => {
     if (!modelerRef.current) return;
@@ -495,10 +546,29 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
       {/* Main Canvas */}
       <Box sx={{ flex: 1, position: 'relative' }}>
         {/* Toolbar */}
-        <Paper sx={{ p: 1, mb: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            BPMN Designer
+        <Paper sx={{ 
+          p: 1, 
+          mb: 1, 
+          display: 'flex', 
+          gap: 1, 
+          alignItems: 'center',
+          background: 'linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
+            🎨 BPMN Designer
           </Typography>
+          
+          <Button
+            onClick={() => setPaletteCollapsed(!paletteCollapsed)}
+            startIcon={<MenuIcon />}
+            variant="outlined"
+            size="small"
+            sx={{ minWidth: 'auto' }}
+            title={paletteCollapsed ? "Palette'i Göster" : "Palette'i Gizle"}
+          >
+            Palette
+          </Button>
           
           <Button
             onClick={handleSave}
@@ -506,7 +576,7 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
             variant="outlined"
             data-testid="save-bpmn"
           >
-            Taslak Kaydet
+            💾 Taslak Kaydet
           </Button>
           
           <Button
@@ -514,14 +584,26 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
             startIcon={<PublishIcon />}
             variant="contained"
             data-testid="publish-bpmn"
+            sx={{
+              background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #45a049 0%, #3d8b40 100%)'
+              }
+            }}
           >
-            Yayınla
+            🚀 Yayınla
           </Button>
 
           <IconButton
             onClick={() => setPropertiesPanelOpen(!propertiesPanelOpen)}
             color={propertiesPanelOpen ? 'primary' : 'default'}
             data-testid="toggle-properties"
+            sx={{
+              background: propertiesPanelOpen ? 'rgba(25, 118, 210, 0.1)' : 'transparent',
+              '&:hover': {
+                background: 'rgba(25, 118, 210, 0.15)'
+              }
+            }}
           >
             <SettingsIcon />
           </IconButton>
@@ -533,10 +615,55 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
           sx={{ 
             height: 'calc(100vh - 80px)',
             border: '1px solid',
-            borderColor: 'divider'
+            borderColor: 'divider',
+            position: 'relative',
+            '& .djs-palette': {
+              display: paletteCollapsed ? 'none' : 'block',
+              transition: 'all 0.3s ease-in-out'
+            },
+            '& .djs-palette .entry': {
+              position: 'relative',
+              '&:hover::after': {
+                content: 'attr(data-tooltip)',
+                position: 'absolute',
+                left: '100%',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'rgba(0,0,0,0.8)',
+                color: 'white',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                zIndex: 1000,
+                marginLeft: '8px'
+              }
+            }
           }}
           data-testid="bpmn-canvas"
-        />
+        >
+          {paletteCollapsed && (
+            <Paper
+              sx={{
+                position: 'absolute',
+                top: 10,
+                left: 10,
+                zIndex: 100,
+                p: 1,
+                background: 'rgba(255,255,255,0.9)',
+                backdropFilter: 'blur(8px)'
+              }}
+            >
+              <IconButton
+                onClick={() => setPaletteCollapsed(false)}
+                size="small"
+                title="Palette'i Göster"
+              >
+                <MenuIcon />
+              </IconButton>
+            </Paper>
+          )}
+        </Box>
       </Box>
 
       {/* Properties Panel */}

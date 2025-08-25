@@ -15,7 +15,9 @@ import {
   Avatar,
   Chip,
   useTheme,
-  alpha
+  alpha,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -31,7 +33,8 @@ import {
   ExpandMore,
   AutoAwesome as AutoAwesomeIcon,
   Settings as SettingsIcon,
-  Analytics as AnalyticsIcon
+  Analytics as AnalyticsIcon,
+  PushPin as PinIcon
 } from '@mui/icons-material';
 import { useLocation } from 'wouter';
 
@@ -40,6 +43,8 @@ interface AdminSidebarProps {
   onClose: () => void;
   user?: any;
 }
+
+const SIDEBAR_PIN_KEY = 'admin_sidebar_pinned';
 
 interface MenuGroup {
   title: string;
@@ -97,7 +102,16 @@ const menuGroups: MenuGroup[] = [
 export default function AdminSidebar({ open, onClose, user }: AdminSidebarProps) {
   const [location, setLocation] = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Dashboard', 'Tasarım & Geliştirme']);
+  const [isPinned, setIsPinned] = useState(() => {
+    return localStorage.getItem(SIDEBAR_PIN_KEY) === 'true';
+  });
   const theme = useTheme();
+
+  const handlePinToggle = () => {
+    const newPinned = !isPinned;
+    setIsPinned(newPinned);
+    localStorage.setItem(SIDEBAR_PIN_KEY, newPinned.toString());
+  };
 
   const toggleGroup = (groupTitle: string) => {
     setExpandedGroups(prev =>
@@ -120,17 +134,18 @@ export default function AdminSidebar({ open, onClose, user }: AdminSidebarProps)
 
   return (
     <Drawer
-      variant="temporary"
+      variant={isPinned ? "persistent" : "temporary"}
       anchor="left"
       open={open}
-      onClose={onClose}
+      onClose={isPinned ? undefined : onClose}
       sx={{
         '& .MuiDrawer-paper': {
           width: 280,
           background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
           color: 'white',
           border: 'none',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+          boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+          zIndex: isPinned ? 1200 : 1300
         }
       }}
     >
@@ -161,18 +176,63 @@ export default function AdminSidebar({ open, onClose, user }: AdminSidebarProps)
               </Typography>
             </Box>
             
-            <IconButton
-              onClick={onClose}
-              sx={{ 
-                color: 'white',
-                '&:hover': {
-                  bgcolor: alpha('rgba(255,255,255,0.1)', 0.1)
-                }
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <IconButton
+                onClick={handlePinToggle}
+                sx={{ 
+                  color: 'white',
+                  bgcolor: isPinned ? alpha('rgba(255,255,255,0.2)', 0.2) : 'transparent',
+                  '&:hover': {
+                    bgcolor: alpha('rgba(255,255,255,0.15)', 0.15)
+                  }
+                }}
+                title={isPinned ? 'Pinlemeyi Kaldır' : 'Menüyü Pinle'}
+              >
+                <PinIcon sx={{ transform: isPinned ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
+              </IconButton>
+              
+              {!isPinned && (
+                <IconButton
+                  onClick={onClose}
+                  sx={{ 
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: alpha('rgba(255,255,255,0.1)', 0.1)
+                    }
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              )}
+            </Box>
           </Box>
+          
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isPinned}
+                onChange={handlePinToggle}
+                size="small"
+                sx={{
+                  '& .MuiSwitch-thumb': {
+                    backgroundColor: 'white',
+                  },
+                  '& .MuiSwitch-track': {
+                    backgroundColor: alpha('rgba(255,255,255,0.3)', 0.3),
+                  },
+                  '& .Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: alpha('rgba(255,255,255,0.5)', 0.5),
+                  }
+                }}
+              />
+            }
+            label={
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                📌 Menüyü Pinle
+              </Typography>
+            }
+            sx={{ mb: 1 }}
+          />
           
           <Chip
             label="Admin Panel"
