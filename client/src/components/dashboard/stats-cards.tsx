@@ -24,7 +24,7 @@ export default function StatsCards() {
     enabled: !!localStorage.getItem('access_token'),
   });
 
-  const stats = analytics?.data?.stats;
+  const stats = analytics?.data?.stats || {};
 
   const cards: StatCard[] = [
     {

@@ -135,11 +135,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(forms.updated_at));
 
     if (filters?.status) {
-      query = query.where(and(
-        eq(forms.tenant_id, tenantId),
-        eq(forms.is_deleted, false),
-        eq(forms.status, filters.status as any)
-      ));
+      return await db.select().from(forms)
+        .where(and(
+          eq(forms.tenant_id, tenantId),
+          eq(forms.is_deleted, false),
+          eq(forms.status, filters.status as any)
+        ))
+        .orderBy(desc(forms.updated_at));
     }
 
     return await query;
@@ -195,7 +197,7 @@ export class DatabaseStorage implements IStorage {
         eq(forms.id, id),
         eq(forms.tenant_id, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Workflows
@@ -208,11 +210,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(workflows.updated_at));
 
     if (filters?.status) {
-      query = query.where(and(
-        eq(workflows.tenant_id, tenantId),
-        eq(workflows.is_deleted, false),
-        eq(workflows.status, filters.status as any)
-      ));
+      return await db.select().from(workflows)
+        .where(and(
+          eq(workflows.tenant_id, tenantId),
+          eq(workflows.is_deleted, false),
+          eq(workflows.status, filters.status as any)
+        ))
+        .orderBy(desc(workflows.updated_at));
     }
 
     return await query;
@@ -267,18 +271,32 @@ export class DatabaseStorage implements IStorage {
       .where(eq(processInstances.tenant_id, tenantId))
       .orderBy(desc(processInstances.started_at));
 
+    if (filters?.status && filters?.userId) {
+      return await db.select().from(processInstances)
+        .where(and(
+          eq(processInstances.tenant_id, tenantId),
+          eq(processInstances.status, filters.status as any),
+          eq(processInstances.started_by, filters.userId)
+        ))
+        .orderBy(desc(processInstances.started_at));
+    }
+
     if (filters?.status) {
-      query = query.where(and(
-        eq(processInstances.tenant_id, tenantId),
-        eq(processInstances.status, filters.status as any)
-      ));
+      return await db.select().from(processInstances)
+        .where(and(
+          eq(processInstances.tenant_id, tenantId),
+          eq(processInstances.status, filters.status as any)
+        ))
+        .orderBy(desc(processInstances.started_at));
     }
 
     if (filters?.userId) {
-      query = query.where(and(
-        eq(processInstances.tenant_id, tenantId),
-        eq(processInstances.started_by, filters.userId)
-      ));
+      return await db.select().from(processInstances)
+        .where(and(
+          eq(processInstances.tenant_id, tenantId),
+          eq(processInstances.started_by, filters.userId)
+        ))
+        .orderBy(desc(processInstances.started_at));
     }
 
     return await query;
@@ -315,18 +333,32 @@ export class DatabaseStorage implements IStorage {
       .where(eq(taskInstances.tenant_id, tenantId))
       .orderBy(desc(taskInstances.created_at));
 
+    if (filters?.status && filters?.assigneeId) {
+      return await db.select().from(taskInstances)
+        .where(and(
+          eq(taskInstances.tenant_id, tenantId),
+          eq(taskInstances.status, filters.status as any),
+          eq(taskInstances.assignee_id, filters.assigneeId)
+        ))
+        .orderBy(desc(taskInstances.created_at));
+    }
+
     if (filters?.status) {
-      query = query.where(and(
-        eq(taskInstances.tenant_id, tenantId),
-        eq(taskInstances.status, filters.status as any)
-      ));
+      return await db.select().from(taskInstances)
+        .where(and(
+          eq(taskInstances.tenant_id, tenantId),
+          eq(taskInstances.status, filters.status as any)
+        ))
+        .orderBy(desc(taskInstances.created_at));
     }
 
     if (filters?.assigneeId) {
-      query = query.where(and(
-        eq(taskInstances.tenant_id, tenantId),
-        eq(taskInstances.assignee_id, filters.assigneeId)
-      ));
+      return await db.select().from(taskInstances)
+        .where(and(
+          eq(taskInstances.tenant_id, tenantId),
+          eq(taskInstances.assignee_id, filters.assigneeId)
+        ))
+        .orderBy(desc(taskInstances.created_at));
     }
 
     return await query;

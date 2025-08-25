@@ -200,7 +200,9 @@ export default function Sidebar({ user }: SidebarProps) {
               variant="body2" 
               sx={{ 
                 fontWeight: 500, 
-                truncate: true,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
                 lineHeight: 1.2 
               }}
             >
@@ -209,7 +211,11 @@ export default function Sidebar({ user }: SidebarProps) {
             <Typography 
               variant="caption" 
               color="text.secondary"
-              sx={{ truncate: true }}
+              sx={{ 
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
             >
               {currentUser.role}
             </Typography>

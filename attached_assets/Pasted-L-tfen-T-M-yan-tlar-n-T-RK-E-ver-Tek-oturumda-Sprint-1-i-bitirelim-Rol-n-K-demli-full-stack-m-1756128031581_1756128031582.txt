@@ -1,0 +1,120 @@
+Lütfen TÜM yanıtlarını TÜRKÇE ver. Tek oturumda Sprint‑1’i bitirelim.
+
+Rolün: Kıdemli full‑stack mühendisi + kurtarma (stabilizasyon) ajanı.
+Amaç: Derleme hatalarını gider, DB şemasını uygula, seed et, InMemory Storage’ı DatabaseStorage’a geçir, FE↔BE entegrasyonunu doğrula ve smoke testleri PASS yap.
+
+KURALLAR
+- PLAN.md’deki kararlara sadık kal (multi-tenant, RBAC, JWT, rate limit, CORS, PWA hedefi vb.).
+- Var olan dosyaları KORU; sadece gerekli minimal değişiklikleri yap.
+- Her adımda komutları KENDİN çalıştır; FAILED ise düzelt ve tekrar dene. Bitince kısa rapor yaz.
+- Tüm değişiklikler için tam dosya üret; kısmi diff verme.
+- İş bittiğinde terminale büyük harflerle: SPRINT1_SMOKE=PASS yaz.
+
+ÖN KOŞULLAR
+- Backend: Node.js + TypeScript + Express + Prisma + PostgreSQL.
+- Database: PostgreSQL erişilebilir (host, port, user, pass). Erişilemiyorsa önce local docker ile ayağa kaldır (postgres:16).
+- Çok kritik: JWT, RBAC ve X-Tenant-Id zorunluluğu korunacak.
+
+## 0) Ortam & .env
+- Proje köküne (veya backend/ klasörüne) .env oluştur/ güncelle:
+  DATABASE_URL="postgresql://postgres:postgres@localhost:5432/flowner?schema=public"
+  JWT_ACCESS_TTL="60m"
+  JWT_REFRESH_TTL="7d"
+  JWT_SECRET="dev-secret-change"
+  CORS_ALLOWLIST="http://localhost:3000,http://localhost:5173"
+  RATE_TENANT_WINDOW="10m"
+  RATE_TENANT_MAX="600"
+  RATE_USER_MAX="120"
+- Eğer Postgres yoksa, docker-compose.dev.yml dosyası ekle (postgres+pgadmin opsiyonel) ve başlat:
+  docker compose -f docker-compose.dev.yml up -d
+
+## 1) TypeScript hatalarını bitir (hedef: 0 hata)
+- `npm ci`
+- `npm run build` (veya `tsc -p tsconfig.json`)
+- Çıkan tüm TS hatalarını düzelt:
+  * Eksik tipler, import path, never/any yanlışları, async return tipleri.
+  * Express request handler’larda doğru tipler (Request, Response, NextFunction).
+  * Prisma client import ve tipleri (PrismaClient).
+  * Middleware’lerde tenantId’nin zorunlu olduğu tip güvenliği.
+- `npm run build` tekrar; 0 hata olana kadar düzelt.
+- Raporla: “TS hataları çözüldü: 0”.
+
+## 2) Prisma şema, migrasyon ve seed
+- `prisma/schema.prisma` içinde tenant_id sütunu bütün ana tablolarda mevcut mu kontrol et (users, tenants, forms, form_versions, workflows, workflow_versions, process_instances, task_instances, audit_logs, attachments).
+- İndeksler: (tenant_id, is_deleted), ayrıca gerekli unique key’ler.
+- Migration:
+  npx prisma migrate dev --name init_s1
+- Seed:
+  * Eğer seed.ts yoksa, backend/prisma/seed.ts ekle ve çalıştır:
+    - tenant “demo”
+    - roller: tenant_admin, designer, approver, user (roles tablosu veya enum/role_map)
+    - admin kullanıcı: admin@demo.local / Passw0rd! (bcrypt)
+  npx prisma db seed
+- Sağlık:
+  `npm run build` ve `npm start` ile /readiness endpoint’i DB ping OK dönmeli.
+
+## 3) Storage katmanını DatabaseStorage’a geçir
+- Şu an MemStorage kullanan bileşenleri tespit et (ör. attachments metadata, tasks queue snapshot, settings/lookup cache vs.).
+- DatabaseStorage:
+  - Dosya/ek metadata: attachments tablosu (id, tenant_id, file_name, size, hash, storage_key, content_type, created_at).
+  - Görev/süreç state: task_instances / process_instances zaten DB’de; MemState varsa kaldır.
+  - Lookup/cache uygunsa Redis yoksa MemoryCache kalsın; ama kalıcı veri → DB.
+- İlgili repository/service implementasyonlarını Prisma ile güncelle.
+- Birim test veya basit route ile CRUD doğrula (ör. POST /api/v1/_dev/attachment-meta → DB insert).
+
+## 4) FE ↔ BE entegrasyonu (minimum uçlar çalışır)
+- Auth akışı:
+  - POST /api/v1/auth/login → {accessToken, refreshToken}
+  - POST /api/v1/auth/refresh → yeni access
+  - GET  /api/v1/me → 200 + subject
+- RBAC korumalı örnek:
+  - GET /api/v1/tenants → sadece tenant_admin 200, diğerleri 403, tokensız 401
+- Dashboard verileri:
+  - GET /api/v1/analytics/summary → { activeProcesses, pendingTasks, completedToday, avgDuration } DB’den (dummy seed verisi olur)
+  - GET /api/v1/activity/recent → son 10 olay (audit_logs üzerinden)
+- Lookup:
+  - GET /api/v1/lookups/countries → X-Cache: MISS/HIT header (Memory/Redis). İlk istek MISS, sonraki 5 dk HIT.
+- CORS: Allowlist’teki domain’ler; X-Tenant-Id zorunlu middleware aktif.
+- Rate limit: tenant ve kullanıcı bazlı basit sayaç (in‑memory; ileride Redis).
+
+## 5) Observability & Hata modeli (varsa eksikleri tamamla)
+- pino JSON log: her request’te traceId (uuid), tenantId, userId enrich et.
+- OpenTelemetry: http/express otomatik enstrümantasyon (dev’de console exporter).
+- ProblemDetails (RFC7807) formatında hata döndür (status/title/detail/traceId).
+- /health (liveness) ve /readiness (DB ping + cache) 200 OK.
+
+## 6) Smoke testler (Jest + Supertest) — tek komutla PASS
+- tests/smoke/*.test.ts ekle:
+  [A] GET /health → 200
+  [B] GET /readiness → 200
+  [C] Auth: login(admin@demo.local/Passw0rd!) → access+refresh; refresh→yeni access; GET /me → 200
+  [D] RBAC: /api/v1/tenants → access ile 200; tokensız 401; yanlış rolde 403
+  [E] Tenant header: X-Tenant-Id yoksa 400; varsa 200
+  [F] Dashboard: /api/v1/analytics/summary → 200 + temel alanlar
+- package.json’a script:
+  "test:smoke": "jest --runInBand --detectOpenHandles"
+- Çalıştır:
+  npm run build
+  npm start & (arka plan)
+  sleep 3
+  npm run test:smoke
+- Başarılıysa en sonda: **SPRINT1_SMOKE=PASS** yaz; değilse kırılan testleri düzelt ve tekrar çalıştır.
+
+## 7) README güncelle ve rapor yaz
+- README.md’ye “Sprint‑1 Doğrulama” bölümü ekle: .env, migrate, seed, build, start, test komutları.
+- Kısa raporu Sprint1.Report.md dosyasına yaz:
+  - Düzeltmeler (TS → 0 hata)
+  - DB migration adı, seed özeti
+  - Storage değişiklikleri (Mem→DB)
+  - Smoke test sonucu: PASS
+  - Sonraki adım: Sprint‑2 (Engine MVP)
+
+KABUL KRİTERLERİ
+- `npm run build` 0 TS hatası ile biter.
+- `npx prisma migrate dev` ve `npx prisma db seed` başarılıdır.
+- /health ve /readiness 200 döner.
+- Auth/RBAC uçları çalışır; X‑Tenant‑Id zorunlu.
+- Storage katmanı kalıcı verilerde DB kullanır; basic CRUD test edilmiştir.
+- `npm run test:smoke` PASSED; terminalin sonunda **SPRINT1_SMOKE=PASS** görünür.
+
+Lütfen tüm adımları sırayla uygula, her adımda kısa Türkçe rapor yaz ve başarısız olursa düzeltip yeniden dene. İş bittiğinde “SPRINT1_SMOKE=PASS” yazmayı unutma.

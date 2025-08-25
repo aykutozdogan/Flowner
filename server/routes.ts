@@ -337,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: form.status,
           created_at: form.created_at,
           updated_at: form.updated_at,
-          fields_count: Array.isArray(form.schema?.fields) ? form.schema.fields.length : 0,
+          fields_count: Array.isArray((form.schema as any)?.fields) ? (form.schema as any).fields.length : 0,
           submissions_count: 0 // TODO: Calculate actual submissions
         })),
         meta: {
