@@ -20,6 +20,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { specs, swaggerUi } from "./swagger";
+import cors from "cors";
 
 // JWT Secret (should be in environment variable in production)
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -138,6 +139,41 @@ const jobScheduler = new JobScheduler();
 jobScheduler.start().catch(console.error);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // CORS configuration for Replit environment
+  const corsOptions = {
+    origin: function (origin: string | undefined, callback: any) {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+      
+      // Allow all Replit domains
+      if (origin.includes('replit.dev') || 
+          origin.includes('replit.co') || 
+          origin.includes('repl.co') ||
+          origin === 'http://localhost:5000' ||
+          origin === 'http://localhost:5174' ||
+          origin === 'http://localhost:5175') {
+        return callback(null, true);
+      }
+      
+      // Allow the origin if it's in the environment variable
+      const allowedOrigins = process.env.CORS_ALLOWLIST?.split(',') || [];
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      return callback(null, true); // Allow all for development
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'X-Requested-With'],
+    exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page']
+  };
+  
+  app.use(cors(corsOptions));
+  
+  // Handle preflight requests
+  app.options('*', cors(corsOptions));
+
   // Swagger API Documentation
   app.use('/api-docs', swaggerUi.serve);
   app.get('/api-docs', swaggerUi.setup(specs, {
