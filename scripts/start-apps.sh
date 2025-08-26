@@ -4,37 +4,45 @@
 echo "🚀 Flowner Development Mode Starting..."
 
 # Kill any existing processes
-pkill -f "vite\|node" 2>/dev/null || true
-sleep 2
+pkill -f "vite\|node\|tsx" 2>/dev/null || true
+sleep 3
 
 echo "📦 Type checking shared packages..."
 cd packages/shared-core && npm run type-check 2>/dev/null || true
 cd ../shared-ui && npm run type-check 2>/dev/null || true
 cd ../..
 
-echo "🔧 Starting Admin App (development mode - port 5174)..."
-cd apps/admin-app
-VITE_HOST=0.0.0.0 npm run dev -- --host 0.0.0.0 --port 5174 &
-ADMIN_PID=$!
-cd ../..
-
-echo "📱 Starting Portal App (development mode - port 5175)..."
-cd apps/portal-app
-VITE_HOST=0.0.0.0 npm run dev -- --host 0.0.0.0 --port 5175 &
-PORTAL_PID=$!
-cd ../..
-
 echo "⚙️ Starting Backend API (port 5000)..."
 npm run dev &
 API_PID=$!
+sleep 5
 
-# Wait a moment for services to start
+echo "🔧 Starting Admin App (port 5174)..."
+cd apps/admin-app
+npm run dev &
+ADMIN_PID=$!
+cd ../..
 sleep 3
 
-echo "✅ All services started in development mode!"
-echo "Admin: http://localhost:5174"
-echo "Portal: http://localhost:5175" 
-echo "API: http://localhost:5000"
+echo "📱 Starting Portal App (port 5175)..."
+cd apps/portal-app
+npm run dev &
+PORTAL_PID=$!
+cd ../..
+sleep 3
 
-# Keep the script running
+echo "✅ All services started successfully!"
+echo ""
+echo "🌐 Access URLs:"
+echo "   Backend API: https://${REPLIT_SLUG}-${REPLIT_OWNER}.replit.dev/"
+echo "   Admin Panel: https://${REPLIT_SLUG}-${REPLIT_OWNER}.replit.dev:3001/"
+echo "   User Portal: https://${REPLIT_SLUG}-${REPLIT_OWNER}.replit.dev:3002/"
+echo ""
+echo "   Local URLs:"
+echo "   API: http://localhost:5000"
+echo "   Admin: http://localhost:5174" 
+echo "   Portal: http://localhost:5175"
+
+# Keep processes alive
+trap 'kill $API_PID $ADMIN_PID $PORTAL_PID 2>/dev/null' EXIT
 wait
