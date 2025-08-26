@@ -52,7 +52,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router base="/portal">
+      <Router>
         <Box sx={{ flexGrow: 1 }}>
           <AppBar position="static">
             <Toolbar>

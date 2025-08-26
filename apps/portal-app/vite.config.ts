@@ -19,5 +19,9 @@ export default defineConfig({
       '@shared-ui': path.resolve(__dirname, '../../packages/shared-ui/src'),
       '@shared-core': path.resolve(__dirname, '../../packages/shared-core/src'),
     }
-  }
+  },
+  base: '/',
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+  },
 })
