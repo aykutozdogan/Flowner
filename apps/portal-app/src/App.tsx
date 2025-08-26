@@ -47,6 +47,8 @@ const Profile = () => (
 );
 
 function App() {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -59,7 +61,7 @@ function App() {
               </Typography>
             </Toolbar>
           </AppBar>
-          
+
           <Switch>
             <Route path="/" component={Tasks} />
             <Route path="/tasks" component={Tasks} />

@@ -145,27 +145,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
       
+      // Allow all localhost and development origins
+      if (origin.includes('localhost') || 
+          origin.includes('127.0.0.1') ||
+          origin.includes('0.0.0.0')) {
+        return callback(null, true);
+      }
+      
       // Allow all Replit domains
       if (origin.includes('replit.dev') || 
           origin.includes('replit.co') || 
-          origin.includes('repl.co') ||
-          origin === 'http://localhost:5000' ||
-          origin === 'http://localhost:5174' ||
-          origin === 'http://localhost:5175') {
+          origin.includes('repl.co')) {
         return callback(null, true);
       }
       
       // Allow the origin if it's in the environment variable
       const allowedOrigins = process.env.CORS_ALLOWLIST?.split(',') || [];
-      if (allowedOrigins.includes(origin)) {
+      if (allowedOrigins.some(allowed => origin.includes(allowed.replace('*', '')))) {
         return callback(null, true);
       }
       
-      return callback(null, true); // Allow all for development
+      // Allow all for development (bu satırı geçici olarak bırakıyoruz)
+      console.log('CORS Origin:', origin);
+      return callback(null, true);
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'X-Requested-With'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'X-Requested-With', 'Origin', 'Accept'],
     exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page']
   };
   
