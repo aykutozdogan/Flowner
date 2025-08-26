@@ -1,16 +1,23 @@
-import type { Express, Request } from "express";
+import type { Express } from "express";
+import type { Request as ExpressRequest } from "express";
 
-declare module 'express' {
-  interface Request {
-    user?: {
+interface ExtendedRequest extends ExpressRequest {
+  user: {
+    id: string;
+    role: string;
+    email: string;
+    name: string;
+    tenant: {
       id: string;
-      role: string;
-      tenantId?: string;
+      domain: string;
+      name: string;
     };
-    tenantId?: string;
-    tenantDomain?: string;
-  }
+  };
+  tenantId: string;
+  tenantDomain: string;
 }
+
+type Request = ExtendedRequest;
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ProcessRuntime, JobScheduler, type BpmnDefinition } from "./engine";
@@ -27,7 +34,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "your-refresh-secret-key";
 
 // Middleware for parsing tenant ID
-const parseTenantId = async (req: Request, res: any, next: any) => {
+const parseTenantId = async (req: ExpressRequest, res: any, next: any) => {
   const tenantIdentifier = req.headers['x-tenant-id'];
   if (!tenantIdentifier) {
     return res.status(400).json({
@@ -41,12 +48,13 @@ const parseTenantId = async (req: Request, res: any, next: any) => {
   try {
     // Handle both domain and UUID formats
     let tenant;
-    if (tenantIdentifier.includes('-') && tenantIdentifier.length === 36) {
+    const tenantId = Array.isArray(tenantIdentifier) ? tenantIdentifier[0] : tenantIdentifier;
+    if (tenantId.includes('-') && tenantId.length === 36) {
       // It's a UUID
-      tenant = await storage.getTenant(tenantIdentifier);
+      tenant = await storage.getTenant(tenantId);
     } else {
       // It's a domain
-      tenant = await storage.getTenantByDomain(tenantIdentifier);
+      tenant = await storage.getTenantByDomain(tenantId);
     }
     
     if (!tenant) {
@@ -58,8 +66,8 @@ const parseTenantId = async (req: Request, res: any, next: any) => {
       });
     }
     
-    req.tenantId = tenant.id;
-    req.tenantDomain = tenant.domain;
+    (req as ExtendedRequest).tenantId = tenant.id;
+    (req as ExtendedRequest).tenantDomain = tenant.domain;
     next();
   } catch (error) {
     console.error('Tenant lookup error:', error);
@@ -73,7 +81,7 @@ const parseTenantId = async (req: Request, res: any, next: any) => {
 };
 
 // Middleware for JWT authentication
-const authenticateToken = async (req: Request, res: any, next: any) => {
+const authenticateToken = async (req: ExpressRequest, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -100,7 +108,7 @@ const authenticateToken = async (req: Request, res: any, next: any) => {
     }
 
     // Ensure the user belongs to the tenant making the request
-    if (user.tenant_id !== req.tenantId) {
+    if (user.tenant_id !== (req as ExtendedRequest).tenantId) {
       return res.status(403).json({
         type: "/api/errors/forbidden",
         title: "Forbidden",
@@ -109,7 +117,7 @@ const authenticateToken = async (req: Request, res: any, next: any) => {
       });
     }
 
-    req.user = user;
+    (req as ExtendedRequest).user = user;
     next();
   } catch (error) {
     return res.status(401).json({
@@ -362,7 +370,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
-      const tenantIdentifier = req.headers['x-tenant-id'] as string;
+      const tenantIdentifierHeader = req.headers['x-tenant-id'];
+      const tenantIdentifier = Array.isArray(tenantIdentifierHeader) ? tenantIdentifierHeader[0] : tenantIdentifierHeader;
 
       if (!tenantIdentifier) {
         return res.status(400).json({
@@ -586,7 +595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Protected meta endpoint (requires auth)
   app.get('/__meta/seed', async (req: any, res) => {
     try {
-      const tenantId = req.tenantId;
+      const tenantId = (req as ExtendedRequest).tenantId;
       
       const workflows = await storage.getWorkflows(tenantId);
       const processes = await storage.getProcessInstances(tenantId, { limit: 1000, offset: 0 });
@@ -646,7 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/engine/tick', async (req: any, res) => {
     try {
       // Only admin can manually trigger engine tick
-      if (req.user.role !== 'tenant_admin') {
+      if ((req as ExtendedRequest).user.role !== 'tenant_admin') {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
@@ -690,7 +699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *               $ref: '#/components/schemas/Error'
    */
   app.get("/api/auth/me", async (req: any, res) => {
-    const user = req.user;
+    const user = (req as ExtendedRequest).user;
     res.json({
       success: true,
       data: {
@@ -711,7 +720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard analytics
   app.get("/api/analytics/dashboard", async (req: any, res) => {
     try {
-      const stats = await storage.getDashboardStats(req.tenantId);
+      const stats = await storage.getDashboardStats((req as ExtendedRequest).tenantId);
       
       res.json({
         success: true,
@@ -802,7 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/forms", async (req: any, res) => {
     try {
       const { status, search } = req.query;
-      const forms = await storage.getForms(req.tenantId, { status, search });
+      const forms = await storage.getForms((req as ExtendedRequest).tenantId, { status, search });
       
       res.json({
         success: true,
@@ -904,22 +913,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if form exists
-      let form = await storage.getFormByKey(key, req.tenantId);
+      let form = await storage.getFormByKey(key, (req as ExtendedRequest).tenantId);
       
       if (!form) {
         // Create new form
         form = await storage.createForm({
-          tenant_id: req.tenantId,
+          tenant_id: (req as ExtendedRequest).tenantId,
           key,
           name,
           description,
           latest_version: 1,
           status: "draft",
-          created_by: req.user.id
+          created_by: (req as ExtendedRequest).user.id
         });
       } else {
         // Update existing form
-        form = await storage.updateForm(form.id, req.tenantId, {
+        form = await storage.updateForm(form.id, (req as ExtendedRequest).tenantId, {
           name,
           description,
           latest_version: form.latest_version + 1
@@ -928,7 +937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create new version
       const formVersion = await storage.createFormVersion({
-        tenant_id: req.tenantId,
+        tenant_id: (req as ExtendedRequest).tenantId,
         form_id: form!.id,
         version: form!.latest_version,
         status: "draft",
@@ -989,7 +998,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/forms", async (req: any, res) => {
     try {
       const { status } = req.query;
-      const forms = await storage.getForms(req.tenantId, { status });
+      const forms = await storage.getForms((req as ExtendedRequest).tenantId, { status });
       
       res.json({
         success: true,
@@ -1052,7 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { key } = req.params;
       const { includeDraft } = req.query;
       
-      const form = await storage.getFormByKey(key, req.tenantId);
+      const form = await storage.getFormByKey(key, (req as ExtendedRequest).tenantId);
       if (!form) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1064,7 +1073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get latest version
       const status = includeDraft === 'true' ? undefined : 'published';
-      const latestVersion = await storage.getLatestFormVersion(key, req.tenantId, status);
+      const latestVersion = await storage.getLatestFormVersion(key, (req as ExtendedRequest).tenantId, status);
       
       if (!latestVersion && !includeDraft) {
         return res.status(404).json({
@@ -1139,7 +1148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const form = await storage.getFormByKey(key, req.tenantId);
+      const form = await storage.getFormByKey(key, (req as ExtendedRequest).tenantId);
       if (!form) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1153,13 +1162,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newVersion = form.latest_version + 1;
       
       // Update form's latest version
-      await storage.updateForm(form.id, req.tenantId, {
+      await storage.updateForm(form.id, (req as ExtendedRequest).tenantId, {
         latest_version: newVersion
       });
 
       // Create new version
       const formVersion = await storage.createFormVersion({
-        tenant_id: req.tenantId,
+        tenant_id: (req as ExtendedRequest).tenantId,
         form_id: form.id,
         version: newVersion,
         status: "draft",
@@ -1216,7 +1225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { key } = req.params;
       const { version } = req.body;
 
-      const form = await storage.getFormByKey(key, req.tenantId);
+      const form = await storage.getFormByKey(key, (req as ExtendedRequest).tenantId);
       if (!form) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1230,7 +1239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const versionToPublish = version || form.latest_version;
       
       // Get the draft version
-      const draftVersion = await storage.getFormVersion(form.id, versionToPublish, req.tenantId);
+      const draftVersion = await storage.getFormVersion(form.id, versionToPublish, (req as ExtendedRequest).tenantId);
       if (!draftVersion) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1253,12 +1262,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const publishedVersion = await storage.publishFormVersion(
         form.id,
         versionToPublish,
-        req.tenantId,
-        req.user.id
+        (req as ExtendedRequest).tenantId,
+        (req as ExtendedRequest).user.id
       );
 
       // Update form status to published
-      await storage.updateForm(form.id, req.tenantId, {
+      await storage.updateForm(form.id, (req as ExtendedRequest).tenantId, {
         status: "published"
       });
 
@@ -1346,7 +1355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const form = await storage.getFormByKey(key, req.tenantId);
+      const form = await storage.getFormByKey(key, (req as ExtendedRequest).tenantId);
       if (!form) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1359,9 +1368,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get form version for validation
       let formVersion;
       if (version) {
-        formVersion = await storage.getFormVersion(form.id, version, req.tenantId);
+        formVersion = await storage.getFormVersion(form.id, version, (req as ExtendedRequest).tenantId);
       } else {
-        formVersion = await storage.getLatestFormVersion(key, req.tenantId, 'published');
+        formVersion = await storage.getLatestFormVersion(key, (req as ExtendedRequest).tenantId, 'published');
       }
 
       if (!formVersion) {
@@ -1456,7 +1465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { key } = req.params;
       const { version } = req.query;
 
-      const form = await storage.getFormByKey(key, req.tenantId);
+      const form = await storage.getFormByKey(key, (req as ExtendedRequest).tenantId);
       if (!form) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1469,9 +1478,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get form version for preview
       let formVersion;
       if (version) {
-        formVersion = await storage.getFormVersion(form.id, parseInt(version), req.tenantId);
+        formVersion = await storage.getFormVersion(form.id, parseInt(version), (req as ExtendedRequest).tenantId);
       } else {
-        formVersion = await storage.getLatestFormVersion(key, req.tenantId, 'published');
+        formVersion = await storage.getLatestFormVersion(key, (req as ExtendedRequest).tenantId, 'published');
       }
 
       if (!formVersion) {
@@ -1566,10 +1575,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter tasks assigned to current user's role
       const filters: any = { 
         status,
-        assigneeRole: req.user.role 
+        assigneeRole: (req as ExtendedRequest).user.role 
       };
 
-      const tasks = await storage.getTaskInstances(req.tenantId, filters);
+      const tasks = await storage.getTaskInstances((req as ExtendedRequest).tenantId, filters);
       
       res.json(tasks.map(task => ({
         id: task.id,
@@ -1603,10 +1612,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let filters: any = { status };
       if (assigned_to === "me") {
-        filters.assigneeId = req.user.id;
+        filters.assigneeId = (req as ExtendedRequest).user.id;
       }
 
-      const tasks = await storage.getTaskInstances(req.tenantId, filters);
+      const tasks = await storage.getTaskInstances((req as ExtendedRequest).tenantId, filters);
       
       res.json({
         success: true,
@@ -1658,7 +1667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: taskId } = req.params;
       
-      const task = await storage.getTaskInstanceById(taskId, req.tenantId);
+      const task = await storage.getTaskInstanceById(taskId, (req as ExtendedRequest).tenantId);
       if (!task) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1669,9 +1678,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user can view this task
-      const canView = task.assignee_id === req.user.id || 
-                     task.assignee_role === req.user.role ||
-                     req.user.role === 'tenant_admin';
+      const canView = task.assignee_id === (req as ExtendedRequest).user.id || 
+                     task.assignee_role === (req as ExtendedRequest).user.role ||
+                     (req as ExtendedRequest).user.role === 'tenant_admin';
 
       if (!canView) {
         return res.status(403).json({
@@ -1721,7 +1730,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const formDataList = await storage.getFormData(
         processId as string,
         taskId as string,
-        req.tenantId
+        (req as ExtendedRequest).tenantId
       );
       
       res.json({
@@ -1753,10 +1762,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let workflow;
       if (workflowIdentifier.includes('-') && workflowIdentifier.length === 36) {
         // It's a UUID
-        workflow = await storage.getWorkflowById(workflowIdentifier, req.tenantId);
+        workflow = await storage.getWorkflowById(workflowIdentifier, (req as ExtendedRequest).tenantId);
       } else {
         // It's a key
-        workflow = await storage.getWorkflowByKey(workflowIdentifier, req.tenantId);
+        workflow = await storage.getWorkflowByKey(workflowIdentifier, (req as ExtendedRequest).tenantId);
       }
       
       if (!workflow) {
@@ -1770,18 +1779,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create workflow version with JSON DSL
       const versionData = {
-        tenantId: req.tenantId,
+        tenantId: (req as ExtendedRequest).tenantId,
         workflowId: workflow.id,
         version: parseInt(version.replace(/\./g, "")), // Convert "1.0.0" to 100
         definitionJson: JSON.parse(workflow.bpmn_xml), // Assume BPMN XML is actually JSON DSL
         status: "published" as const,
-        publishedBy: req.user.id,
+        publishedBy: (req as ExtendedRequest).user.id,
       };
 
       await storage.createWorkflowVersion(versionData);
       
       // Update workflow status
-      await storage.updateWorkflow(workflow.id, req.tenantId, {
+      await storage.updateWorkflow(workflow.id, (req as ExtendedRequest).tenantId, {
         status: "published",
         published_at: new Date(),
       });
@@ -1849,7 +1858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
    */
   app.get("/api/processes", parseTenantId, authenticateToken, async (req, res) => {
     try {
-      const processes = await storage.getProcessInstances(req.tenantId, {
+      const processes = await storage.getProcessInstances((req as ExtendedRequest).tenantId, {
         limit: parseInt(req.query.limit as string) || 50,
         offset: parseInt(req.query.offset as string) || 0,
         status: req.query.status as any,
@@ -1933,7 +1942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get published workflow version
-      const workflowVersion = await storage.getLatestWorkflowVersion(workflowId, req.tenantId);
+      const workflowVersion = await storage.getLatestWorkflowVersion(workflowId, (req as ExtendedRequest).tenantId);
       if (!workflowVersion) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1945,13 +1954,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Start process using engine
       const processInstance = await processRuntime.startProcess({
-        tenantId: req.tenantId,
+        tenantId: (req as ExtendedRequest).tenantId,
         workflowId,
         workflowVersion: workflowVersion.version,
         bpmnDefinition: workflowVersion.definition_json as BpmnDefinition,
         name,
         variables,
-        startedBy: req.user.id,
+        startedBy: (req as ExtendedRequest).user.id,
       });
 
       console.log(`[Engine API] Process started: ${processInstance.id} from workflow ${workflowId}`);
@@ -1983,7 +1992,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get workflow by key
-      const workflow = await storage.getWorkflowByKey(workflowKey, req.tenantId);
+      const workflow = await storage.getWorkflowByKey(workflowKey, (req as ExtendedRequest).tenantId);
       if (!workflow) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1994,7 +2003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get published workflow version
-      const workflowVersion = await storage.getLatestWorkflowVersion(workflow.id, req.tenantId);
+      const workflowVersion = await storage.getLatestWorkflowVersion(workflow.id, (req as ExtendedRequest).tenantId);
       if (!workflowVersion) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -2006,13 +2015,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Start process using engine
       const processInstance = await processRuntime.startProcess({
-        tenantId: req.tenantId,
+        tenantId: (req as ExtendedRequest).tenantId,
         workflowId: workflow.id,
         workflowVersion: workflowVersion.version,
         bpmnDefinition: workflowVersion.definition_json as BpmnDefinition,
         name: name || `${workflow.name} Process`,
         variables,
-        startedBy: req.user.id,
+        startedBy: (req as ExtendedRequest).user.id,
       });
 
       console.log(`[Engine API] Process started: ${processInstance.id} from workflow key ${workflowKey}`);
@@ -2032,7 +2041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: processId } = req.params;
       
-      const process = await storage.getProcessInstanceById(processId, req.tenantId);
+      const process = await storage.getProcessInstanceById(processId, (req as ExtendedRequest).tenantId);
       if (!process) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -2043,7 +2052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get associated tasks
-      const tasks = await storage.getTaskInstances(req.tenantId, { processId });
+      const tasks = await storage.getTaskInstances((req as ExtendedRequest).tenantId, { processId });
 
       res.json({
         ...process,
@@ -2064,7 +2073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: processId } = req.params;
       
-      await processRuntime.cancelProcess(processId, req.tenantId);
+      await processRuntime.cancelProcess(processId, (req as ExtendedRequest).tenantId);
       
       console.log(`[Engine API] Process cancelled: ${processId}`);
       res.json({
@@ -2091,17 +2100,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Role-based filtering
-      if (req.user.role !== 'tenant_admin') {
+      if ((req as ExtendedRequest).user.role !== 'tenant_admin') {
         // Non-admin users only see tasks assigned to their role or directly to them
-        filters.assigneeRole = req.user.role;
-        filters.assigneeId = req.user.id;
+        filters.assigneeRole = (req as ExtendedRequest).user.role;
+        filters.assigneeId = (req as ExtendedRequest).user.id;
       }
 
       if (req.query.status) {
         filters.status = req.query.status;
       }
 
-      const tasks = await storage.getTaskInstances(req.tenantId, filters);
+      const tasks = await storage.getTaskInstances((req as ExtendedRequest).tenantId, filters);
       res.json(tasks);
     } catch (error) {
       console.error("Error fetching engine tasks:", error);
@@ -2120,7 +2129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { outcome, formData = {} } = req.body;
       
       // Check task ownership/assignment
-      const task = await storage.getTaskInstanceById(taskId, req.tenantId);
+      const task = await storage.getTaskInstanceById(taskId, (req as ExtendedRequest).tenantId);
       if (!task) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -2131,9 +2140,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user can complete this task
-      const canComplete = task.assignee_id === req.user.id || 
-                         task.assignee_role === req.user.role ||
-                         req.user.role === 'tenant_admin';
+      const canComplete = task.assignee_id === (req as ExtendedRequest).user.id || 
+                         task.assignee_role === (req as ExtendedRequest).user.role ||
+                         (req as ExtendedRequest).user.role === 'tenant_admin';
 
       if (!canComplete) {
         return res.status(403).json({
@@ -2147,13 +2156,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Complete task using engine
       await processRuntime.completeTask({
         taskId,
-        tenantId: req.tenantId,
-        userId: req.user.id,
+        tenantId: (req as ExtendedRequest).tenantId,
+        userId: (req as ExtendedRequest).user.id,
         outcome,
         formData,
       });
 
-      console.log(`[Engine API] Task completed: ${taskId} by user ${req.user.id}`);
+      console.log(`[Engine API] Task completed: ${taskId} by user ${(req as ExtendedRequest).user.id}`);
       res.json({
         success: true,
         message: "Task completed successfully"
@@ -2175,7 +2184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { assigneeId } = req.body;
       
       // Only admin and approvers can reassign tasks
-      if (!['tenant_admin', 'approver'].includes(req.user.role)) {
+      if (!['tenant_admin', 'approver'].includes((req as ExtendedRequest).user.role)) {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
@@ -2184,7 +2193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      await storage.updateTaskInstance(taskId, req.tenantId, {
+      await storage.updateTaskInstance(taskId, (req as ExtendedRequest).tenantId, {
         assignee_id: assigneeId,
         status: 'assigned'
       });
@@ -2209,7 +2218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/engine/stats", parseTenantId, authenticateToken, async (req, res) => {
     try {
       // Only admin can access engine stats
-      if (req.user.role !== 'tenant_admin') {
+      if ((req as ExtendedRequest).user.role !== 'tenant_admin') {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
@@ -2239,7 +2248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/tenants", parseTenantId, authenticateToken, async (req, res) => {
     try {
       // Only tenant_admin and designer can manage tenants
-      if (!['tenant_admin', 'designer'].includes(req.user.role)) {
+      if (!['tenant_admin', 'designer'].includes((req as ExtendedRequest).user.role)) {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
@@ -2267,7 +2276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/v1/tenants", parseTenantId, authenticateToken, async (req, res) => {
     try {
       // Only tenant_admin and designer can create tenants
-      if (!['tenant_admin', 'designer'].includes(req.user.role)) {
+      if (!['tenant_admin', 'designer'].includes((req as ExtendedRequest).user.role)) {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
@@ -2313,8 +2322,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workflows Management API
   app.get("/api/v1/workflows", parseTenantId, authenticateToken, async (req, res) => {
     try {
-      const { status } = req.query;
-      const workflows = await storage.getWorkflows(req.tenantId, { status });
+      const status = req.query.status as string | undefined;
+      const workflows = await storage.getWorkflows((req as ExtendedRequest).tenantId, { status });
       
       res.json({
         success: true,
@@ -2345,14 +2354,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const workflow = await storage.createWorkflow({
-        tenant_id: req.tenantId,
+        tenant_id: (req as ExtendedRequest).tenantId,
         key,
         name,
         description,
         bpmn_xml: bpmn_xml || JSON.stringify({}),
         config: config || {},
         status,
-        created_by: req.user.id
+        created_by: (req as ExtendedRequest).user.id
       });
 
       res.json({
@@ -2374,7 +2383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { key } = req.params;
       
-      const workflow = await storage.getWorkflowByKey(key, req.tenantId);
+      const workflow = await storage.getWorkflowByKey(key, (req as ExtendedRequest).tenantId);
       if (!workflow) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -2404,7 +2413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { key } = req.params;
       const { name, description, bpmn_xml, config } = req.body;
 
-      const workflow = await storage.getWorkflowByKey(key, req.tenantId);
+      const workflow = await storage.getWorkflowByKey(key, (req as ExtendedRequest).tenantId);
       if (!workflow) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -2414,7 +2423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const updatedWorkflow = await storage.updateWorkflow(workflow.id, req.tenantId, {
+      const updatedWorkflow = await storage.updateWorkflow(workflow.id, (req as ExtendedRequest).tenantId, {
         name,
         description,
         bpmn_xml,
@@ -2441,7 +2450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { key } = req.params;
       const { changelog, bpmn_xml, config } = req.body;
 
-      const workflow = await storage.getWorkflowByKey(key, req.tenantId);
+      const workflow = await storage.getWorkflowByKey(key, (req as ExtendedRequest).tenantId);
       if (!workflow) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -2453,14 +2462,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update workflow with latest content
       if (bpmn_xml || config) {
-        await storage.updateWorkflow(workflow.id, req.tenantId, {
+        await storage.updateWorkflow(workflow.id, (req as ExtendedRequest).tenantId, {
           bpmn_xml,
           config
         });
       }
 
       // Publish workflow
-      const publishedWorkflow = await storage.updateWorkflow(workflow.id, req.tenantId, {
+      const publishedWorkflow = await storage.updateWorkflow(workflow.id, (req as ExtendedRequest).tenantId, {
         status: "published",
         published_at: new Date()
       });
@@ -2485,7 +2494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/users", parseTenantId, authenticateToken, async (req, res) => {
     try {
       // Only tenant_admin and designer can manage users
-      if (!['tenant_admin', 'designer'].includes(req.user.role)) {
+      if (!['tenant_admin', 'designer'].includes((req as ExtendedRequest).user.role)) {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
@@ -2494,7 +2503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const users = await storage.getUsersByTenant(req.tenantId);
+      const users = await storage.getUsersByTenant((req as ExtendedRequest).tenantId);
       res.json({
         success: true,
         data: users
@@ -2513,7 +2522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/v1/users", parseTenantId, authenticateToken, async (req, res) => {
     try {
       // Only tenant_admin and designer can create users
-      if (!['tenant_admin', 'designer'].includes(req.user.role)) {
+      if (!['tenant_admin', 'designer'].includes((req as ExtendedRequest).user.role)) {
         return res.status(403).json({
           type: "/api/errors/forbidden",
           title: "Forbidden",
@@ -2540,7 +2549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: name.trim(),
         password: hashedPassword,
         role,
-        tenant_id: req.tenantId,
+        tenant_id: (req as ExtendedRequest).tenantId,
         is_active: true
       });
 

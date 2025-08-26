@@ -472,6 +472,11 @@ export const insertWorkflowSchema = createInsertSchema(workflows).omit({
   published_at: true,
 });
 
+export const updateWorkflowSchema = createInsertSchema(workflows).omit({
+  id: true,
+  created_at: true,
+}).partial();
+
 export const insertWorkflowVersionSchema = createInsertSchema(workflowVersions).omit({
   id: true,
   created_at: true,
@@ -522,6 +527,7 @@ export type InsertFormData = z.infer<typeof insertFormDataSchema>;
 
 export type Workflow = typeof workflows.$inferSelect;
 export type InsertWorkflow = z.infer<typeof insertWorkflowSchema>;
+export type UpdateWorkflow = z.infer<typeof updateWorkflowSchema>;
 
 export type WorkflowVersion = typeof workflowVersions.$inferSelect;
 export type InsertWorkflowVersion = z.infer<typeof insertWorkflowVersionSchema>;

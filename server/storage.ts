@@ -2,7 +2,7 @@ import {
   tenants, users, forms, formVersions, formData, workflows, workflowVersions, processInstances, taskInstances, auditLogs, fileAttachments,
   type Tenant, type User, type Form, type FormVersion, type FormData, type Workflow, type WorkflowVersion, type ProcessInstance, type TaskInstance,
   type InsertTenant, type InsertUser, type InsertForm, type InsertFormVersion, type InsertFormData, type InsertWorkflow, type InsertWorkflowVersion,
-  type InsertProcessInstance, type InsertTaskInstance, type UserWithTenant
+  type InsertProcessInstance, type InsertTaskInstance, type UserWithTenant, type UpdateWorkflow
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, count, sql } from "drizzle-orm";
@@ -48,7 +48,7 @@ export interface IStorage {
   getWorkflowById(id: string, tenantId: string): Promise<Workflow | undefined>;
   getWorkflowByKey(key: string, tenantId: string): Promise<Workflow | undefined>;
   createWorkflow(workflow: InsertWorkflow): Promise<Workflow>;
-  updateWorkflow(id: string, tenantId: string, updates: Partial<InsertWorkflow>): Promise<Workflow | undefined>;
+  updateWorkflow(id: string, tenantId: string, updates: UpdateWorkflow): Promise<Workflow | undefined>;
   publishWorkflow(id: string, tenantId: string, versionNotes?: string): Promise<Workflow | undefined>;
 
   // Workflow Versions
@@ -397,7 +397,7 @@ export class DatabaseStorage implements IStorage {
     return newWorkflow;
   }
 
-  async updateWorkflow(id: string, tenantId: string, updates: Partial<InsertWorkflow>): Promise<Workflow | undefined> {
+  async updateWorkflow(id: string, tenantId: string, updates: UpdateWorkflow): Promise<Workflow | undefined> {
     const [updatedWorkflow] = await db.update(workflows)
       .set({ ...updates, updated_at: sql`now()` })
       .where(and(
