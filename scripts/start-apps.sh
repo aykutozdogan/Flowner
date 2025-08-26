@@ -3,7 +3,8 @@
 
 echo "🚀 Flowner Development Mode Starting..."
 
-# Kill any existing processes
+# Kill any existing processes on our ports
+lsof -ti:5000,5174,5175 | xargs -r kill -9 2>/dev/null || true
 pkill -f "vite\|node\|tsx" 2>/dev/null || true
 sleep 3
 
