@@ -1,6 +1,7 @@
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider as CustomThemeProvider } from './hooks/use-theme';
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -29,22 +30,44 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#2196F3', // primary-500
-      dark: '#1976D2', // primary-700
-      light: '#E3F2FD', // primary-50
+      main: '#1976d2', // S7 Primary Blue - güvenilir, profesyonel
+      dark: '#1565c0',
+      light: '#42a5f5',
+      contrastText: '#ffffff',
     },
     secondary: {
-      main: '#9E9E9E', // secondary-500
-      dark: '#424242', // secondary-800
-      contrastText: '#fff',
+      main: '#5c6bc0', // S7 Indigo - modern accent
+      dark: '#3f51b5',
+      light: '#9575cd',
+      contrastText: '#ffffff',
+    },
+    success: {
+      main: '#388e3c', // S7 Success Green
+      dark: '#2e7d32',
+      light: '#66bb6a',
+    },
+    warning: {
+      main: '#f57c00', // S7 Warning Amber
+      dark: '#ef6c00',
+      light: '#ff9800',
+    },
+    error: {
+      main: '#d32f2f', // S7 Error Red
+      dark: '#c62828',
+      light: '#f44336',
+    },
+    info: {
+      main: '#0288d1', // S7 Info Light Blue
+      dark: '#0277bd',
+      light: '#03a9f4',
     },
     background: {
-      default: '#F9FAFB', // gray-50
-      paper: '#FFFFFF',
+      default: '#fafafa', // S7 Enterprise Background
+      paper: '#ffffff',
     },
     text: {
-      primary: '#212121', // secondary-900
-      secondary: '#9E9E9E', // secondary-500
+      primary: 'rgba(0, 0, 0, 0.87)',
+      secondary: 'rgba(0, 0, 0, 0.6)',
     },
   },
   typography: {
@@ -52,13 +75,19 @@ const theme = createTheme({
     h1: {
       fontSize: '2.25rem',
       fontWeight: 700,
+      letterSpacing: '-0.01em',
     },
     h2: {
       fontSize: '1.875rem',
       fontWeight: 600,
+      letterSpacing: '-0.01em',
     },
     h3: {
       fontSize: '1.5rem',
+      fontWeight: 600,
+    },
+    h4: {
+      fontSize: '1.25rem',
       fontWeight: 600,
     },
     body1: {
@@ -69,9 +98,55 @@ const theme = createTheme({
       fontSize: '0.75rem',
       lineHeight: 1.4,
     },
+    button: {
+      textTransform: 'none',
+      fontWeight: 500,
+    },
   },
   shape: {
-    borderRadius: 8,
+    borderRadius: 8, // S7 Consistent border radius
+  },
+  components: {
+    // S7 Component Simplification
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          textTransform: 'none',
+          fontWeight: 500,
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+          },
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+          border: '1px solid #f0f0f0',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 8,
+          },
+        },
+      },
+    },
   },
   shadows: [
     'none',
@@ -234,17 +309,19 @@ function App() {
   };
 
   return (
-    <ThemeProvider {...cleanThemeProviderProps}>
-      <CssBaseline />
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <CustomThemeProvider>
+      <ThemeProvider {...cleanThemeProviderProps}>
+        <CssBaseline />
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </CustomThemeProvider>
   );
 }
 

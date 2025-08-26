@@ -20,7 +20,7 @@ interface StatCard {
 
 export default function StatsCards() {
   const { data: analytics, isLoading } = useQuery<{data?: {stats?: any}}>({
-    queryKey: ['/api/analytics/dashboard'],
+    queryKey: ['/api/v1/analytics/dashboard'],
     enabled: !!localStorage.getItem('access_token'),
   });
 

@@ -57,7 +57,7 @@ export async function apiRequest(
   let response = await fetch(normalizedUrl, config);
 
   // Handle token refresh for 401 errors on protected routes
-  if (response.status === 401 && normalizedUrl !== '/api/auth/login' && normalizedUrl !== '/api/auth/refresh') {
+  if (response.status === 401 && normalizedUrl !== '/api/v1/auth/login' && normalizedUrl !== '/api/v1/auth/refresh') {
     const refreshSuccess = await AuthService.refreshAccessToken();
     
     if (refreshSuccess) {
@@ -82,7 +82,7 @@ export async function apiRequest(
 export const api = {
   // Auth
   login: async (email: string, password: string, tenantId: string) => {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch('/api/v1/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,20 +96,20 @@ export const api = {
   },
 
   refresh: async (refreshToken: string) => {
-    const response = await apiRequest('POST', '/api/auth/refresh', {
+    const response = await apiRequest('POST', '/api/v1/auth/refresh', {
       refresh_token: refreshToken,
     });
     return response.json();
   },
 
   me: async () => {
-    const response = await apiRequest('GET', '/api/auth/me');
+    const response = await apiRequest('GET', '/api/v1/auth/me');
     return response.json();
   },
 
   // Analytics
   getDashboardAnalytics: async () => {
-    const response = await apiRequest('GET', '/api/analytics/dashboard');
+    const response = await apiRequest('GET', '/api/v1/analytics/dashboard');
     return response.json();
   },
 
@@ -119,27 +119,27 @@ export const api = {
     if (filters?.status) params.append('status', filters.status);
     if (filters?.search) params.append('search', filters.search);
     
-    const response = await apiRequest('GET', `/api/forms${params.toString() ? '?' + params.toString() : ''}`);
+    const response = await apiRequest('GET', `/api/v1/forms${params.toString() ? '?' + params.toString() : ''}`);
     return response.json();
   },
 
   getForm: async (id: string) => {
-    const response = await apiRequest('GET', `/api/forms/${id}`);
+    const response = await apiRequest('GET', `/api/v1/forms/${id}`);
     return response.json();
   },
 
   createForm: async (form: any) => {
-    const response = await apiRequest('POST', '/api/forms', form);
+    const response = await apiRequest('POST', '/api/v1/forms', form);
     return response.json();
   },
 
   updateForm: async (id: string, form: any) => {
-    const response = await apiRequest('PUT', `/api/forms/${id}`, form);
+    const response = await apiRequest('PUT', `/api/v1/forms/${id}`, form);
     return response.json();
   },
 
   deleteForm: async (id: string) => {
-    const response = await apiRequest('DELETE', `/api/forms/${id}`);
+    const response = await apiRequest('DELETE', `/api/v1/forms/${id}`);
     return response.json();
   },
 
@@ -149,19 +149,39 @@ export const api = {
     if (filters?.status) params.append('status', filters.status);
     if (filters?.assigned_to) params.append('assigned_to', filters.assigned_to);
     
-    const response = await apiRequest('GET', `/api/tasks/inbox${params.toString() ? '?' + params.toString() : ''}`);
+    const response = await apiRequest('GET', `/api/v1/tasks/inbox${params.toString() ? '?' + params.toString() : ''}`);
     return response.json();
   },
 
   getTask: async (id: string) => {
-    const response = await apiRequest('GET', `/api/tasks/${id}`);
+    const response = await apiRequest('GET', `/api/v1/tasks/${id}`);
     return response.json();
   },
 
   completeTask: async (id: string, outcome: string, formData: any) => {
-    const response = await apiRequest('POST', `/api/tasks/${id}/complete`, {
+    const response = await apiRequest('POST', `/api/v1/tasks/${id}/complete`, {
       outcome,
       form_data: formData,
+    });
+    return response.json();
+  },
+
+  // S7: Expense Approval Workflow
+  startExpenseApproval: async (amount: number, description: string, category?: string) => {
+    const response = await apiRequest('POST', '/api/v1/workflows/expense-approval/start', {
+      amount,
+      description,
+      category: category || 'General',
+    });
+    return response.json();
+  },
+
+  completeExpenseApproval: async (processId: string, taskId: string, decision: 'approved' | 'rejected', comments?: string) => {
+    const response = await apiRequest('POST', '/api/v1/workflows/expense-approval/complete', {
+      processId,
+      taskId,
+      decision,
+      comments: comments || '',
     });
     return response.json();
   },

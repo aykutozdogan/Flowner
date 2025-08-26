@@ -2,6 +2,7 @@ import React from 'react';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import StatsCards from '@/components/dashboard/stats-cards';
 import QuickActions from '@/components/dashboard/quick-actions';
+import { ExpenseApprovalForm } from '@/components/workflows/ExpenseApprovalForm';
 import RecentActivity from '@/components/dashboard/recent-activity';
 import ActiveProcesses from '@/components/dashboard/active-processes';
 import SystemHealth from '@/components/dashboard/system-health';
@@ -17,12 +18,16 @@ export default function AdminDashboard() {
       <Box 
         sx={{ 
           display: 'grid', 
-          gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' },
+          gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr 1fr' },
           gap: 3,
           mb: 4
         }}
       >
         <QuickActions />
+        <div>
+          <h3 className="text-lg font-semibold mb-3">S7 Demo Workflow</h3>
+          <ExpenseApprovalForm />
+        </div>
         <RecentActivity />
       </Box>
       

@@ -367,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *             schema:
    *               $ref: '#/components/schemas/Error'
    */
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/v1/auth/login", async (req, res) => {
     try {
       const { email, password } = loginSchema.parse(req.body);
       const tenantIdentifierHeader = req.headers['x-tenant-id'];
@@ -538,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *             schema:
    *               $ref: '#/components/schemas/Error'
    */
-  app.post("/api/auth/refresh", async (req, res) => {
+  app.post("/api/v1/auth/refresh", async (req, res) => {
     try {
       const { refresh_token } = refreshTokenSchema.parse(req.body);
 
@@ -589,8 +589,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Protected routes (require authentication and tenant validation)
-  app.use("/api", parseTenantId);
-  app.use("/api", authenticateToken);
+  // S7 API v1 Standardization - Apply middleware to all v1 endpoints
+  app.use("/api/v1", parseTenantId);
+  app.use("/api/v1", authenticateToken);
 
   // Protected meta endpoint (requires auth)
   app.get('/__meta/seed', async (req: any, res) => {
@@ -652,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *             schema:
    *               $ref: '#/components/schemas/Error'
    */
-  app.post('/api/engine/tick', async (req: any, res) => {
+  app.post('/api/v1/engine/tick', async (req: any, res) => {
     try {
       // Only admin can manually trigger engine tick
       if ((req as ExtendedRequest).user.role !== 'tenant_admin') {
@@ -698,7 +699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *             schema:
    *               $ref: '#/components/schemas/Error'
    */
-  app.get("/api/auth/me", async (req: any, res) => {
+  app.get("/api/v1/auth/me", async (req: any, res) => {
     const user = (req as ExtendedRequest).user;
     res.json({
       success: true,
@@ -718,7 +719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard analytics
-  app.get("/api/analytics/dashboard", async (req: any, res) => {
+  app.get("/api/v1/analytics/dashboard", async (req: any, res) => {
     try {
       const stats = await storage.getDashboardStats((req as ExtendedRequest).tenantId);
       
@@ -808,7 +809,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *                           type: integer
    *                           example: 1
    */
-  app.get("/api/forms", async (req: any, res) => {
+  app.get("/api/v1/forms-legacy", async (req: any, res) => {
     try {
       const { status, search } = req.query;
       const forms = await storage.getForms((req as ExtendedRequest).tenantId, { status, search });
@@ -1568,7 +1569,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
    */
   
   // My Tasks endpoint (tasks assigned to current user)
-  app.get("/api/tasks/my-tasks", async (req: any, res) => {
+  app.get("/api/v1/tasks/my-tasks", async (req: any, res) => {
     try {
       const { status = "pending" } = req.query;
       
@@ -1606,7 +1607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/tasks/inbox", async (req: any, res) => {
+  app.get("/api/v1/tasks/inbox", async (req: any, res) => {
     try {
       const { status = "pending", assigned_to } = req.query;
       
@@ -1723,7 +1724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // S4: Form Data API endpoint
-  app.get("/api/forms/data", parseTenantId, authenticateToken, async (req, res) => {
+  app.get("/api/v1/forms/data", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { processId, taskId } = req.query;
       
@@ -1753,7 +1754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ========================================
 
   // Workflow Publishing API
-  app.post("/api/workflows/:id/publish", parseTenantId, authenticateToken, async (req, res) => {
+  app.post("/api/v1/workflows/:id/publish", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { id: workflowIdentifier } = req.params;
       const { version = "1.0.0" } = req.body;
@@ -1856,7 +1857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *             schema:
    *               $ref: '#/components/schemas/Error'
    */
-  app.get("/api/processes", parseTenantId, authenticateToken, async (req, res) => {
+  app.get("/api/v1/processes", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const processes = await storage.getProcessInstances((req as ExtendedRequest).tenantId, {
         limit: parseInt(req.query.limit as string) || 50,
@@ -1927,7 +1928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *             schema:
    *               $ref: '#/components/schemas/Error'
    */
-  app.post("/api/processes", parseTenantId, authenticateToken, async (req, res) => {
+  app.post("/api/v1/processes", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { workflowId, name, variables = {} } = req.body;
       
@@ -1977,7 +1978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Process Start API with workflowKey
-  app.post("/api/processes/start", parseTenantId, authenticateToken, async (req, res) => {
+  app.post("/api/v1/processes/start", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { workflowKey, name = "Process", variables = {} } = req.body;
       
@@ -2037,7 +2038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/processes/:id", parseTenantId, authenticateToken, async (req, res) => {
+  app.get("/api/v1/processes/:id", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { id: processId } = req.params;
       
@@ -2069,7 +2070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/processes/:id/cancel", parseTenantId, authenticateToken, async (req, res) => {
+  app.post("/api/v1/processes/:id/cancel", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { id: processId } = req.params;
       
@@ -2092,7 +2093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task Management API
-  app.get("/api/engine/tasks", parseTenantId, authenticateToken, async (req, res) => {
+  app.get("/api/v1/engine/tasks", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const filters: any = {
         limit: parseInt(req.query.limit as string) || 50,
@@ -2123,7 +2124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/engine/tasks/:id/complete", parseTenantId, authenticateToken, async (req, res) => {
+  app.post("/api/v1/engine/tasks/:id/complete", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { id: taskId } = req.params;
       const { outcome, formData = {} } = req.body;
@@ -2178,7 +2179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/engine/tasks/:id/assign", parseTenantId, authenticateToken, async (req, res) => {
+  app.post("/api/v1/engine/tasks/:id/assign", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { id: taskId } = req.params;
       const { assigneeId } = req.body;
@@ -2214,8 +2215,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // S7: Demo Expense Approval Workflow API
+  app.post("/api/v1/workflows/expense-approval/start", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { amount, description, category = "General" } = req.body;
+      const tenantId = (req as ExtendedRequest).tenantId;
+      const userId = (req as ExtendedRequest).user.id;
+
+      // Validate required fields
+      if (!amount || !description) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            type: '/api/errors/validation-error',
+            title: 'Validation Error',
+            detail: 'Amount and description are required',
+          }
+        });
+      }
+
+      // Create process instance for expense approval
+      const processInstance = await storage.createProcessInstance({
+        id: `expense-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        tenant_id: tenantId,
+        workflow_id: 'expense-approval-workflow',
+        name: `Expense Request: ${description} (${amount} TL)`,
+        status: 'running',
+        variables: {
+          amount: parseFloat(amount),
+          description,
+          category,
+          requestedBy: userId,
+          status: 'pending_approval',
+          approverRole: amount > 5000 ? 'tenant_admin' : 'approver'
+        },
+        started_by: userId,
+        started_at: new Date(),
+      });
+
+      // Create initial task for approval
+      const taskInstance = await storage.createTaskInstance({
+        id: `expense-task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        tenant_id: tenantId,
+        process_id: processInstance.id,
+        name: `Approve Expense: ${description}`,
+        type: 'user',
+        status: 'pending',
+        assigned_role: amount > 5000 ? 'tenant_admin' : 'approver',
+        form_data: {
+          amount,
+          description,
+          category,
+          requestedBy: userId
+        },
+        created_at: new Date(),
+      });
+
+      res.json({
+        success: true,
+        data: {
+          processId: processInstance.id,
+          taskId: taskInstance.id,
+          status: 'started',
+          approverRole: amount > 5000 ? 'tenant_admin' : 'approver'
+        }
+      });
+
+    } catch (error) {
+      console.error('[ExpenseWorkflow] Error starting expense approval:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          type: '/api/errors/internal-error',
+          title: 'Internal Server Error',
+          detail: 'Failed to start expense approval workflow'
+        }
+      });
+    }
+  });
+
+  app.post("/api/v1/workflows/expense-approval/complete", parseTenantId, authenticateToken, async (req, res) => {
+    try {
+      const { processId, taskId, decision, comments = "" } = req.body;
+      const tenantId = (req as ExtendedRequest).tenantId;
+      const userId = (req as ExtendedRequest).user.id;
+
+      // Validate required fields
+      if (!processId || !taskId || !decision) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            type: '/api/errors/validation-error',
+            title: 'Validation Error',
+            detail: 'Process ID, task ID, and decision are required',
+          }
+        });
+      }
+
+      if (!['approved', 'rejected'].includes(decision)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            type: '/api/errors/validation-error',
+            title: 'Validation Error',
+            detail: 'Decision must be "approved" or "rejected"',
+          }
+        });
+      }
+
+      // Complete the task
+      await storage.updateTaskInstance(taskId, tenantId, {
+        status: 'completed',
+        completed_by: userId,
+        completed_at: new Date(),
+        outcome: decision,
+        form_data: {
+          decision,
+          comments,
+          approvedBy: userId,
+          approvedAt: new Date().toISOString()
+        }
+      });
+
+      // Update process status
+      const finalStatus = decision === 'approved' ? 'completed' : 'cancelled';
+      await storage.updateProcessInstance(processId, tenantId, {
+        status: finalStatus,
+        completed_at: new Date(),
+        variables: {
+          decision,
+          comments,
+          approvedBy: userId,
+          finalStatus
+        }
+      });
+
+      res.json({
+        success: true,
+        data: {
+          decision,
+          status: finalStatus,
+          completedBy: userId
+        }
+      });
+
+    } catch (error) {
+      console.error('[ExpenseWorkflow] Error completing expense approval:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          type: '/api/errors/internal-error',
+          title: 'Internal Server Error',
+          detail: 'Failed to complete expense approval'
+        }
+      });
+    }
+  });
+
   // Engine Statistics API
-  app.get("/api/engine/stats", parseTenantId, authenticateToken, async (req, res) => {
+  app.get("/api/v1/engine/stats", parseTenantId, authenticateToken, async (req, res) => {
     try {
       // Only admin can access engine stats
       if ((req as ExtendedRequest).user.role !== 'tenant_admin') {

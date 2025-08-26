@@ -29,10 +29,15 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    host: true,
+    port: 5173,
+    allowedHosts: [
+      "0305bf3e-a8a0-449c-adb5-192b49daa40b-00-35p3hpmvif7qt.picard.replit.dev",
+      ".replit.dev",
+    ],
     fs: {
       strict: true,
       deny: ["**/.*"],
     },
-    allowedHosts: true,
   },
 });

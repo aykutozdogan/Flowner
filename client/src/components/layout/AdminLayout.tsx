@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme, alpha } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, Notifications, Search } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, Notifications, Search, LightMode, DarkMode, BusinessCenter } from '@mui/icons-material';
+import { useTheme as useCustomTheme } from '@/hooks/use-theme';
 import AdminSidebar from './AdminSidebar';
 
 interface AdminLayoutProps {
@@ -14,6 +15,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
     return localStorage.getItem('admin_sidebar_pinned') === 'true';
   });
   const theme = useTheme();
+  const { theme: currentTheme, toggleTheme } = useCustomTheme();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -66,6 +68,22 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
               }}
             >
               <Search />
+            </IconButton>
+            
+            {/* S7 Theme Toggle */}
+            <IconButton 
+              onClick={toggleTheme}
+              sx={{ 
+                '&:hover': { 
+                  bgcolor: alpha(theme.palette.action.hover, 0.1) 
+                },
+                color: theme.palette.primary.main
+              }}
+              title={`Tema: ${currentTheme === 'light' ? 'Açık' : currentTheme === 'dark' ? 'Koyu' : 'Kurumsal'}`}
+            >
+              {currentTheme === 'light' && <LightMode />}
+              {currentTheme === 'dark' && <DarkMode />}
+              {currentTheme === 'corporate' && <BusinessCenter />}
             </IconButton>
             
             <IconButton 

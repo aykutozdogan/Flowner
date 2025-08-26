@@ -1,0 +1,633 @@
+# S7 Sprint Mega-Prompt: Advanced BPM Engine + UI Overhaul
+
+## 🌐 **Dil ve İletişim**
+
+**ÖNEMLI**: Bu sprint ve bundan sonraki tüm sprintlerde **Türkçe** cevap ver. Teknik terimler İngilizce kalabilir ama açıklamalar, yorumlar ve raporlama tamamen Türkçe olsun.
+
+Örnek:
+- ✅ "Authentication middleware'i başarıyla implement ettim"
+- ✅ "Form builder component'inde validation hatası çözüldü"
+- ❌ "Successfully implemented authentication middleware"
+
+## 🎯 Sprint Hedefleri
+
+S7 sprintinde Flowner platformunu production-ready enterprise BPM çözümüne dönüştürmek. Hybrid approval system, UI overhaul, port consolidation ve demo expense approval workflow implementasyonu.
+
+## 📋 Kritik Gereksinimler
+
+### 1. 🎨 **UI/UX Overhaul - Sade ve Profesyonel Tasarım**
+
+**Mevcut Durum:** Çok renkli, karmaşık UI elementleri
+**Hedef:** Sade, profesyonel, enterprise-grade arayüz
+
+#### Theme Integration
+- **Fuse Theme** entegrasyonu (Material-UI tabanlı)
+- **Enterprise Professional Renk Paleti:**
+  - Primary: `#1976d2` (Material Blue - güvenilir, profesyonel)
+  - Secondary: `#5c6bc0` (Indigo - modern accent)
+  - Success: `#388e3c` (Dark Green - approval states)
+  - Warning: `#f57c00` (Amber - attention, pending)
+  - Error: `#d32f2f` (Dark Red - critical errors)
+  - Info: `#0288d1` (Light Blue - information)
+- **Multi-Theme Support:**
+  - Light Mode: Beyaz background, koyu text
+  - Dark Mode: Koyu background, açık renkler
+  - Corporate Mode: Daha konservatif, iş dünyası odaklı
+- **Status Color System:**
+  - Process Running: `#2196f3` (Blue)
+  - Process Completed: `#4caf50` (Green)  
+  - Process Failed: `#f44336` (Red)
+  - Task High Priority: `#f44336` (Red)
+  - Task Medium Priority: `#ff9800` (Orange)
+  - Form Draft: `#9e9e9e` (Gray)
+  - Form Published: `#4caf50` (Green)
+
+#### Design System
+```typescript
+// Consistent component theming
+const theme = {
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          textTransform: 'none',
+          fontWeight: 500
+        }
+      }
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
+        }
+      }
+    }
+  }
+}
+```
+
+#### Component Simplification
+- Butonlar: Sadece Primary/Secondary/Outlined variants
+- Cards: Minimal shadow, consistent spacing
+- Forms: Clean input styling, consistent validation
+- Navigation: Subtle hover effects, clear hierarchy
+
+### 2. 🏗️ **Port Consolidation - Tek Port Çözümü**
+
+**Mevcut Sorun:** Admin (5174) ve Portal (5175) ayrı portlardan çalışmıyor
+**Çözüm:** Single port (5000) ile route-based separation
+
+#### Implementation
+```typescript
+// server/routes.ts - Unified routing
+app.use('/admin', adminAuthMiddleware, adminRoutes);
+app.use('/portal', portalAuthMiddleware, portalRoutes);
+app.use('/api', apiRoutes);
+
+// Serve static files
+app.use('/admin/*', express.static('dist/admin'));
+app.use('/portal/*', express.static('dist/portal'));
+app.use('/', express.static('dist/portal')); // Default to portal
+```
+
+#### Build Configuration
+```json
+// Single build output structure
+dist/
+├── admin/           // Admin app static files
+├── portal/          // Portal app static files  
+└── api/            // API server
+```
+
+### 3. 📊 **Complete Menu & Route Implementation**
+
+**Hedef:** Tüm menü itemlarının çalışan sayfalara yönlendirmesi
+
+#### Admin Panel Routes (tenant_admin, designer)
+```typescript
+const adminRoutes = [
+  '/admin/dashboard',           // ✅ Implemented
+  '/admin/forms',              // ✅ Implemented  
+  '/admin/forms/builder/:id?',  // ✅ Implemented
+  '/admin/workflows',          // ✅ Implemented
+  '/admin/workflows/designer/:id?', // ✅ Implemented
+  '/admin/processes',          // ✅ Implemented
+  '/admin/tasks',              // 🔄 Need implementation
+  '/admin/users',              // ✅ Implemented
+  '/admin/tenants',            // ✅ Implemented
+  '/admin/settings',           // 🔄 Need implementation
+  '/admin/reports',            // 🔄 Need implementation
+  '/admin/integrations'        // 🔄 Need implementation
+];
+```
+
+#### Portal Routes (user, approver)
+```typescript
+const portalRoutes = [
+  '/portal/inbox',             // ✅ Implemented
+  '/portal/tasks',             // ✅ Implemented
+  '/portal/tasks/:id',         // ✅ Implemented
+  '/portal/my-processes',      // 🔄 Need implementation
+  '/portal/start-process',     // 🔄 Need implementation
+  '/portal/forms',             // 🔄 Need implementation
+  '/portal/profile',           // 🔄 Need implementation
+  '/portal/notifications'      // 🔄 Need implementation
+];
+```
+
+### 4. 🧹 **API Cleanup - Form Endpoint Standardization**
+
+**Mevcut Durum:** `/api/forms` ve `/api/v1/forms` dağınıklığı
+**Hedef:** Consistent API structure
+
+#### New API Structure
+```typescript
+// Standardize all endpoints to /api/v1/
+const apiEndpoints = {
+  // Forms
+  'GET /api/v1/forms': 'List forms',
+  'POST /api/v1/forms': 'Create form', 
+  'GET /api/v1/forms/:key': 'Get form',
+  'PUT /api/v1/forms/:key': 'Update form',
+  'POST /api/v1/forms/:key/publish': 'Publish form',
+  'GET /api/v1/forms/:key/preview': 'Form preview',
+  
+  // Workflows  
+  'GET /api/v1/workflows': 'List workflows',
+  'POST /api/v1/workflows': 'Create workflow',
+  'GET /api/v1/workflows/:key': 'Get workflow',
+  'PUT /api/v1/workflows/:key': 'Update workflow',
+  'POST /api/v1/workflows/:key/publish': 'Publish workflow',
+  
+  // Processes
+  'GET /api/v1/processes': 'List process instances',
+  'POST /api/v1/processes/start': 'Start process',
+  'GET /api/v1/processes/:id': 'Get process details',
+  
+  // Tasks
+  'GET /api/v1/tasks': 'List tasks',
+  'GET /api/v1/tasks/:id': 'Get task details', 
+  'POST /api/v1/tasks/:id/complete': 'Complete task'
+};
+```
+
+### 5. 💼 **Demo Expense Approval Workflow**
+
+**Hedef:** End-to-end çalışan masraf onay sistemi
+
+#### Workflow Definition
+```xml
+<!-- Expense Approval BPMN -->
+<process id="expense-approval">
+  <startEvent id="start" />
+  <userTask id="submit-expense" name="Submit Expense" 
+            formKey="expense-form" />
+  <exclusiveGateway id="amount-check" />
+  <userTask id="manager-approval" name="Manager Approval"
+            formKey="approval-form" />
+  <serviceTask id="auto-approve" name="Auto Approve" />
+  <endEvent id="approved" />
+  <endEvent id="rejected" />
+</process>
+```
+
+#### Form Definitions
+```typescript
+// Expense Request Form
+const expenseForm = {
+  key: "expense-form",
+  title: "Masraf Talebi",
+  fields: [
+    {
+      name: "employee_name",
+      type: "text",
+      label: "Çalışan Adı", 
+      required: true
+    },
+    {
+      name: "amount",
+      type: "number",
+      label: "Tutar (TRY)",
+      required: true,
+      validation: { min: 1, max: 50000 }
+    },
+    {
+      name: "category",
+      type: "select",
+      label: "Kategori",
+      options: ["Yemek", "Ulaşım", "Konaklama", "Malzeme"]
+    },
+    {
+      name: "description", 
+      type: "textarea",
+      label: "Açıklama",
+      required: true
+    }
+  ],
+  approval: {
+    type: "workflow",
+    workflow_key: "expense-approval"
+  }
+};
+
+// Manager Approval Form
+const approvalForm = {
+  key: "approval-form", 
+  title: "Masraf Onayı",
+  readonly_fields: ["employee_name", "amount", "category", "description"],
+  fields: [
+    {
+      name: "manager_comment",
+      type: "textarea", 
+      label: "Yönetici Yorumu"
+    }
+  ],
+  outcomes: ["approve", "reject", "request_info"]
+};
+```
+
+### 6. 🚀 **Hybrid Approval System Implementation**
+
+#### Form-Level Approval Configuration
+```typescript
+interface FormApprovalConfig {
+  type: 'none' | 'simple' | 'workflow';
+  simple_rules?: ApprovalRule[];
+  workflow_key?: string;
+}
+
+interface ApprovalRule {
+  condition: {
+    field: string;
+    operator: 'eq' | 'gt' | 'lt' | 'gte' | 'lte';
+    value: any;
+  };
+  action: 'auto_approve' | 'require_approval';
+  assignee?: string | string[];
+}
+
+// Example usage
+const expenseFormConfig = {
+  approval: {
+    type: 'simple',
+    simple_rules: [
+      {
+        condition: { field: 'amount', operator: 'lte', value: 1000 },
+        action: 'auto_approve'
+      },
+      {
+        condition: { field: 'amount', operator: 'gt', value: 1000 },
+        action: 'require_approval', 
+        assignee: ['manager@company.com']
+      }
+    ]
+  }
+};
+```
+
+### 7. ⚡ **Advanced BPM Engine Features**
+
+#### Timer Events
+```typescript
+interface TimerEvent {
+  type: 'duration' | 'date' | 'cycle';
+  expression: string; // ISO 8601 duration/date
+  escalation?: {
+    assignee: string;
+    notification: string;
+  };
+}
+
+// Implementation in BPMN
+<intermediateCatchEvent id="timer1">
+  <timerEventDefinition>
+    <timeDuration>PT2H</timeDuration> <!-- 2 hours -->
+  </timerEventDefinition>
+</intermediateCatchEvent>
+```
+
+#### Message Events & Webhooks
+```typescript
+interface MessageEvent {
+  message_name: string;
+  correlation_keys: string[];
+  webhook_endpoint?: string;
+  auth_config?: {
+    type: 'bearer' | 'api_key' | 'basic';
+    credentials: string;
+  };
+}
+
+// Webhook receiver
+app.post('/api/v1/messages/:message_name', async (req, res) => {
+  const { correlation_key, payload } = req.body;
+  await bpmnEngine.correlateMessage(message_name, correlation_key, payload);
+  res.json({ status: 'received' });
+});
+```
+
+#### Error Boundaries & Retry Logic
+```typescript
+interface ServiceTaskConfig {
+  retry_config: {
+    max_attempts: number;
+    backoff_strategy: 'linear' | 'exponential';
+    delay_ms: number;
+  };
+  timeout_ms: number;
+  error_handling: 'ignore' | 'retry' | 'escalate';
+}
+```
+
+### 8. 📱 **Responsive & Mobile-First Design**
+
+#### Breakpoint Strategy
+```scss
+// Mobile-first responsive design
+.container {
+  @media (min-width: 576px) { /* Small devices */ }
+  @media (min-width: 768px) { /* Medium devices */ }
+  @media (min-width: 992px) { /* Large devices */ }
+  @media (min-width: 1200px) { /* Extra large devices */ }
+}
+```
+
+#### Mobile-Optimized Components
+- Touch-friendly button sizes (min 44px)
+- Swipe gestures for task actions
+- Collapsible navigation menu
+- Optimized form layouts
+
+### 9. 🔄 **Real-Time Updates**
+
+#### WebSocket Integration
+```typescript
+// Real-time task updates
+const io = new Server(server);
+
+io.on('connection', (socket) => {
+  socket.on('join_user_tasks', (userId) => {
+    socket.join(`user_${userId}`);
+  });
+  
+  socket.on('join_process', (processId) => {
+    socket.join(`process_${processId}`);
+  });
+});
+
+// Emit updates
+bpmnEngine.on('task_assigned', (task) => {
+  io.to(`user_${task.assignee}`).emit('task_assigned', task);
+});
+
+bpmnEngine.on('process_updated', (process) => {
+  io.to(`process_${process.id}`).emit('process_updated', process);
+});
+```
+
+### 10. 📊 **Enhanced Dashboard & Analytics**
+
+#### Dashboard Widgets
+```typescript
+const dashboardWidgets = [
+  'pending_tasks_count',
+  'completed_processes_today', 
+  'average_completion_time',
+  'approval_rate_chart',
+  'process_status_distribution',
+  'top_form_submissions'
+];
+```
+
+## 🧪 **S7 Kabul Kriterleri**
+
+### ✅ **UI/UX Checklist**
+- [ ] Fuse theme successfully integrated
+- [ ] Light/Dark mode toggle working
+- [ ] Custom color palette system implemented
+- [ ] All buttons and cards follow design system
+- [ ] Mobile-responsive across all screens
+
+### ✅ **Technical Checklist**
+- [ ] Single port (5000) serving both admin & portal
+- [ ] All menu routes have working pages
+- [ ] API endpoints standardized to /api/v1/*
+- [ ] WebSocket real-time updates functioning
+- [ ] Timer events and message events implemented
+
+### ✅ **Demo Workflow Checklist**
+- [ ] Expense form builder creates working form
+- [ ] BPMN designer creates expense approval workflow  
+- [ ] Form submission triggers workflow
+- [ ] Auto-approve works for amounts ≤ 1000 TRY
+- [ ] Manual approval creates task for amounts > 1000 TRY
+- [ ] Manager can approve/reject with comments
+- [ ] Process completion updates all UIs
+
+### ✅ **End-to-End Testing**
+- [ ] Admin can create expense form
+- [ ] Admin can design approval workflow
+- [ ] User can submit expense request
+- [ ] Manager receives approval task
+- [ ] Real-time notifications work
+- [ ] Process completion is tracked
+
+## 🚧 **Implementation Priority**
+
+### Phase 1: Foundation (Days 1-2)
+1. Port consolidation & routing fix
+2. API endpoint standardization
+3. Fuse theme integration
+
+### Phase 2: Core Features (Days 3-4)
+1. Complete missing route implementations
+2. Advanced BPM engine features
+3. WebSocket real-time updates
+
+### Phase 3: Demo & Polish (Days 5-6)
+1. Expense approval workflow implementation
+2. Mobile responsiveness
+3. End-to-end testing & bug fixes
+
+## 🎯 **Success Metrics**
+
+- [ ] **Build Success**: Single `npm start` command runs entire application
+- [ ] **Route Coverage**: 100% of menu items have working pages
+- [ ] **Demo Workflow**: Complete expense approval flow works end-to-end
+- [ ] **Performance**: Page load times < 2 seconds
+- [ ] **Mobile**: All features accessible on mobile devices
+- [ ] **Real-time**: UI updates without page refresh
+
+## 📚 **Technical Stack Confirmations**
+
+- **Backend**: Node.js + TypeScript + Express + PostgreSQL
+- **Frontend**: React 18 + TypeScript + Material-UI + Fuse Theme
+- **Build**: Vite for frontend, tsx for backend
+- **WebSocket**: Socket.io for real-time updates
+- **BPMN**: bpmn-js for diagram editor
+- **Database**: Drizzle ORM + PostgreSQL
+- **Authentication**: JWT + Role-based routing
+
+---
+
+## 🤖 **Agent Role & Responsibilities**
+
+**Sen Flowner projesinin Lead Full-Stack Developer'ısın.** Senin sorumlulukların:
+
+### 👨‍💻 **Development Role**
+- Node.js + TypeScript backend geliştirme
+- React + TypeScript frontend geliştirme  
+- PostgreSQL database schema güncellemeleri
+- API endpoint implementasyonları
+- BPMN engine geliştirmeleri
+
+### 🎨 **UI/UX Role**
+- Fuse theme entegrasyonu ve customization
+- Material-UI component geliştirme
+- Responsive design implementation
+- Mobile-first approach uygulama
+
+### 🧪 **Quality Assurance Role**
+- Code quality ve best practices
+- Error handling ve validation
+- Performance optimization
+- Cross-browser compatibility
+
+## 📋 **Sprint Completion Checklist**
+
+### S7 Sprint bitiminde şunları yapman gerekiyor:
+
+#### 1. 🧪 **Smoke Test Script Oluştur**
+`./tests/s7-smoke-test.sh` dosyası oluştur ve aşağıdaki testleri yap:
+
+```bash
+#!/bin/bash
+echo "🧪 S7 Smoke Test - Advanced BPM & UI Overhaul"
+echo "=============================================="
+
+# 1. Application Start Test
+echo "Testing application startup..."
+curl -f http://localhost:5000/api/health || exit 1
+
+# 2. Port Consolidation Test  
+echo "Testing unified port access..."
+curl -f http://localhost:5000/admin/ || exit 1
+curl -f http://localhost:5000/portal/ || exit 1
+
+# 3. API Standardization Test
+echo "Testing /api/v1/ endpoints..."
+curl -f http://localhost:5000/api/v1/forms || exit 1
+curl -f http://localhost:5000/api/v1/workflows || exit 1
+
+# 4. Theme Integration Test
+echo "Testing Fuse theme assets..."
+curl -f http://localhost:5000/admin/index.html || exit 1
+
+# 5. Demo Workflow Test
+echo "Testing expense approval workflow..."
+# Login as admin
+TOKEN=$(curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@demo.local","password":"Passw0rd!","tenant":"demo.local"}' \
+  | jq -r '.token')
+
+# Create expense form
+curl -X POST http://localhost:5000/api/v1/forms \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Tenant-Id: demo.local" \
+  -d '{"key":"expense-form","title":"Expense Request"}' || exit 1
+
+echo "✅ S7 Smoke Test completed successfully!"
+echo "S7_SMOKE_TEST=PASS"
+```
+
+#### 2. 🧪 **Smoke Test Çalıştır**
+Script'i çalıştır ve tüm testlerin geçtiğini doğrula:
+
+```bash
+chmod +x ./tests/s7-smoke-test.sh
+./tests/s7-smoke-test.sh
+```
+
+#### 3. 📊 **Sprint Report Oluştur**
+`./docs/s7-sprint-report.md` dosyası oluştur ve şu bölümleri dahil et:
+
+**Sprint Report Template:**
+```markdown
+# S7 Sprint Raporu — Advanced BPM Engine + UI Overhaul
+
+**Tarih:** [Bugünün tarihi]
+**Durum:** ✅ PASS / ❌ FAIL  
+**Sprint:** S7 - Advanced BPM & UI Overhaul
+
+## Özet
+[Sprint'in genel başarı durumu]
+
+## Tamamlanan Özellikler
+
+### 1. ✅ UI/UX Overhaul
+- Fuse theme entegrasyonu
+- Renk paleti sistemi  
+- Design system standardizasyonu
+- Mobile-responsive design
+
+### 2. ✅ Port Consolidation
+- Tek port (5000) ile unified access
+- Route-based separation
+- Build configuration güncellemesi
+
+### 3. ✅ Complete Menu Implementation
+- Admin panel route'ları
+- Portal route'ları
+- Missing page implementations
+
+### 4. ✅ API Standardization
+- /api/v1/ endpoint standardizasyonu
+- Form endpoint cleanup
+- Consistent response format
+
+### 5. ✅ Demo Expense Approval
+- Expense form definition
+- BPMN workflow implementation  
+- End-to-end approval flow
+
+### 6. ✅ Advanced BPM Features
+- Timer events
+- Message events & webhooks
+- Error handling & retry logic
+
+## Test Sonuçları
+
+### Smoke Test Results
+[Smoke test çıktısını buraya kopyala]
+
+## Bilinen Sorunlar
+[Varsa çözülemeyen sorunları listele]
+
+## Sonraki Adımlar
+[S8 için öneriler]
+
+## Sonuç
+S7_REPORT=[PASS/FAIL]
+```
+
+---
+
+## 🎯 **S7 Sprint Goal**
+
+Transform Flowner into a polished, production-ready BPM platform with complete expense approval demo workflow and unified, elegant user interface.
+
+## 📦 **Expected Deliverables**
+
+1. **Working Application**: Single-port unified application
+2. **Complete Demo**: End-to-end expense approval workflow
+3. **Smoke Test**: Automated test script validating all features  
+4. **Sprint Report**: Comprehensive documentation of achievements
+5. **Clean Codebase**: Consistent, maintainable, well-documented code
+
+**Final Command to Validate Success:**
+```bash
+npm start && ./tests/s7-smoke-test.sh && echo "S7 Sprint Complete! ✅"
+```
