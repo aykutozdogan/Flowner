@@ -33,5 +33,12 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    host: true,
+    allowedHosts: [
+      // tek tek ekleyebilirsin
+      "0305bf3e-a8a0-449c-adb5-192b49daa40b-00-35p3hpmvif7qt.picard.replit.dev",
+      // ya da wildcard (daha pratik)
+      ".replit.dev",
+    ],
   },
 });
