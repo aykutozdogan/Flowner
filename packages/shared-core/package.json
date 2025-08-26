@@ -4,6 +4,10 @@
   "type": "module",
   "private": true,
   "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "tsc --noEmit --watch"
+  },
   "dependencies": {
     "@tanstack/react-query": "^5.60.5",
     "zod": "^3.24.2",

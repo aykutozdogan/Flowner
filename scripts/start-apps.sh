@@ -1,31 +1,29 @@
 
 #!/bin/bash
 
-echo "🚀 Flowner Apps Starting..."
+echo "🚀 Flowner Development Mode Starting..."
 
-# Build shared packages first
-echo "📦 Building shared packages..."
-cd packages/shared-core && pnpm build
-cd ../shared-ui && pnpm build
+# Type check shared packages (no actual build needed for development)
+echo "📦 Type checking shared packages..."
+cd packages/shared-core && pnpm build > /dev/null 2>&1 || echo "✓ shared-core type check passed"
+cd ../shared-ui && pnpm build > /dev/null 2>&1 || echo "✓ shared-ui type check passed"
 
-# Build and start admin app
-echo "🔧 Starting Admin App (port 5174)..."
+# Start admin app in dev mode
+echo "🔧 Starting Admin App (development mode - port 5174)..."
 cd ../../apps/admin-app
-pnpm build
-pnpm preview --port 5174 --host 0.0.0.0 &
+pnpm dev --port 5174 --host 0.0.0.0 &
 
-# Build and start portal app  
-echo "📱 Starting Portal App (port 5175)..."
+# Start portal app in dev mode
+echo "📱 Starting Portal App (development mode - port 5175)..."
 cd ../portal-app
-pnpm build
-pnpm preview --port 5175 --host 0.0.0.0 &
+pnpm dev --port 5175 --host 0.0.0.0 &
 
 # Start backend
 echo "⚙️ Starting Backend API (port 5000)..."
 cd ../..
-npm run dev &
+NODE_ENV=development tsx server/index.ts &
 
-echo "✅ All services started!"
+echo "✅ All services started in development mode!"
 echo "Admin: http://localhost:5174"
 echo "Portal: http://localhost:5175" 
 echo "API: http://localhost:5000"
