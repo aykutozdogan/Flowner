@@ -10,9 +10,15 @@ export default defineConfig({
     host: '0.0.0.0',
     strictPort: true,
     hmr: {
-      clientPort: 5175
+      clientPort: 5175,
+      host: '0.0.0.0'
     },
-    allowedHosts: 'all'
+    allowedHosts: 'all',
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    }
   },
   preview: {
     port: 5175,

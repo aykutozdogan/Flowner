@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 echo "🚀 Flowner Development Mode Starting..."
@@ -36,12 +35,12 @@ echo "✅ All services started successfully!"
 echo ""
 echo "🌐 Access URLs:"
 echo "   Backend API: https://${REPLIT_SLUG}-${REPLIT_OWNER}.replit.dev/"
-echo "   Admin Panel: https://${REPLIT_SLUG}-${REPLIT_OWNER}.replit.dev:3001/"
-echo "   User Portal: https://${REPLIT_SLUG}-${REPLIT_OWNER}.replit.dev:3002/"
+echo "   Admin Panel: https://${REPLIT_SLUG}-${REPLIT_OWNER}.replit.dev:5174/"
+echo "   User Portal: https://${REPLIT_SLUG}-${REPLIT_OWNER}.replit.dev:5175/"
 echo ""
 echo "   Local URLs:"
 echo "   API: http://localhost:5000"
-echo "   Admin: http://localhost:5174" 
+echo "   Admin: http://localhost:5174"
 echo "   Portal: http://localhost:5175"
 
 # Keep processes alive
