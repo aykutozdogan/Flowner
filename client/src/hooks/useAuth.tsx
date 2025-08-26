@@ -1,117 +1,131 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { api } from '../lib/api';
 
 interface User {
   id: string;
   email: string;
-  name: string;
-  role: 'tenant_admin' | 'designer' | 'approver' | 'user';
-  tenant_id: string;
+  displayName?: string;
+  roles: string[];
+  tenantId: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
-  token: string | null;
-  tenantId: string | null;
-  login: (userData: User, token: string) => void;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  hasAdminAccess: () => boolean;
-  hasPortalAccess: () => boolean;
-  getDefaultRoute: () => string;
+  hasRole: (role: string) => boolean;
+  isAdmin: boolean;
+  isUser: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const checkAuth = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await api.get('/auth/me');
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData.user);
+      } else {
+        localStorage.removeItem('token');
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      localStorage.removeItem('token');
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Local storage'dan auth bilgilerini yükle
-    const storedToken = localStorage.getItem('access_token');
-    const storedUser = localStorage.getItem('user');
-    const storedTenantId = localStorage.getItem('tenant_id');
-
-    if (storedToken && storedUser && storedTenantId) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setToken(storedToken);
-        setTenantId(storedTenantId);
-      } catch (error) {
-        console.error('Auth verileri parse edilemedi:', error);
-        logout();
-      }
-    }
+    checkAuth();
   }, []);
 
-  const login = (userData: User, authToken: string) => {
-    setUser(userData);
-    setToken(authToken);
-    setTenantId(userData.tenant_id);
-    
-    localStorage.setItem('access_token', authToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('tenant_id', userData.tenant_id);
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Login failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      setUser(data.user);
+
+      // Role-based redirect
+      const searchParams = new URLSearchParams(location.search);
+      const redirectTo = searchParams.get('redirectTo');
+      
+      if (redirectTo) {
+        navigate(redirectTo);
+      } else {
+        // Default role-based redirect
+        const roles = data.user.roles || [];
+        if (roles.includes('tenant_admin') || roles.includes('designer')) {
+          navigate('/admin/dashboard');
+        } else if (roles.includes('user') || roles.includes('approver')) {
+          navigate('/portal/tasks');
+        } else {
+          navigate('/dashboard');
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
     setUser(null);
-    setToken(null);
-    setTenantId(null);
-    
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('tenant_id');
+    navigate('/login');
   };
 
-  const hasAdminAccess = () => {
-    return user?.role === 'tenant_admin' || user?.role === 'designer';
+  const hasRole = (role: string) => {
+    return user?.roles?.includes(role) || false;
   };
 
-  const hasPortalAccess = () => {
-    return user?.role === 'approver' || user?.role === 'user';
-  };
-
-  const getDefaultRoute = () => {
-    if (!user) return '/login';
-    
-    if (hasAdminAccess()) {
-      return '/admin/dashboard';
-    } else if (hasPortalAccess()) {
-      return '/portal/tasks';
-    }
-    
-    return '/login';
-  };
-
-  const isAuthenticated = !!user && !!token;
-
-  const value = {
-    user,
-    isAuthenticated,
-    token,
-    tenantId,
-    login,
-    logout,
-    hasAdminAccess,
-    hasPortalAccess,
-    getDefaultRoute
-  };
+  const isAdmin = hasRole('tenant_admin') || hasRole('designer');
+  const isUser = hasRole('user') || hasRole('approver');
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      user,
+      isLoading,
+      login,
+      logout,
+      hasRole,
+      isAdmin,
+      isUser
+    }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};

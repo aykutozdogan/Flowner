@@ -1,360 +1,310 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import {
-  Box,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  IconButton,
-  Chip,
-  Alert,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon
-} from '@mui/icons-material';
-import { queryClient, apiRequest } from '@/lib/queryClient';
-import { toast } from '@/hooks/use-toast';
+
+import { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Checkbox } from '../../components/ui/checkbox';
+import { Badge } from '../../components/ui/badge';
+import { useToast } from '../../hooks/use-toast';
+import { api } from '../../lib/api';
 
 interface User {
   id: string;
   email: string;
-  name: string;
-  role: 'tenant_admin' | 'designer' | 'approver' | 'user';
-  is_active: boolean;
-  created_at: string;
-  tenant_id: string;
+  displayName?: string;
+  roles: string[];
+  tenantId: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
-const ROLE_LABELS = {
-  tenant_admin: 'Kiracı Yöneticisi',
-  designer: 'Tasarımcı',
-  approver: 'Onaylayıcı',
-  user: 'Kullanıcı'
-};
+interface UserFormData {
+  email: string;
+  password: string;
+  displayName: string;
+  roles: string[];
+}
 
-const ROLE_COLORS = {
-  tenant_admin: 'error',
-  designer: 'warning',
-  approver: 'info',
-  user: 'success'
-} as const;
+const availableRoles = [
+  { id: 'tenant_admin', label: 'Tenant Admin' },
+  { id: 'designer', label: 'Designer' },
+  { id: 'user', label: 'User' },
+  { id: 'approver', label: 'Approver' }
+];
 
-export default function UsersPage() {
-  const [dialogOpen, setDialogOpen] = useState(false);
+export const UsersPage = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState({
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState<UserFormData>({
     email: '',
-    name: '',
     password: '',
-    role: 'user' as User['role']
+    displayName: '',
+    roles: []
   });
+  const { toast } = useToast();
 
-  // Fetch users
-  const { data: users, isLoading, error } = useQuery({
-    queryKey: ['/api/v1/users'],
-    select: (data: any) => data.data || data,
-  });
-
-  // Create/Update user mutation
-  const saveUserMutation = useMutation({
-    mutationFn: (userData: any) => {
-      return editingUser
-        ? apiRequest(`/api/v1/users/${editingUser.id}`, { method: 'PUT', body: userData })
-        : apiRequest('/api/v1/users', { method: 'POST', body: userData });
-    },
-    onSuccess: () => {
+  const fetchUsers = async () => {
+    try {
+      const response = await api.get('/users');
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
       toast({
-        title: 'Başarılı',
-        description: editingUser ? 'Kullanıcı güncellendi' : 'Yeni kullanıcı oluşturuldu',
+        title: 'Error',
+        description: 'Failed to load users',
+        variant: 'destructive'
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/users'] });
-      handleCloseDialog();
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Hata',
-        description: error.message || 'İşlem başarısız',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Delete user mutation
-  const deleteUserMutation = useMutation({
-    mutationFn: (userId: string) => {
-      return apiRequest(`/api/v1/users/${userId}`, { method: 'DELETE' });
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Başarılı',
-        description: 'Kullanıcı silindi',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/users'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Hata',
-        description: error.message || 'Silme işlemi başarısız',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleOpenDialog = (user?: User) => {
-    if (user) {
-      setEditingUser(user);
-      setFormData({
-        email: user.email,
-        name: user.name,
-        password: '', // Don't prefill password for security
-        role: user.role
-      });
-    } else {
-      setEditingUser(null);
-      setFormData({
-        email: '',
-        name: '',
-        password: '',
-        role: 'user'
-      });
+    } finally {
+      setIsLoading(false);
     }
-    setDialogOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-    setEditingUser(null);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const endpoint = editingUser ? `/users/${editingUser.id}` : '/users';
+      const method = editingUser ? 'PUT' : 'POST';
+      
+      const payload = editingUser 
+        ? { email: formData.email, displayName: formData.displayName, roles: formData.roles }
+        : formData;
+
+      const response = await api.request(endpoint, {
+        method,
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: `User ${editingUser ? 'updated' : 'created'} successfully`
+        });
+        setIsDialogOpen(false);
+        setEditingUser(null);
+        setFormData({ email: '', password: '', displayName: '', roles: [] });
+        fetchUsers();
+      } else {
+        const error = await response.json();
+        throw new Error(error.detail || 'Operation failed');
+      }
+    } catch (error) {
+      console.error('Failed to save user:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save user',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
     setFormData({
-      email: '',
-      name: '',
+      email: user.email,
       password: '',
-      role: 'user'
+      displayName: user.displayName || '',
+      roles: user.roles
     });
+    setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!formData.email.trim() || !formData.name.trim()) {
+  const handleDelete = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+
+    try {
+      const response = await api.delete(`/users/${userId}`);
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'User deleted successfully'
+        });
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Failed to delete user:', error);
       toast({
-        title: 'Hata',
-        description: 'Email ve ad alanları zorunludur',
-        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete user',
+        variant: 'destructive'
       });
-      return;
     }
-
-    if (!editingUser && !formData.password.trim()) {
-      toast({
-        title: 'Hata',
-        description: 'Yeni kullanıcı için şifre zorunludur',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const payload: any = { ...formData };
-    // Don't send empty password for updates
-    if (editingUser && !payload.password?.trim()) {
-      delete payload.password;
-    }
-
-    saveUserMutation.mutate(payload);
   };
 
-  const handleDelete = (userId: string) => {
-    if (window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
-      deleteUserMutation.mutate(userId);
-    }
+  const handleRoleChange = (roleId: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      roles: checked 
+        ? [...prev.roles, roleId]
+        : prev.roles.filter(r => r !== roleId)
+    }));
+  };
+
+  const openCreateDialog = () => {
+    setEditingUser(null);
+    setFormData({ email: '', password: '', displayName: '', roles: [] });
+    setIsDialogOpen(true);
   };
 
   if (isLoading) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography>Yükleniyor...</Typography>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">
-          Kullanıcılar yüklenirken hata oluştu: {(error as any)?.message}
-        </Alert>
-      </Box>
-    );
+    return <div className="p-6">Loading users...</div>;
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Kullanıcı Yönetimi
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-          data-testid="button-new-user"
-        >
-          Yeni Kullanıcı
-        </Button>
-      </Box>
-
-      <Card>
-        <CardContent sx={{ p: 0 }}>
-          <TableContainer component={Paper} elevation={0}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Ad</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Rol</TableCell>
-                  <TableCell>Durum</TableCell>
-                  <TableCell>Oluşturulma Tarihi</TableCell>
-                  <TableCell>İşlemler</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users?.map((user: User) => (
-                  <TableRow key={user.id} data-testid={`user-row-${user.id}`}>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={ROLE_LABELS[user.role]}
-                        color={ROLE_COLORS[user.role]}
-                        size="small"
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Users</h1>
+          <p className="text-muted-foreground">Manage system users and permissions</p>
+        </div>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              New User
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {editingUser ? 'Edit User' : 'Create New User'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+              
+              {!editingUser && (
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              <div>
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input
+                  id="displayName"
+                  value={formData.displayName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+                  placeholder="Optional"
+                />
+              </div>
+              
+              <div>
+                <Label>Roles</Label>
+                <div className="space-y-2 mt-2">
+                  {availableRoles.map((role) => (
+                    <div key={role.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={role.id}
+                        checked={formData.roles.includes(role.id)}
+                        onCheckedChange={(checked) => handleRoleChange(role.id, checked as boolean)}
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.is_active ? 'Aktif' : 'Pasif'}
-                        color={user.is_active ? 'success' : 'default'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {new Date(user.created_at).toLocaleDateString('tr-TR')}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        onClick={() => handleOpenDialog(user)}
-                        size="small"
-                        data-testid={`button-edit-user-${user.id}`}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleDelete(user.id)}
-                        size="small"
-                        color="error"
-                        data-testid={`button-delete-user-${user.id}`}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(!users || users.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">
-                      <Typography color="text.secondary">
-                        Henüz kullanıcı bulunmuyor
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+                      <Label htmlFor={role.id} className="text-sm font-normal">
+                        {role.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingUser ? 'Update' : 'Create'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingUser ? 'Kullanıcıyı Düzenle' : 'Yeni Kullanıcı Oluştur'}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Ad Soyad"
-            fullWidth
-            variant="outlined"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            sx={{ mb: 2 }}
-            data-testid="input-user-name"
-          />
-          <TextField
-            margin="dense"
-            label="Email"
-            type="email"
-            fullWidth
-            variant="outlined"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            sx={{ mb: 2 }}
-            data-testid="input-user-email"
-          />
-          <TextField
-            margin="dense"
-            label={editingUser ? "Yeni Şifre (boş bırakılabilir)" : "Şifre"}
-            type="password"
-            fullWidth
-            variant="outlined"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            sx={{ mb: 2 }}
-            data-testid="input-user-password"
-          />
-          <FormControl fullWidth>
-            <InputLabel>Rol</InputLabel>
-            <Select
-              value={formData.role}
-              label="Rol"
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as User['role'] })}
-              data-testid="select-user-role"
-            >
-              <MenuItem value="user">Kullanıcı</MenuItem>
-              <MenuItem value="approver">Onaylayıcı</MenuItem>
-              <MenuItem value="designer">Tasarımcı</MenuItem>
-              <MenuItem value="tenant_admin">Kiracı Yöneticisi</MenuItem>
-            </Select>
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>İptal</Button>
-          <Button
-            onClick={handleSave}
-            variant="contained"
-            disabled={saveUserMutation.isPending}
-            data-testid="button-save-user"
-          >
-            {saveUserMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      <div className="grid gap-4">
+        {users.map((user) => (
+          <Card key={user.id}>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-lg">{user.displayName || user.email}</CardTitle>
+                  {user.displayName && (
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                  )}
+                  <div className="flex gap-1 mt-2">
+                    {user.roles.map((role) => (
+                      <Badge key={role} variant="secondary" className="text-xs">
+                        {availableRoles.find(r => r.id === role)?.label || role}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" onClick={() => handleEdit(user)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDelete(user.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                Created: {new Date(user.createdAt).toLocaleDateString()}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+        
+        {users.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-muted-foreground">No users found. Create your first user to get started.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
   );
-}
+};

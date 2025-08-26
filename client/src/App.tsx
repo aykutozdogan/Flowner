@@ -174,16 +174,18 @@ const theme = createTheme({
     '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
     '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
     '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
+    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
+    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
   ],
 });
 
 function RootRedirect() {
   const { isAuthenticated, getDefaultRoute } = useAuth();
-  
+
   if (!isAuthenticated) {
     return <Redirect to="/login" />;
   }
-  
+
   return <Redirect to={getDefaultRoute()} />;
 }
 
@@ -192,26 +194,18 @@ function Router() {
     <Switch>
       {/* Public Routes */}
       <Route path="/login" component={Login} />
-      
+
       {/* Admin Routes */}
       <Route path="/admin/dashboard">
         <ProtectedRoute requireAdmin>
           <AdminDashboard />
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/admin/forms">
         <ProtectedRoute requireAdmin>
           <AdminLayout>
             <FormsPage />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/admin/workflows">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <Workflows />
           </AdminLayout>
         </ProtectedRoute>
       </Route>
@@ -232,6 +226,14 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/admin/workflows">
+        <ProtectedRoute requireAdmin>
+          <AdminLayout>
+            <Workflows />
+          </AdminLayout>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/admin/workflows/designer/:key?">
         <ProtectedRoute requireAdmin>
           <AdminLayout>
@@ -247,7 +249,7 @@ function Router() {
           </AdminLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/admin/processes">
         <ProtectedRoute requireAdmin>
           <AdminLayout>
@@ -255,7 +257,7 @@ function Router() {
           </AdminLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/admin/tasks">
         <ProtectedRoute requireAdmin>
           <AdminLayout>
@@ -263,7 +265,7 @@ function Router() {
           </AdminLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/admin/analytics">
         <ProtectedRoute requireAdmin>
           <AdminLayout>
@@ -271,20 +273,20 @@ function Router() {
           </AdminLayout>
         </ProtectedRoute>
       </Route>
-      
+
       {/* Portal Routes */}
       <Route path="/portal/inbox">
         <ProtectedRoute requirePortal>
           <PortalInbox />
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/portal/tasks/:id">
         <ProtectedRoute requirePortal>
           <PortalTaskDetail />
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/portal/tasks">
         <ProtectedRoute requirePortal>
           <PortalLayout>
@@ -292,10 +294,10 @@ function Router() {
           </PortalLayout>
         </ProtectedRoute>
       </Route>
-      
+
       {/* Root Redirect */}
       <Route path="/" component={RootRedirect} />
-      
+
       {/* 404 */}
       <Route component={NotFound} />
     </Switch>

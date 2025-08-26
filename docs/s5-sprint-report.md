@@ -1,3 +1,4 @@
+
 # S5 Sprint Raporu — Admin/Portal Düzeltmeleri & Builder/Designer
 
 **Tarih:** 25 Ağustos 2025  

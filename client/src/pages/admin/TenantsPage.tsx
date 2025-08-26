@@ -1,294 +1,243 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import {
-  Box,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  IconButton,
-  Chip,
-  Alert
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon
-} from '@mui/icons-material';
-import { queryClient, apiRequest } from '@/lib/queryClient';
-import { toast } from '@/hooks/use-toast';
+
+import { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { useToast } from '../../hooks/use-toast';
+import { api } from '../../lib/api';
 
 interface Tenant {
   id: string;
   name: string;
   domain: string;
-  is_active: boolean;
-  created_at: string;
-  settings?: any;
-  branding?: any;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
-export default function TenantsPage() {
-  const [dialogOpen, setDialogOpen] = useState(false);
+interface TenantFormData {
+  name: string;
+  domain: string;
+  description: string;
+}
+
+export const TenantsPage = () => {
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<TenantFormData>({
     name: '',
     domain: '',
-    settings: {},
-    branding: {}
+    description: ''
   });
+  const { toast } = useToast();
 
-  // Fetch tenants
-  const { data: tenants, isLoading, error } = useQuery({
-    queryKey: ['/api/v1/tenants'],
-    select: (data: any) => data.data || data,
-  });
-
-  // Create/Update tenant mutation
-  const saveTenantMutation = useMutation({
-    mutationFn: (tenantData: any) => {
-      return editingTenant
-        ? apiRequest(`/api/v1/tenants/${editingTenant.id}`, { method: 'PUT', body: tenantData })
-        : apiRequest('/api/v1/tenants', { method: 'POST', body: tenantData });
-    },
-    onSuccess: () => {
+  const fetchTenants = async () => {
+    try {
+      const response = await api.get('/tenants');
+      if (response.ok) {
+        const data = await response.json();
+        setTenants(data.tenants || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tenants:', error);
       toast({
-        title: 'Başarılı',
-        description: editingTenant ? 'Kiracı güncellendi' : 'Yeni kiracı oluşturuldu',
+        title: 'Error',
+        description: 'Failed to load tenants',
+        variant: 'destructive'
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/tenants'] });
-      handleCloseDialog();
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Hata',
-        description: error.message || 'İşlem başarısız',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Delete tenant mutation
-  const deleteTenantMutation = useMutation({
-    mutationFn: (tenantId: string) => {
-      return apiRequest(`/api/v1/tenants/${tenantId}`, { method: 'DELETE' });
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Başarılı',
-        description: 'Kiracı silindi',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/tenants'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Hata',
-        description: error.message || 'Silme işlemi başarısız',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleOpenDialog = (tenant?: Tenant) => {
-    if (tenant) {
-      setEditingTenant(tenant);
-      setFormData({
-        name: tenant.name,
-        domain: tenant.domain,
-        settings: tenant.settings || {},
-        branding: tenant.branding || {}
-      });
-    } else {
-      setEditingTenant(null);
-      setFormData({
-        name: '',
-        domain: '',
-        settings: {},
-        branding: {}
-      });
+    } finally {
+      setIsLoading(false);
     }
-    setDialogOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-    setEditingTenant(null);
+  useEffect(() => {
+    fetchTenants();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const endpoint = editingTenant ? `/tenants/${editingTenant.id}` : '/tenants';
+      const method = editingTenant ? 'PUT' : 'POST';
+      
+      const response = await api.request(endpoint, {
+        method,
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: `Tenant ${editingTenant ? 'updated' : 'created'} successfully`
+        });
+        setIsDialogOpen(false);
+        setEditingTenant(null);
+        setFormData({ name: '', domain: '', description: '' });
+        fetchTenants();
+      } else {
+        const error = await response.json();
+        throw new Error(error.detail || 'Operation failed');
+      }
+    } catch (error) {
+      console.error('Failed to save tenant:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save tenant',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleEdit = (tenant: Tenant) => {
+    setEditingTenant(tenant);
     setFormData({
-      name: '',
-      domain: '',
-      settings: {},
-      branding: {}
+      name: tenant.name,
+      domain: tenant.domain,
+      description: tenant.description || ''
     });
+    setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!formData.name.trim() || !formData.domain.trim()) {
+  const handleDelete = async (tenantId: string) => {
+    if (!confirm('Are you sure you want to delete this tenant?')) return;
+
+    try {
+      const response = await api.delete(`/tenants/${tenantId}`);
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'Tenant deleted successfully'
+        });
+        fetchTenants();
+      }
+    } catch (error) {
+      console.error('Failed to delete tenant:', error);
       toast({
-        title: 'Hata',
-        description: 'Kiracı adı ve domain zorunludur',
-        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete tenant',
+        variant: 'destructive'
       });
-      return;
     }
-
-    saveTenantMutation.mutate(formData);
   };
 
-  const handleDelete = (tenantId: string) => {
-    if (window.confirm('Bu kiracıyı silmek istediğinizden emin misiniz?')) {
-      deleteTenantMutation.mutate(tenantId);
-    }
+  const openCreateDialog = () => {
+    setEditingTenant(null);
+    setFormData({ name: '', domain: '', description: '' });
+    setIsDialogOpen(true);
   };
 
   if (isLoading) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography>Yükleniyor...</Typography>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">
-          Kiracılar yüklenirken hata oluştu: {(error as any)?.message}
-        </Alert>
-      </Box>
-    );
+    return <div className="p-6">Loading tenants...</div>;
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Kiracı Yönetimi
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-          data-testid="button-new-tenant"
-        >
-          Yeni Kiracı
-        </Button>
-      </Box>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Tenants</h1>
+          <p className="text-muted-foreground">Manage tenant organizations</p>
+        </div>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Tenant
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingTenant ? 'Edit Tenant' : 'Create New Tenant'}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="domain">Domain</Label>
+                <Input
+                  id="domain"
+                  value={formData.domain}
+                  onChange={(e) => setFormData(prev => ({ ...prev, domain: e.target.value }))}
+                  placeholder="example.com"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Optional description"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingTenant ? 'Update' : 'Create'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-      <Card>
-        <CardContent sx={{ p: 0 }}>
-          <TableContainer component={Paper} elevation={0}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Kiracı Adı</TableCell>
-                  <TableCell>Domain</TableCell>
-                  <TableCell>Durum</TableCell>
-                  <TableCell>Oluşturulma Tarihi</TableCell>
-                  <TableCell>İşlemler</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tenants?.map((tenant: Tenant) => (
-                  <TableRow key={tenant.id} data-testid={`tenant-row-${tenant.id}`}>
-                    <TableCell>{tenant.name}</TableCell>
-                    <TableCell>{tenant.domain}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={tenant.is_active ? 'Aktif' : 'Pasif'}
-                        color={tenant.is_active ? 'success' : 'default'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {new Date(tenant.created_at).toLocaleDateString('tr-TR')}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        onClick={() => handleOpenDialog(tenant)}
-                        size="small"
-                        data-testid={`button-edit-tenant-${tenant.id}`}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleDelete(tenant.id)}
-                        size="small"
-                        color="error"
-                        data-testid={`button-delete-tenant-${tenant.id}`}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(!tenants || tenants.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      <Typography color="text.secondary">
-                        Henüz kiracı bulunmuyor
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
-
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingTenant ? 'Kiracıyı Düzenle' : 'Yeni Kiracı Oluştur'}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Kiracı Adı"
-            fullWidth
-            variant="outlined"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            sx={{ mb: 2 }}
-            data-testid="input-tenant-name"
-          />
-          <TextField
-            margin="dense"
-            label="Domain"
-            fullWidth
-            variant="outlined"
-            value={formData.domain}
-            onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-            placeholder="example.com"
-            helperText="Kiracının benzersiz domain adı"
-            data-testid="input-tenant-domain"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>İptal</Button>
-          <Button
-            onClick={handleSave}
-            variant="contained"
-            disabled={saveTenantMutation.isPending}
-            data-testid="button-save-tenant"
-          >
-            {saveTenantMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      <div className="grid gap-4">
+        {tenants.map((tenant) => (
+          <Card key={tenant.id}>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>{tenant.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{tenant.domain}</p>
+                </div>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" onClick={() => handleEdit(tenant)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDelete(tenant.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            {tenant.description && (
+              <CardContent>
+                <p className="text-sm">{tenant.description}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Created: {new Date(tenant.createdAt).toLocaleDateString()}
+                </p>
+              </CardContent>
+            )}
+          </Card>
+        ))}
+        
+        {tenants.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-muted-foreground">No tenants found. Create your first tenant to get started.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
   );
-}
+};

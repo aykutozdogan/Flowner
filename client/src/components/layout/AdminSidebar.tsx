@@ -1,391 +1,105 @@
 
-import React, { useState } from 'react';
-import {
-  Drawer,
-  Box,
-  Typography,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  IconButton,
-  Collapse,
-  Divider,
-  Avatar,
-  Chip,
-  useTheme,
-  alpha,
-  Switch,
-  FormControlLabel
-} from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Close as CloseIcon,
-  Dashboard as DashboardIcon,
-  Description as FormIcon,
-  AccountTree as WorkflowIcon,
-  PlayCircleOutline as ProcessIcon,
-  Assignment as TaskIcon,
-  Business as TenantIcon,
-  People as UsersIcon,
-  ExpandLess,
-  ExpandMore,
-  AutoAwesome as AutoAwesomeIcon,
-  Settings as SettingsIcon,
-  Analytics as AnalyticsIcon,
-  PushPin as PinIcon
-} from '@mui/icons-material';
-import { useLocation } from 'wouter';
+import { 
+  Home, 
+  FileText, 
+  GitBranch, 
+  Play, 
+  Building, 
+  Users, 
+  Settings,
+  BarChart3
+} from 'lucide-react';
+import { useLocation, Link } from 'react-router-dom';
+import { cn } from '../../lib/utils';
+import { useAuth } from '../../hooks/useAuth';
 
-interface AdminSidebarProps {
-  open: boolean;
-  onClose: () => void;
-  user?: any;
-  onPinChange?: (pinned: boolean) => void;
-}
-
-const SIDEBAR_PIN_KEY = 'admin_sidebar_pinned';
-
-interface MenuGroup {
-  title: string;
-  icon: React.ComponentType<any>;
-  items: Array<{
-    text: string;
-    icon: React.ComponentType<any>;
-    path: string;
-    badge?: number;
-    color?: string;
-  }>;
-  collapsible?: boolean;
-}
-
-const menuGroups: MenuGroup[] = [
-  {
-    title: 'Dashboard',
-    icon: DashboardIcon,
-    items: [
-      { text: 'Ana Sayfa', icon: DashboardIcon, path: '/admin/dashboard' },
-      { text: 'Analytics', icon: AnalyticsIcon, path: '/admin/analytics' }
-    ]
+const menuItems = [
+  { 
+    icon: Home, 
+    label: 'Dashboard', 
+    href: '/admin/dashboard',
+    roles: ['tenant_admin', 'designer']
   },
-  {
-    title: 'Tasarım & Geliştirme',
-    icon: AutoAwesomeIcon,
-    collapsible: true,
-    items: [
-      { text: 'Formlar', icon: FormIcon, path: '/admin/forms', color: '#4CAF50' },
-      { text: 'Form Builder', icon: FormIcon, path: '/admin/forms/builder', color: '#4CAF50' },
-      { text: 'Workflows', icon: WorkflowIcon, path: '/admin/workflows', color: '#2196F3' },
-      { text: 'BPMN Designer', icon: WorkflowIcon, path: '/admin/workflows/designer', color: '#2196F3' }
-    ]
+  { 
+    icon: FileText, 
+    label: 'Forms', 
+    href: '/admin/forms',
+    roles: ['tenant_admin', 'designer']
   },
-  {
-    title: 'İşlem Yönetimi',
-    icon: ProcessIcon,
-    collapsible: true,
-    items: [
-      { text: 'Processes', icon: ProcessIcon, path: '/admin/processes', badge: 12 },
-      { text: 'Task Inbox', icon: TaskIcon, path: '/admin/tasks', badge: 5, color: '#FF9800' }
-    ]
+  { 
+    icon: GitBranch, 
+    label: 'Workflows', 
+    href: '/admin/workflows',
+    roles: ['tenant_admin', 'designer']
   },
-  {
-    title: 'Sistem Yönetimi',
-    icon: SettingsIcon,
-    collapsible: true,
-    items: [
-      { text: 'Tenants', icon: TenantIcon, path: '/admin/tenants', color: '#9C27B0' },
-      { text: 'Users', icon: UsersIcon, path: '/admin/users', color: '#607D8B' }
-    ]
+  { 
+    icon: Play, 
+    label: 'Processes', 
+    href: '/admin/processes',
+    roles: ['tenant_admin', 'designer']
+  },
+  { 
+    icon: Building, 
+    label: 'Tenants', 
+    href: '/admin/tenants',
+    roles: ['tenant_admin']
+  },
+  { 
+    icon: Users, 
+    label: 'Users', 
+    href: '/admin/users',
+    roles: ['tenant_admin']
+  },
+  { 
+    icon: BarChart3, 
+    label: 'Analytics', 
+    href: '/admin/analytics',
+    roles: ['tenant_admin', 'designer']
+  },
+  { 
+    icon: Settings, 
+    label: 'Settings', 
+    href: '/admin/settings',
+    roles: ['tenant_admin']
   }
 ];
 
-export default function AdminSidebar({ open, onClose, user, onPinChange }: AdminSidebarProps) {
-  const [location, setLocation] = useLocation();
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['Dashboard', 'Tasarım & Geliştirme']);
-  const [isPinned, setIsPinned] = useState(() => {
-    return localStorage.getItem(SIDEBAR_PIN_KEY) === 'true';
-  });
-  const theme = useTheme();
+export const AdminSidebar = () => {
+  const location = useLocation();
+  const { hasRole } = useAuth();
 
-  const handlePinToggle = () => {
-    const newPinned = !isPinned;
-    setIsPinned(newPinned);
-    localStorage.setItem(SIDEBAR_PIN_KEY, newPinned.toString());
-    onPinChange?.(newPinned);
-  };
-
-  const toggleGroup = (groupTitle: string) => {
-    setExpandedGroups(prev =>
-      prev.includes(groupTitle)
-        ? prev.filter(title => title !== groupTitle)
-        : [...prev, groupTitle]
-    );
-  };
-
-  const handleNavigation = (path: string) => {
-    setLocation(path);
-    onClose();
-  };
-
-  const currentUser = user || {
-    name: 'Admin User',
-    role: 'Tenant Admin',
-    avatar: null
-  };
+  const visibleItems = menuItems.filter(item => 
+    item.roles.some(role => hasRole(role))
+  );
 
   return (
-    <Drawer
-      variant={isPinned ? "persistent" : "temporary"}
-      anchor="left"
-      open={open}
-      onClose={isPinned ? undefined : onClose}
-      sx={{
-        '& .MuiDrawer-paper': {
-          width: 280,
-          background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-          color: 'white',
-          border: 'none',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
-          zIndex: isPinned ? 1200 : 1300
-        }
-      }}
-    >
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        {/* Header */}
-        <Box sx={{ 
-          p: 3,
-          background: alpha('rgba(255,255,255,0.1)', 0.1),
-          borderBottom: `1px solid ${alpha('rgba(255,255,255,0.2)', 0.2)}`
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  bgcolor: alpha('rgba(255,255,255,0.2)', 0.2),
-                  borderRadius: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <WorkflowIcon sx={{ color: 'white', fontSize: 24 }} />
-              </Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: 'white' }}>
-                Flowner
-              </Typography>
-            </Box>
-            
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <IconButton
-                onClick={handlePinToggle}
-                sx={{ 
-                  color: 'white',
-                  bgcolor: isPinned ? alpha('rgba(255,255,255,0.2)', 0.2) : 'transparent',
-                  '&:hover': {
-                    bgcolor: alpha('rgba(255,255,255,0.15)', 0.15)
-                  }
-                }}
-                title={isPinned ? 'Pinlemeyi Kaldır' : 'Menüyü Pinle'}
-              >
-                <PinIcon sx={{ transform: isPinned ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
-              </IconButton>
-              
-              {!isPinned && (
-                <IconButton
-                  onClick={onClose}
-                  sx={{ 
-                    color: 'white',
-                    '&:hover': {
-                      bgcolor: alpha('rgba(255,255,255,0.1)', 0.1)
-                    }
-                  }}
-                >
-                  <CloseIcon />
-                </IconButton>
-              )}
-            </Box>
-          </Box>
+    <div className="w-64 bg-background border-r border-border h-full">
+      <div className="p-6">
+        <h2 className="text-xl font-bold text-foreground">Flowner Admin</h2>
+      </div>
+      
+      <nav className="px-4 space-y-2">
+        {visibleItems.map((item) => {
+          const isActive = location.pathname === item.href || 
+                          (item.href !== '/admin/dashboard' && location.pathname.startsWith(item.href));
           
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isPinned}
-                onChange={handlePinToggle}
-                size="small"
-                sx={{
-                  '& .MuiSwitch-thumb': {
-                    backgroundColor: 'white',
-                  },
-                  '& .MuiSwitch-track': {
-                    backgroundColor: alpha('rgba(255,255,255,0.3)', 0.3),
-                  },
-                  '& .Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: alpha('rgba(255,255,255,0.5)', 0.5),
-                  }
-                }}
-              />
-            }
-            label={
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                📌 Menüyü Pinle
-              </Typography>
-            }
-            sx={{ mb: 1 }}
-          />
-          
-          <Chip
-            label="Admin Panel"
-            size="small"
-            sx={{
-              bgcolor: alpha('rgba(255,255,255,0.2)', 0.2),
-              color: 'white',
-              fontWeight: 500,
-              '& .MuiChip-label': { px: 1.5 }
-            }}
-          />
-        </Box>
-
-        {/* Navigation */}
-        <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto' }}>
-          {menuGroups.map((group) => (
-            <Box key={group.title} sx={{ mb: 1 }}>
-              {group.collapsible ? (
-                <ListItemButton
-                  onClick={() => toggleGroup(group.title)}
-                  sx={{
-                    borderRadius: 2,
-                    mb: 1,
-                    color: 'rgba(255,255,255,0.8)',
-                    '&:hover': {
-                      bgcolor: alpha('rgba(255,255,255,0.1)', 0.1),
-                      color: 'white'
-                    },
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                >
-                  <ListItemIcon>
-                    <group.icon sx={{ color: 'rgba(255,255,255,0.8)', fontSize: 20 }} />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={group.title}
-                    primaryTypographyProps={{
-                      fontSize: '0.9rem',
-                      fontWeight: 600
-                    }}
-                  />
-                  {expandedGroups.includes(group.title) ? 
-                    <ExpandLess sx={{ color: 'rgba(255,255,255,0.6)' }} /> : 
-                    <ExpandMore sx={{ color: 'rgba(255,255,255,0.6)' }} />
-                  }
-                </ListItemButton>
-              ) : (
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color: 'rgba(255,255,255,0.6)',
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    pl: 2,
-                    mb: 1,
-                    display: 'block'
-                  }}
-                >
-                  {group.title}
-                </Typography>
+          return (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
-
-              <Collapse in={!group.collapsible || expandedGroups.includes(group.title)} timeout="auto">
-                <List sx={{ pl: group.collapsible ? 2 : 0 }}>
-                  {group.items.map((item) => {
-                    const isActive = location === item.path;
-                    return (
-                      <ListItem key={item.text} sx={{ py: 0.25, px: 0 }}>
-                        <ListItemButton
-                          onClick={() => handleNavigation(item.path)}
-                          sx={{
-                            borderRadius: 2,
-                            minHeight: 48,
-                            bgcolor: isActive ? alpha('rgba(255,255,255,0.15)', 0.15) : 'transparent',
-                            color: isActive ? 'white' : 'rgba(255,255,255,0.8)',
-                            '&:hover': {
-                              bgcolor: alpha('rgba(255,255,255,0.1)', 0.1),
-                              color: 'white',
-                              transform: 'translateX(4px)'
-                            },
-                            transition: 'all 0.2s ease-in-out',
-                            border: isActive ? `1px solid ${alpha('rgba(255,255,255,0.3)', 0.3)}` : 'none'
-                          }}
-                        >
-                          <ListItemIcon sx={{ minWidth: 40 }}>
-                            <item.icon 
-                              sx={{ 
-                                fontSize: 20,
-                                color: item.color || (isActive ? 'white' : 'rgba(255,255,255,0.7)')
-                              }} 
-                            />
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary={item.text}
-                            primaryTypographyProps={{
-                              fontSize: '0.875rem',
-                              fontWeight: isActive ? 600 : 400
-                            }}
-                          />
-                          {item.badge && (
-                            <Chip
-                              label={item.badge}
-                              size="small"
-                              sx={{
-                                bgcolor: theme.palette.error.main,
-                                color: 'white',
-                                height: 20,
-                                fontSize: '0.75rem',
-                                '& .MuiChip-label': { px: 1 }
-                              }}
-                            />
-                          )}
-                        </ListItemButton>
-                      </ListItem>
-                    );
-                  })}
-                </List>
-              </Collapse>
-            </Box>
-          ))}
-        </Box>
-
-        <Divider sx={{ borderColor: alpha('rgba(255,255,255,0.2)', 0.2) }} />
-
-        {/* User Profile */}
-        <Box sx={{ 
-          p: 3,
-          background: alpha('rgba(0,0,0,0.1)', 0.1)
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar
-              sx={{
-                width: 44,
-                height: 44,
-                bgcolor: alpha('rgba(255,255,255,0.2)', 0.2),
-                border: `2px solid ${alpha('rgba(255,255,255,0.3)', 0.3)}`
-              }}
             >
-              {currentUser.name.charAt(0)}
-            </Avatar>
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="subtitle2" sx={{ color: 'white', fontWeight: 600 }}>
-                {currentUser.name}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                {currentUser.role}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
-    </Drawer>
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
-}
+};

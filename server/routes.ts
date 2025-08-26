@@ -44,7 +44,7 @@ const parseTenantId = async (req: ExpressRequest, res: any, next: any) => {
       detail: "X-Tenant-Id header is required"
     });
   }
-  
+
   try {
     // Handle both domain and UUID formats
     let tenant;
@@ -56,7 +56,7 @@ const parseTenantId = async (req: ExpressRequest, res: any, next: any) => {
       // It's a domain
       tenant = await storage.getTenantByDomain(tenantId);
     }
-    
+
     if (!tenant) {
       return res.status(400).json({
         type: "/api/errors/validation",
@@ -65,7 +65,7 @@ const parseTenantId = async (req: ExpressRequest, res: any, next: any) => {
         detail: "Tenant not found"
       });
     }
-    
+
     (req as ExtendedRequest).tenantId = tenant.id;
     (req as ExtendedRequest).tenantDomain = tenant.domain;
     next();
@@ -97,7 +97,7 @@ const authenticateToken = async (req: ExpressRequest, res: any, next: any) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     const user = await storage.getUserWithTenant(decoded.userId);
-    
+
     if (!user || !user.is_active) {
       return res.status(401).json({
         type: "/api/errors/auth",
@@ -152,27 +152,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     origin: function (origin: string | undefined, callback: any) {
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
-      
+
       // Allow all localhost and development origins
       if (origin.includes('localhost') || 
           origin.includes('127.0.0.1') ||
           origin.includes('0.0.0.0')) {
         return callback(null, true);
       }
-      
+
       // Allow all Replit domains
       if (origin.includes('replit.dev') || 
           origin.includes('replit.co') || 
           origin.includes('repl.co')) {
         return callback(null, true);
       }
-      
+
       // Allow the origin if it's in the environment variable
       const allowedOrigins = process.env.CORS_ALLOWLIST?.split(',') || [];
       if (allowedOrigins.some(allowed => origin.includes(allowed.replace('*', '')))) {
         return callback(null, true);
       }
-      
+
       // Allow all for development (bu satırı geçici olarak bırakıyoruz)
       console.log('CORS Origin:', origin);
       return callback(null, true);
@@ -182,9 +182,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'X-Requested-With', 'Origin', 'Accept'],
     exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page']
   };
-  
+
   app.use(cors(corsOptions));
-  
+
   // Handle preflight requests
   app.options('*', cors(corsOptions));
 
@@ -391,7 +391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // It's a domain
         tenant = await storage.getTenantByDomain(tenantIdentifier);
       }
-      
+
       if (!tenant) {
         return res.status(400).json({
           type: "/api/errors/validation",
@@ -597,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/__meta/seed', async (req: any, res) => {
     try {
       const tenantId = (req as ExtendedRequest).tenantId;
-      
+
       const workflows = await storage.getWorkflows(tenantId);
       const processes = await storage.getProcessInstances(tenantId, { limit: 1000, offset: 0 });
       const tasks = await storage.getTaskInstances(tenantId, { limit: 1000, offset: 0 });
@@ -722,7 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/analytics/dashboard", async (req: any, res) => {
     try {
       const stats = await storage.getDashboardStats((req as ExtendedRequest).tenantId);
-      
+
       res.json({
         success: true,
         data: {
@@ -813,7 +813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status, search } = req.query;
       const forms = await storage.getForms((req as ExtendedRequest).tenantId, { status, search });
-      
+
       res.json({
         success: true,
         data: forms.map(form => ({
@@ -915,7 +915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if form exists
       let form = await storage.getFormByKey(key, (req as ExtendedRequest).tenantId);
-      
+
       if (!form) {
         // Create new form
         form = await storage.createForm({
@@ -1000,7 +1000,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status } = req.query;
       const forms = await storage.getForms((req as ExtendedRequest).tenantId, { status });
-      
+
       res.json({
         success: true,
         data: forms
@@ -1061,7 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { key } = req.params;
       const { includeDraft } = req.query;
-      
+
       const form = await storage.getFormByKey(key, (req as ExtendedRequest).tenantId);
       if (!form) {
         return res.status(404).json({
@@ -1075,7 +1075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get latest version
       const status = includeDraft === 'true' ? undefined : 'published';
       const latestVersion = await storage.getLatestFormVersion(key, (req as ExtendedRequest).tenantId, status);
-      
+
       if (!latestVersion && !includeDraft) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1161,7 +1161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Increment version and create new draft
       const newVersion = form.latest_version + 1;
-      
+
       // Update form's latest version
       await storage.updateForm(form.id, (req as ExtendedRequest).tenantId, {
         latest_version: newVersion
@@ -1238,7 +1238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Determine which version to publish
       const versionToPublish = version || form.latest_version;
-      
+
       // Get the draft version
       const draftVersion = await storage.getFormVersion(form.id, versionToPublish, (req as ExtendedRequest).tenantId);
       if (!draftVersion) {
@@ -1567,12 +1567,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
    *                           type: integer
    *                           example: 2
    */
-  
+
   // My Tasks endpoint (tasks assigned to current user)
   app.get("/api/v1/tasks/my-tasks", async (req: any, res) => {
     try {
       const { status = "pending" } = req.query;
-      
+
       // Filter tasks assigned to current user's role
       const filters: any = { 
         status,
@@ -1580,7 +1580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const tasks = await storage.getTaskInstances((req as ExtendedRequest).tenantId, filters);
-      
+
       res.json(tasks.map(task => ({
         id: task.id,
         taskId: task.id, // For backward compatibility
@@ -1606,18 +1606,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   app.get("/api/v1/tasks/inbox", async (req: any, res) => {
     try {
       const { status = "pending", assigned_to } = req.query;
-      
+
       let filters: any = { status };
       if (assigned_to === "me") {
         filters.assigneeId = (req as ExtendedRequest).user.id;
       }
 
       const tasks = await storage.getTaskInstances((req as ExtendedRequest).tenantId, filters);
-      
+
       res.json({
         success: true,
         data: tasks.map(task => ({
@@ -1662,12 +1662,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // S4: Task Detail API endpoint for User Portal
   app.get("/api/v1/tasks/:id", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { id: taskId } = req.params;
-      
+
       const task = await storage.getTaskInstanceById(taskId, (req as ExtendedRequest).tenantId);
       if (!task) {
         return res.status(404).json({
@@ -1727,13 +1727,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/forms/data", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { processId, taskId } = req.query;
-      
+
       const formDataList = await storage.getFormData(
         processId as string,
         taskId as string,
         (req as ExtendedRequest).tenantId
       );
-      
+
       res.json({
         success: true,
         data: formDataList
@@ -1758,7 +1758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: workflowIdentifier } = req.params;
       const { version = "1.0.0" } = req.body;
-      
+
       // Get workflow by ID or key
       let workflow;
       if (workflowIdentifier.includes('-') && workflowIdentifier.length === 36) {
@@ -1768,7 +1768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // It's a key
         workflow = await storage.getWorkflowByKey(workflowIdentifier, (req as ExtendedRequest).tenantId);
       }
-      
+
       if (!workflow) {
         return res.status(404).json({
           type: "/api/errors/not-found",
@@ -1789,7 +1789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       await storage.createWorkflowVersion(versionData);
-      
+
       // Update workflow status
       await storage.updateWorkflow(workflow.id, (req as ExtendedRequest).tenantId, {
         status: "published",
@@ -1931,7 +1931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/v1/processes", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { workflowId, name, variables = {} } = req.body;
-      
+
       // Validate required fields
       if (!workflowId || !name) {
         return res.status(400).json({
@@ -1981,7 +1981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/v1/processes/start", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { workflowKey, name = "Process", variables = {} } = req.body;
-      
+
       // Validate required fields
       if (!workflowKey) {
         return res.status(400).json({
@@ -2041,7 +2041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/processes/:id", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { id: processId } = req.params;
-      
+
       const process = await storage.getProcessInstanceById(processId, (req as ExtendedRequest).tenantId);
       if (!process) {
         return res.status(404).json({
@@ -2073,9 +2073,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/v1/processes/:id/cancel", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { id: processId } = req.params;
-      
+
       await processRuntime.cancelProcess(processId, (req as ExtendedRequest).tenantId);
-      
+
       console.log(`[Engine API] Process cancelled: ${processId}`);
       res.json({
         success: true,
@@ -2128,7 +2128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: taskId } = req.params;
       const { outcome, formData = {} } = req.body;
-      
+
       // Check task ownership/assignment
       const task = await storage.getTaskInstanceById(taskId, (req as ExtendedRequest).tenantId);
       if (!task) {
@@ -2183,7 +2183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id: taskId } = req.params;
       const { assigneeId } = req.body;
-      
+
       // Only admin and approvers can reassign tasks
       if (!['tenant_admin', 'approver'].includes((req as ExtendedRequest).user.role)) {
         return res.status(403).json({
@@ -2386,7 +2386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const stats = await jobScheduler.getSchedulerStats();
-      
+
       res.json({
         scheduler: stats,
         timestamp: new Date().toISOString(),
@@ -2482,7 +2482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const status = req.query.status as string | undefined;
       const workflows = await storage.getWorkflows((req as ExtendedRequest).tenantId, { status });
-      
+
       res.json({
         success: true,
         data: workflows
@@ -2540,7 +2540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/workflows/:key", parseTenantId, authenticateToken, async (req, res) => {
     try {
       const { key } = req.params;
-      
+
       const workflow = await storage.getWorkflowByKey(key, (req as ExtendedRequest).tenantId);
       if (!workflow) {
         return res.status(404).json({
