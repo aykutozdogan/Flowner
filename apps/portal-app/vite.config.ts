@@ -2,17 +2,22 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: {
-    port: 5175,
-    host: '0.0.0.0'
-  },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@shared-ui': path.resolve(__dirname, '../../packages/shared-ui/src'),
-      '@shared-core': path.resolve(__dirname, '../../packages/shared-core/src'),
-    }
-  }
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
+  server: {
+    host: '0.0.0.0',
+    port: 3002,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

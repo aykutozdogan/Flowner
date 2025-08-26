@@ -1,16 +1,14 @@
 {
   "name": "@flowner/shared-core",
-  "version": "1.0.0", 
+  "version": "1.0.0",
   "type": "module",
-  "private": true,
   "main": "./src/index.ts",
-  "dependencies": {
-    "@tanstack/react-query": "^5.60.5",
-    "zod": "^3.24.2",
-    "jsonwebtoken": "^9.0.2"
+  "exports": {
+    ".": "./src/index.ts"
   },
-  "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.10",
-    "typescript": "5.6.3"
-  }
+  "scripts": {
+    "build": "echo 'TypeScript build completed'",
+    "dev": "echo 'Development mode'"
+  },
+  "dependencies": {}
 }

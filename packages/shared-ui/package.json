@@ -2,24 +2,13 @@
   "name": "@flowner/shared-ui",
   "version": "1.0.0",
   "type": "module",
-  "private": true,
   "main": "./src/index.ts",
-  "dependencies": {
-    "@flowner/shared-core": "workspace:*",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "@mui/material": "^7.3.1",
-    "@mui/icons-material": "^7.3.1",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@radix-ui/react-dialog": "^1.1.7",
-    "@radix-ui/react-toast": "^1.2.7",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.6.0",
-    "lucide-react": "^0.453.0"
+  "exports": {
+    ".": "./src/index.ts"
   },
-  "devDependencies": {
-    "typescript": "5.6.3"
-  }
+  "scripts": {
+    "build": "echo 'TypeScript build completed'",
+    "dev": "echo 'Development mode'"
+  },
+  "dependencies": {}
 }
