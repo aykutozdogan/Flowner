@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme, alpha, Badge } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, Notifications, Assignment } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, Notifications, Assignment, Logout } from '@mui/icons-material';
+import { useAuth } from '@/hooks/useAuth';
 import PortalSidebar from './PortalSidebar';
 
 interface PortalLayoutProps {
@@ -12,6 +13,7 @@ interface PortalLayoutProps {
 function PortalLayout({ children, user }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
+  const { logout } = useAuth();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -81,6 +83,20 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
             </IconButton>
             
             <IconButton 
+              onClick={logout}
+              sx={{ 
+                '&:hover': { 
+                  bgcolor: alpha(theme.palette.error.main, 0.1) 
+                },
+                color: theme.palette.error.main
+              }}
+              title="Çıkış Yap"
+              data-testid="button-logout"
+            >
+              <Logout />
+            </IconButton>
+            
+            <IconButton 
               sx={{ 
                 '&:hover': { 
                   bgcolor: alpha(theme.palette.action.hover, 0.1) 
@@ -96,11 +112,7 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
       </AppBar>
 
       {/* Sidebar */}
-      <PortalSidebar 
-        open={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-        user={user}
-      />
+      <PortalSidebar />
 
       {/* Main Content */}
       <Box 

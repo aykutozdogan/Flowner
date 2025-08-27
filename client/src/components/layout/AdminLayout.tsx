@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme, alpha } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, Notifications, Search, LightMode, DarkMode, BusinessCenter } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, Notifications, Search, LightMode, DarkMode, BusinessCenter, Logout } from '@mui/icons-material';
 import { useTheme as useCustomTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/hooks/useAuth';
 import AdminSidebar from './AdminSidebar';
 
 interface AdminLayoutProps {
@@ -16,6 +17,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
   });
   const theme = useTheme();
   const { theme: currentTheme, toggleTheme } = useCustomTheme();
+  const { logout } = useAuth();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -97,6 +99,20 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
             </IconButton>
             
             <IconButton 
+              onClick={logout}
+              sx={{ 
+                '&:hover': { 
+                  bgcolor: alpha(theme.palette.error.main, 0.1) 
+                },
+                color: theme.palette.error.main
+              }}
+              title="Çıkış Yap"
+              data-testid="button-logout"
+            >
+              <Logout />
+            </IconButton>
+            
+            <IconButton 
               sx={{ 
                 '&:hover': { 
                   bgcolor: alpha(theme.palette.action.hover, 0.1) 
@@ -112,14 +128,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
       </AppBar>
 
       {/* Sidebar */}
-      <AdminSidebar 
-        open={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-        user={user}
-        onPinChange={(pinned) => {
-          if (!pinned) setSidebarOpen(false);
-        }}
-      />
+      <AdminSidebar />
 
       {/* Main Content */}
       <Box 

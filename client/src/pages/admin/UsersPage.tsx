@@ -1,10 +1,9 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
-import { Button } from '../../components/ui/button';
+import { Button, DataGrid, Form, TextBox } from '../../components/ui/devextreme';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
-import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Badge } from '../../components/ui/badge';
@@ -173,7 +172,11 @@ const UsersPage = () => {
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog}>
+            <Button 
+              variant="primary"
+              onClick={openCreateDialog}
+              data-testid="button-create-user"
+            >
               <Plus className="h-4 w-4 mr-2" />
               New User
             </Button>
@@ -249,10 +252,10 @@ const UsersPage = () => {
               </div>
               
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button variant="primary" type="submit">
                   {editingUser ? 'Update' : 'Create'}
                 </Button>
               </div>
@@ -261,49 +264,103 @@ const UsersPage = () => {
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {users.map((user) => (
-          <Card key={user.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{user.displayName || user.email}</CardTitle>
-                  {user.displayName && (
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                  )}
-                  <div className="flex gap-1 mt-2">
-                    {user.roles.map((role) => (
-                      <Badge key={role} variant="secondary" className="text-xs">
-                        {availableRoles.find(r => r.id === role)?.label || role}
-                      </Badge>
-                    ))}
-                  </div>
+      {/* DevExtreme DataGrid for Users */}
+      <div className="bg-white rounded-lg shadow-sm border">
+        <DataGrid
+          dataSource={users}
+          keyExpr="id"
+          showBorders={true}
+          showRowLines={true}
+          showColumnLines={true}
+          rowAlternationEnabled={true}
+          columnAutoWidth={true}
+          data-testid="users-data-grid"
+          columns={[
+            {
+              dataField: 'email',
+              caption: 'Email',
+              dataType: 'string',
+              width: '200px',
+            },
+            {
+              dataField: 'displayName',
+              caption: 'Display Name',
+              dataType: 'string',
+              width: '150px',
+              cellRender: (cellData) => (
+                <span>{cellData.value || '-'}</span>
+              ),
+            },
+            {
+              dataField: 'roles',
+              caption: 'Roles',
+              width: '200px',
+              allowSorting: false,
+              allowFiltering: false,
+              cellRender: (cellData) => (
+                <div className="flex gap-1 flex-wrap">
+                  {cellData.value.map((role: string) => (
+                    <Badge key={role} variant="secondary" className="text-xs">
+                      {availableRoles.find(r => r.id === role)?.label || role}
+                    </Badge>
+                  ))}
                 </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => handleEdit(user)}>
+              ),
+            },
+            {
+              dataField: 'createdAt',
+              caption: 'Created',
+              dataType: 'date',
+              width: '120px',
+              cellRender: (cellData) => (
+                <span>{new Date(cellData.value).toLocaleDateString()}</span>
+              ),
+            },
+            {
+              dataField: 'isActive',
+              caption: 'Status',
+              width: '80px',
+              allowSorting: false,
+              allowFiltering: false,
+              cellRender: (cellData) => (
+                <Badge variant={cellData.value ? 'default' : 'secondary'}>
+                  {cellData.value ? 'Active' : 'Inactive'}
+                </Badge>
+              ),
+            },
+            {
+              caption: 'Actions',
+              width: '100px',
+              allowSorting: false,
+              allowFiltering: false,
+              cellRender: (cellData) => (
+                <div className="flex space-x-1">
+                  <Button 
+                    variant="secondary" 
+                    size="small"
+                    onClick={() => handleEdit(cellData.data)}
+                    data-testid={`button-edit-${cellData.data.id}`}
+                  >
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDelete(user.id)}>
+                  <Button 
+                    variant="danger" 
+                    size="small"
+                    onClick={() => handleDelete(cellData.data.id)}
+                    data-testid={`button-delete-${cellData.data.id}`}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">
-                Created: {new Date(user.createdAt).toLocaleDateString()}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-        
-        {users.length === 0 && (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">No users found. Create your first user to get started.</p>
-            </CardContent>
-          </Card>
-        )}
+              ),
+            },
+          ]}
+          enablePaging={true}
+          enableFiltering={true}
+          enableSearch={true}
+          pageSize={20}
+          noDataText="No users found. Create your first user to get started."
+        />
       </div>
     </div>
   );

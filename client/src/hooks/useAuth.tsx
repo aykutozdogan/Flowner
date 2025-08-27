@@ -89,7 +89,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (user.role === 'tenant_admin' || user.role === 'designer') {
       return '/admin/dashboard';
     } else if (user.role === 'approver' || user.role === 'user') {
-      return '/portal/inbox';
+      return '/portal/tasks';
     }
     
     return '/login';

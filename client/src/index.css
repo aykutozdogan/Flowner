@@ -1,8 +1,72 @@
+/* Font and CSS Imports First */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* Tailwind CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* DevExtreme Custom Flowner Theme */
+:root.dx-theme-light {
+  /* Override DevExtreme colors with Flowner branding */
+  --dx-color-primary: #1976d2;
+  --dx-color-primary-hover: #1565c0;
+  --dx-color-primary-active: #0d47a1;
+}
+
+:root.dx-theme-dark {
+  /* Dark theme DevExtreme customizations */
+  --dx-color-primary: #42a5f5;
+  --dx-color-primary-hover: #64b5f6;
+  --dx-color-primary-active: #90caf9;
+}
+
+:root.dx-theme-corporate {
+  /* Corporate theme with Material Design */
+  --dx-color-primary: #1976d2;
+  --dx-color-primary-hover: #1565c0;
+  --dx-color-primary-active: #0d47a1;
+}
+
+/* DevExtreme Component Customizations */
+.flowner-data-grid .dx-datagrid {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.flowner-data-grid .dx-datagrid-header-panel {
+  background-color: #f5f5f5;
+  border-bottom: 2px solid #1976d2;
+}
+
+.flowner-data-grid .dx-datagrid-headers .dx-header-row > td {
+  background-color: #f5f5f5;
+  color: #1976d2;
+  font-weight: 600;
+  padding: 12px 8px;
+}
+
+.flowner-data-grid .dx-datagrid-rowsview .dx-row:hover {
+  background-color: #e3f2fd;
+}
+
+.flowner-form .dx-form {
+  font-family: 'Roboto', sans-serif;
+}
+
+.flowner-text-box-container {
+  margin-bottom: 16px;
+}
+
+.flowner-text-box-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
 
 :root {
   /* S7 Enterprise Professional Renk Paleti */

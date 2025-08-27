@@ -2,6 +2,7 @@ import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider as CustomThemeProvider } from './hooks/use-theme';
+import { DevExtremeThemeProvider } from '@/hooks/use-devextreme-theme';
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -183,7 +184,7 @@ const theme = createTheme({
     '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
     '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
     '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-  ],
+  ] as any,
 });
 
 function RootRedirect() {
@@ -381,17 +382,19 @@ function App() {
 
   return (
     <CustomThemeProvider>
-      <ThemeProvider {...cleanThemeProviderProps}>
-        <CssBaseline />
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
-          </AuthProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
+      <DevExtremeThemeProvider>
+        <ThemeProvider {...cleanThemeProviderProps}>
+          <CssBaseline />
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+              </TooltipProvider>
+            </AuthProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </DevExtremeThemeProvider>
     </CustomThemeProvider>
   );
 }
