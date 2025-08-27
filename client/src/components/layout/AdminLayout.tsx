@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme, alpha } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, Notifications, Search, LightMode, DarkMode, BusinessCenter, Logout } from '@mui/icons-material';
+import React, { useState, useEffect } from 'react';
+import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme, alpha, Drawer } from '@mui/material';
+import { Menu as MenuIcon, AccountCircle, Notifications, Search, LightMode, DarkMode, BusinessCenter, Logout, PushPin, PushPinOutlined } from '@mui/icons-material';
 import { useTheme as useCustomTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
-import AdminSidebar from './AdminSidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Button } from '@/components/ui/devextreme';
 import { DevExtremeThemeSelector } from '@/components/ui/devextreme-theme-selector';
+import AdminSidebar from './AdminSidebar';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -13,17 +13,33 @@ interface AdminLayoutProps {
 }
 
 function AdminLayout({ children, user }: AdminLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(() => {
     return localStorage.getItem('admin_sidebar_pinned') === 'true';
   });
   const theme = useTheme();
   const { theme: currentTheme, toggleTheme } = useCustomTheme();
   const { logout } = useAuth();
 
-  // Mock handleLogout function, replace with actual logout logic
-  const handleLogout = () => {
-    console.log("Logging out...");
-    logout();
+  useEffect(() => {
+    localStorage.setItem('admin_sidebar_pinned', sidebarPinned.toString());
+  }, [sidebarPinned]);
+
+  const handleToggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handlePinSidebar = () => {
+    setSidebarPinned(!sidebarPinned);
+    if (!sidebarPinned) {
+      setSidebarOpen(true);
+    }
+  };
+
+  const handleCloseSidebar = () => {
+    if (!sidebarPinned) {
+      setSidebarOpen(false);
+    }
   };
 
   return (
@@ -35,25 +51,20 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
           bgcolor: 'white',
           color: theme.palette.text.primary,
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          borderBottom: `1px solid ${theme.palette.divider}`
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          zIndex: theme.zIndex.drawer + 1
         }}
       >
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           {/* Left side */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton
-              edge="start"
-              onClick={() => setSidebarOpen(true)}
-              sx={{ 
-                mr: 1,
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.primary.main, 0.2),
-                }
-              }}
-            >
-              <MenuIcon sx={{ color: theme.palette.primary.main }} />
-            </IconButton>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={handleToggleSidebar}
+              data-testid="button-toggle-sidebar"
+              icon="menu"
+            />
 
             <Typography 
               variant="h6" 
@@ -69,55 +80,39 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
 
           {/* Right side */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton 
-              sx={{ 
-                '&:hover': { 
-                  bgcolor: alpha(theme.palette.action.hover, 0.1) 
-                } 
-              }}
-            >
-              <Search />
-            </IconButton>
+            <Button
+              variant="secondary"
+              size="small"
+              icon="search"
+              data-testid="button-search"
+            />
 
-            {/* S7 Theme Toggle */}
-            <IconButton 
+            <DevExtremeThemeSelector />
+
+            <Button
+              variant="secondary"
+              size="small"
               onClick={toggleTheme}
-              sx={{ 
-                '&:hover': { 
-                  bgcolor: alpha(theme.palette.action.hover, 0.1) 
-                },
-                color: theme.palette.primary.main
-              }}
+              icon={currentTheme === 'light' ? 'sun' : currentTheme === 'dark' ? 'moon' : 'home'}
               title={`Tema: ${currentTheme === 'light' ? 'Açık' : currentTheme === 'dark' ? 'Koyu' : 'Kurumsal'}`}
-            >
-              {currentTheme === 'light' && <LightMode />}
-              {currentTheme === 'dark' && <DarkMode />}
-              {currentTheme === 'corporate' && <BusinessCenter />}
-            </IconButton>
+              data-testid="button-theme-toggle"
+            />
 
-            <IconButton 
-              sx={{ 
-                '&:hover': { 
-                  bgcolor: alpha(theme.palette.action.hover, 0.1) 
-                } 
-              }}
-            >
-              <Notifications />
-            </IconButton>
+            <Button
+              variant="secondary"
+              size="small"
+              icon="bell"
+              data-testid="button-notifications"
+            />
 
-            <IconButton 
-              onClick={handleLogout}
-              sx={{ 
-                '&:hover': { 
-                  bgcolor: alpha(theme.palette.error.main, 0.1) 
-                },
-                color: theme.palette.error.main
-              }}
+            <Button
+              variant="danger"
+              size="small"
+              onClick={logout}
+              icon="runner"
               title="Çıkış Yap"
               data-testid="button-logout"
-            >
-              <Logout />
-            </IconButton>
+            />
 
             <IconButton 
               sx={{ 
@@ -134,22 +129,48 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar */}
-      <AdminSidebar />
+      {/* Sidebar Drawer */}
+      <Drawer
+        variant={sidebarPinned ? "persistent" : "temporary"}
+        anchor="left"
+        open={sidebarOpen || sidebarPinned}
+        onClose={handleCloseSidebar}
+        sx={{
+          width: 280,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: 280,
+            boxSizing: 'border-box',
+            mt: 8, // AppBar height offset
+            height: 'calc(100% - 64px)',
+          },
+        }}
+      >
+        {/* Pin/Unpin Button */}
+        <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid #e0e0e0' }}>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={handlePinSidebar}
+            icon={sidebarPinned ? "unpin" : "pin"}
+            title={sidebarPinned ? "Menüyü Serbest Bırak" : "Menüyü Sabitle"}
+            data-testid="button-pin-sidebar"
+          />
+        </Box>
+        <AdminSidebar onClose={handleCloseSidebar} />
+      </Drawer>
 
       {/* Main Content */}
       <Box 
         component="main" 
         sx={{ 
           flexGrow: 1, 
-          mt: 8, // AppBar height offset
-          ml: () => {
-            const isPinned = localStorage.getItem('admin_sidebar_pinned') === 'true';
-            return isPinned && sidebarOpen ? '280px' : 0;
-          },
+          mt: 8, // AppBar height offset - boşluğu kaldırdık
+          ml: sidebarPinned ? '280px' : 0,
           bgcolor: '#f8fafc',
           minHeight: 'calc(100vh - 64px)',
-          transition: 'margin-left 0.3s ease'
+          transition: 'margin-left 0.3s ease',
+          p: 0 // Padding'i kaldırdık
         }}
       >
         {children}

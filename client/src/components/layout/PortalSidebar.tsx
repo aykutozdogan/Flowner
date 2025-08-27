@@ -49,7 +49,11 @@ const menuItems = [
   }
 ];
 
-const PortalSidebar = () => {
+interface PortalSidebarProps {
+  onClose?: () => void;
+}
+
+const PortalSidebar = ({ onClose }: PortalSidebarProps) => {
   const [location] = useLocation();
   const { hasRole } = useAuth();
 
@@ -57,13 +61,15 @@ const PortalSidebar = () => {
     item.roles.some(role => hasRole(role))
   );
 
-  return (
-    <div className="w-64 bg-background border-r border-border h-full">
-      <div className="p-6">
-        <h2 className="text-xl font-bold text-foreground">Flowner Portal</h2>
-      </div>
+  const handleLinkClick = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
 
-      <nav className="px-4 space-y-2">
+  return (
+    <div className="w-full bg-background h-full">
+      <nav className="px-4 space-y-2 mt-4">
         {visibleItems.map((item) => {
           const isActive = location === item.href || 
                           (item.href !== '/portal/tasks' && location.startsWith(item.href));
@@ -72,6 +78,7 @@ const PortalSidebar = () => {
             <Link
               key={item.href}
               to={item.href}
+              onClick={handleLinkClick}
               className={cn(
                 "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 isActive

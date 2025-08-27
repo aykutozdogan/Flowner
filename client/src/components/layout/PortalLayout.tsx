@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme, alpha, Badge } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, Notifications, Assignment, Logout } from '@mui/icons-material';
+import React, { useState, useEffect } from 'react';
+import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme, alpha, Badge, Drawer } from '@mui/material';
+import { Menu as MenuIcon, AccountCircle, Notifications, Assignment, Logout, PushPin, PushPinOutlined } from '@mui/icons-material';
 import { useAuth } from '@/hooks/useAuth';
-import PortalSidebar from './PortalSidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Button } from '@/components/ui/devextreme';
 import { DevExtremeThemeSelector } from '@/components/ui/devextreme-theme-selector';
+import PortalSidebar from './PortalSidebar';
 
 interface PortalLayoutProps {
   children: React.ReactNode;
@@ -13,12 +13,31 @@ interface PortalLayoutProps {
 
 function PortalLayout({ children, user }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(() => {
+    return localStorage.getItem('portal_sidebar_pinned') === 'true';
+  });
   const theme = useTheme();
   const { logout } = useAuth();
 
-  // Dummy logout handler to satisfy the Button component's onClick prop
-  const handleLogout = () => {
-    logout();
+  useEffect(() => {
+    localStorage.setItem('portal_sidebar_pinned', sidebarPinned.toString());
+  }, [sidebarPinned]);
+
+  const handleToggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handlePinSidebar = () => {
+    setSidebarPinned(!sidebarPinned);
+    if (!sidebarPinned) {
+      setSidebarOpen(true);
+    }
+  };
+
+  const handleCloseSidebar = () => {
+    if (!sidebarPinned) {
+      setSidebarOpen(false);
+    }
   };
 
   return (
@@ -30,25 +49,20 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
           bgcolor: 'white',
           color: theme.palette.text.primary,
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          borderBottom: `1px solid ${theme.palette.divider}`
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          zIndex: theme.zIndex.drawer + 1
         }}
       >
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           {/* Left side */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton
-              edge="start"
-              onClick={() => setSidebarOpen(true)}
-              sx={{
-                mr: 1,
-                bgcolor: alpha(theme.palette.secondary.main, 0.1),
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                }
-              }}
-            >
-              <MenuIcon sx={{ color: theme.palette.secondary.main }} />
-            </IconButton>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={handleToggleSidebar}
+              data-testid="button-toggle-sidebar"
+              icon="menu"
+            />
 
             <Typography
               variant="h6"
@@ -64,43 +78,32 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
 
           {/* Right side */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton
-              sx={{
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.action.hover, 0.1)
-                }
-              }}
-            >
-              <Badge badgeContent={3} color="error">
-                <Assignment />
-              </Badge>
-            </IconButton>
+            <Button
+              variant="secondary"
+              size="small"
+              icon="tasks"
+              badge={3}
+              data-testid="button-assignments"
+            />
 
-            <IconButton
-              sx={{
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.action.hover, 0.1)
-                }
-              }}
-            >
-              <Badge badgeContent={2} color="error">
-                <Notifications />
-              </Badge>
-            </IconButton>
+            <DevExtremeThemeSelector />
 
-            <IconButton
+            <Button
+              variant="secondary"
+              size="small"
+              icon="bell"
+              badge={2}
+              data-testid="button-notifications"
+            />
+
+            <Button
+              variant="danger"
+              size="small"
               onClick={logout}
-              sx={{
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.error.main, 0.1)
-                },
-                color: theme.palette.error.main
-              }}
+              icon="runner"
               title="Çıkış Yap"
               data-testid="button-logout"
-            >
-              <Logout />
-            </IconButton>
+            />
 
             <IconButton
               sx={{
@@ -117,17 +120,48 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar */}
-      <PortalSidebar />
+      {/* Sidebar Drawer */}
+      <Drawer
+        variant={sidebarPinned ? "persistent" : "temporary"}
+        anchor="left"
+        open={sidebarOpen || sidebarPinned}
+        onClose={handleCloseSidebar}
+        sx={{
+          width: 280,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: 280,
+            boxSizing: 'border-box',
+            mt: 8, // AppBar height offset
+            height: 'calc(100% - 64px)',
+          },
+        }}
+      >
+        {/* Pin/Unpin Button */}
+        <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid #e0e0e0' }}>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={handlePinSidebar}
+            icon={sidebarPinned ? "unpin" : "pin"}
+            title={sidebarPinned ? "Menüyü Serbest Bırak" : "Menüyü Sabitle"}
+            data-testid="button-pin-sidebar"
+          />
+        </Box>
+        <PortalSidebar onClose={handleCloseSidebar} />
+      </Drawer>
 
       {/* Main Content */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          mt: 8, // AppBar height offset
+          mt: 8, // AppBar height offset - boşluğu kaldırdık
+          ml: sidebarPinned ? '280px' : 0,
           bgcolor: '#f8fafc',
-          minHeight: 'calc(100vh - 64px)'
+          minHeight: 'calc(100vh - 64px)',
+          transition: 'margin-left 0.3s ease',
+          p: 0 // Padding'i kaldırdık
         }}
       >
         {children}
