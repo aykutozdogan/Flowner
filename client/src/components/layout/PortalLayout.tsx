@@ -12,7 +12,10 @@ interface PortalLayoutProps {
 }
 
 function PortalLayout({ children, user }: PortalLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    // Masaüstünde başlangıçta açık, mobilde kapalı
+    return window.innerWidth >= 768;
+  });
   const [sidebarPinned, setSidebarPinned] = useState(() => {
     return localStorage.getItem('portal_sidebar_pinned') === 'true';
   });
@@ -26,6 +29,20 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  // Pencere boyutu değiştiğinde sidebar durumunu güncelle
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && !sidebarPinned) {
+        setSidebarOpen(true);
+      } else if (window.innerWidth < 768 && !sidebarPinned) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarPinned]);
 
   const handlePinSidebar = () => {
     setSidebarPinned(!sidebarPinned);
