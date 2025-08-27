@@ -34,8 +34,9 @@ interface FormOption {
 
 const BpmnDesignerPage = () => {
   const [location, navigate] = useLocation();
-  // Extract key from route path /admin/workflows/:key
-  const key = location.split('/').pop();
+  // Extract key from route path - only if editing existing workflow
+  const segments = location.split('/');
+  const key = segments[segments.length - 1] === 'bpmn-designer' ? undefined : segments[segments.length - 1];
   const [workflow, setWorkflow] = useState<WorkflowDefinition>({
     key: '',
     name: '',
@@ -74,7 +75,7 @@ const BpmnDesignerPage = () => {
         description: 'Failed to load workflow',
         variant: 'destructive'
       });
-      navigate('/admin/workflows');
+      navigate('/workflows');
     } finally {
       setIsLoading(false);
     }
@@ -165,7 +166,7 @@ const BpmnDesignerPage = () => {
       <div className="border-b border-border p-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate('/admin/workflows')}>
+            <Button variant="ghost" onClick={() => navigate('/workflows')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Workflows
             </Button>

@@ -26,8 +26,9 @@ interface FormDefinition {
 
 const FormBuilderPage = () => {
   const [location, navigate] = useLocation();
-  // Extract key from route path /admin/forms/:key
-  const key = location.split('/').pop();
+  // Extract key from route path - only if editing existing form
+  const segments = location.split('/');
+  const key = segments[segments.length - 1] === 'form-builder' ? undefined : segments[segments.length - 1];
   const [form, setForm] = useState<FormDefinition>({
     key: '',
     name: '',
@@ -64,7 +65,7 @@ const FormBuilderPage = () => {
         description: 'Failed to load form',
         variant: 'destructive'
       });
-      navigate('/admin/forms');
+      navigate('/forms');
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +145,7 @@ const FormBuilderPage = () => {
       <div className="border-b border-border p-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate('/admin/forms')}>
+            <Button variant="ghost" onClick={() => navigate('/forms')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Forms
             </Button>
