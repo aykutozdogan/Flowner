@@ -35,6 +35,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@shared-ui': path.resolve(__dirname, '../../packages/shared-ui/src'),
       '@shared-core': path.resolve(__dirname, '../../packages/shared-core/src'),
+      '@client': path.resolve(__dirname, '../../client/src'),
     }
   },
   base: '/',
