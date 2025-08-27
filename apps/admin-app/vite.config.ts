@@ -13,7 +13,12 @@ export default defineConfig({
       clientPort: 5174,
       host: '0.0.0.0'
     },
-    allowedHosts: 'all',
+    allowedHosts: [
+      'localhost',
+      '.replit.dev',
+      '.picard.replit.dev',
+      '0305bf3e-a8a0-449c-adb5-192b49daa40b-00-35p3hpmvif7qt.picard.replit.dev'
+    ],
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
