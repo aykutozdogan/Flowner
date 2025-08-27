@@ -1,19 +1,20 @@
 #!/bin/bash
 
+# Ana proje klasörüne geç (script scripts/ klasöründe olduğu için)
+cd "$(dirname "$0")/.."
+
 echo "🚀 Flowner Development Mode Starting..."
 
 # Kill any existing processes on our ports
-lsof -ti:5000,5174,5175 | xargs -r kill -9 2>/dev/null || true
+# lsof -ti:5000,5174,5175 | xargs -r kill -9 2>/dev/null || true
 pkill -f "vite\|node\|tsx" 2>/dev/null || true
-sleep 3
+sleep 2
 
-echo "📦 Type checking shared packages..."
-cd packages/shared-core && npm run type-check 2>/dev/null || true
-cd ../shared-ui && npm run type-check 2>/dev/null || true
-cd ../..
+echo "📦 Checking project structure..."
+pwd
 
 echo "⚙️ Starting Backend API (port 5000)..."
-npm run dev &
+npm run server &
 API_PID=$!
 sleep 5
 
