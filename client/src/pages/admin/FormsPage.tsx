@@ -76,11 +76,11 @@ export default function FormsPage() {
   });
 
   const handleNewForm = () => {
-    setLocation('/admin/forms/builder');
+    setLocation('/form-builder');
   };
 
   const handleEditForm = (formKey: string) => {
-    setLocation(`/admin/forms/builder/${formKey}`);
+    setLocation(`/form-builder/${formKey}`);
   };
 
   if (isLoading) {

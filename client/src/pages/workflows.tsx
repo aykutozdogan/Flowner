@@ -74,16 +74,16 @@ export default function WorkflowsPage() {
   });
 
   const handleNewWorkflow = () => {
-    setLocation('/admin/workflows/designer');
+    setLocation('/bpmn-designer');
   };
 
   const handleEditWorkflow = (workflowKey: string | undefined, workflowId?: string) => {
     if (!workflowKey && !workflowId) {
-      setLocation('/admin/workflows/designer/new');
+      setLocation('/bpmn-designer');
       return;
     }
-    const key = workflowKey || workflowId || 'new';
-    setLocation(`/admin/workflows/designer/${key}`);
+    const key = workflowKey || workflowId;
+    setLocation(`/bpmn-designer/${key}`);
   };
 
   if (isLoading) {
