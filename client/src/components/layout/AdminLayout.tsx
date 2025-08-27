@@ -13,10 +13,7 @@ interface AdminLayoutProps {
 }
 
 function AdminLayout({ children, user }: AdminLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    // Masaüstünde başlangıçta açık, mobilde kapalı
-    return window.innerWidth >= 768;
-  });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarPinned, setSidebarPinned] = useState(() => {
     return localStorage.getItem('admin_sidebar_pinned') === 'true';
   });
@@ -32,18 +29,11 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Pencere boyutu değiştiğinde sidebar durumunu güncelle
+  // Pinleme durumu değiştiğinde sidebar'ı aç
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768 && !sidebarPinned) {
-        setSidebarOpen(true);
-      } else if (window.innerWidth < 768 && !sidebarPinned) {
-        setSidebarOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (sidebarPinned) {
+      setSidebarOpen(true);
+    }
   }, [sidebarPinned]);
 
   const handlePinSidebar = () => {
@@ -54,6 +44,12 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
   };
 
   const handleCloseSidebar = () => {
+    if (!sidebarPinned) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleBackdropClick = () => {
     if (!sidebarPinned) {
       setSidebarOpen(false);
     }
@@ -154,7 +150,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
         variant={sidebarPinned ? "persistent" : "temporary"}
         anchor="left"
         open={sidebarOpen}
-        onClose={handleCloseSidebar}
+        onClose={handleBackdropClick}
         sx={{
           width: 280,
           flexShrink: 0,
@@ -170,7 +166,8 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
           },
         }}
         ModalProps={{
-          keepMounted: true, // Better open performance on mobile
+          keepMounted: true,
+          onBackdropClick: handleBackdropClick,
         }}
       >
         {/* Pin/Unpin Button Header */}

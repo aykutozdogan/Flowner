@@ -12,10 +12,7 @@ interface PortalLayoutProps {
 }
 
 function PortalLayout({ children, user }: PortalLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    // Masaüstünde başlangıçta açık, mobilde kapalı
-    return window.innerWidth >= 768;
-  });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarPinned, setSidebarPinned] = useState(() => {
     return localStorage.getItem('portal_sidebar_pinned') === 'true';
   });
@@ -30,18 +27,11 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Pencere boyutu değiştiğinde sidebar durumunu güncelle
+  // Pinleme durumu değiştiğinde sidebar'ı aç
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768 && !sidebarPinned) {
-        setSidebarOpen(true);
-      } else if (window.innerWidth < 768 && !sidebarPinned) {
-        setSidebarOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (sidebarPinned) {
+      setSidebarOpen(true);
+    }
   }, [sidebarPinned]);
 
   const handlePinSidebar = () => {
@@ -52,6 +42,12 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
   };
 
   const handleCloseSidebar = () => {
+    if (!sidebarPinned) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const handleBackdropClick = () => {
     if (!sidebarPinned) {
       setSidebarOpen(false);
     }
@@ -145,7 +141,7 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
         variant={sidebarPinned ? "persistent" : "temporary"}
         anchor="left"
         open={sidebarOpen}
-        onClose={handleCloseSidebar}
+        onClose={handleBackdropClick}
         sx={{
           width: 280,
           flexShrink: 0,
@@ -161,7 +157,8 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
           },
         }}
         ModalProps={{
-          keepMounted: true, // Better open performance on mobile
+          keepMounted: true,
+          onBackdropClick: handleBackdropClick,
         }}
       >
         {/* Pin/Unpin Button Header */}
