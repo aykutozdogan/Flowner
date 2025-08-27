@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -20,6 +21,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { toast } = useToast();
+  const { login, getDefaultRoute } = useAuth();
 
   // Get redirectTo parameter from URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -42,11 +44,8 @@ export default function Login() {
       const data = await response.json();
       
       if (data.success) {
-        // Store tokens and user info
-        localStorage.setItem('access_token', data.data.access_token);
-        localStorage.setItem('refresh_token', data.data.refresh_token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
-        localStorage.setItem('tenant_id', data.data.user.tenant_id);
+        // Use AuthContext login method
+        login(data.data.user, data.data.access_token, data.data.refresh_token);
 
         toast({
           title: "Giriş Başarılı",
@@ -54,19 +53,13 @@ export default function Login() {
         });
 
         // Handle redirect - redirectTo param takes priority
-        if (redirectTo) {
-          setLocation(redirectTo);
-        } else {
-          // Role-based redirect
-          const userRole = data.data.user.role;
-          if (userRole === 'tenant_admin' || userRole === 'designer') {
-            setLocation('/admin/dashboard');
-          } else if (userRole === 'approver' || userRole === 'user') {
-            setLocation('/portal/tasks');
-          } else {
-            setLocation('/');
-          }
-        }
+        const targetRoute = redirectTo || getDefaultRoute();
+        
+        // Use a small delay to ensure state is updated
+        setTimeout(() => {
+          setLocation(targetRoute);
+        }, 100);
+        
       } else {
         setError(data.detail || 'Login failed');
       }

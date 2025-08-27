@@ -1,130 +1,116 @@
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useLocation } from 'wouter';
-import { api } from '../lib/api';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User } from '@shared/schema';
 
-interface User {
-  id: string;
-  email: string;
-  displayName?: string;
-  roles: string[];
-  tenantId: string;
+interface AuthUser extends Omit<User, 'password'> {
+  tenant_id: string;
 }
 
 interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  user: AuthUser | null | undefined;
+  isAuthenticated: boolean;
+  login: (userData: AuthUser, accessToken: string, refreshToken: string) => void;
   logout: () => void;
-  hasRole: (role: string) => boolean;
-  isAdmin: boolean;
-  isUser: boolean;
+  hasAdminAccess: () => boolean;
+  hasPortalAccess: () => boolean;
+  getDefaultRoute: () => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [location, navigate] = useLocation();
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<AuthUser | null | undefined>(undefined);
 
-      const response = await api.get('/auth/me');
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData.user);
-      } else {
-        localStorage.removeItem('token');
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('token');
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Initialize auth state from localStorage
   useEffect(() => {
-    checkAuth();
+    const initializeAuth = () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        const accessToken = localStorage.getItem('access_token');
+        const tenantId = localStorage.getItem('tenant_id');
+
+        if (storedUser && accessToken && tenantId) {
+          const userData = JSON.parse(storedUser) as AuthUser;
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        setUser(null);
+        // Clear corrupted data
+        localStorage.removeItem('user');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('tenant_id');
+      }
+    };
+
+    initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await api.post('/auth/login', { email, password });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Login failed');
-      }
-
-      const data = await response.json();
-      localStorage.setItem('token', data.token);
-      setUser(data.user);
-
-      // Role-based redirect
-      const searchParams = new URLSearchParams(location.search);
-      const redirectTo = searchParams.get('redirectTo');
-      
-      if (redirectTo) {
-        navigate(redirectTo);
-      } else {
-        // Default role-based redirect
-        const roles = data.user.roles || [];
-        if (roles.includes('tenant_admin') || roles.includes('designer')) {
-          navigate('/admin/dashboard');
-        } else if (roles.includes('user') || roles.includes('approver')) {
-          navigate('/portal/tasks');
-        } else {
-          navigate('/dashboard');
-        }
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
+  const login = (userData: AuthUser, accessToken: string, refreshToken: string) => {
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('tenant_id', userData.tenant_id);
+    setUser(userData);
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('tenant_id');
     setUser(null);
-    navigate('/login');
+    window.location.href = '/login';
   };
 
-  const hasRole = (role: string) => {
-    return user?.roles?.includes(role) || false;
+  const hasAdminAccess = () => {
+    return user?.role === 'tenant_admin' || user?.role === 'designer';
   };
 
-  const isAdmin = hasRole('tenant_admin') || hasRole('designer');
-  const isUser = hasRole('user') || hasRole('approver');
+  const hasPortalAccess = () => {
+    return user?.role === 'approver' || user?.role === 'user';
+  };
+
+  const getDefaultRoute = () => {
+    if (!user) return '/login';
+    
+    if (user.role === 'tenant_admin' || user.role === 'designer') {
+      return '/admin/dashboard';
+    } else if (user.role === 'approver' || user.role === 'user') {
+      return '/portal/inbox';
+    }
+    
+    return '/login';
+  };
+
+  const isAuthenticated = !!user && !!localStorage.getItem('access_token');
 
   return (
     <AuthContext.Provider value={{
       user,
-      isLoading,
+      isAuthenticated,
       login,
       logout,
-      hasRole,
-      isAdmin,
-      isUser
+      hasAdminAccess,
+      hasPortalAccess,
+      getDefaultRoute,
     }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}

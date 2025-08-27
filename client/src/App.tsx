@@ -187,7 +187,21 @@ const theme = createTheme({
 });
 
 function RootRedirect() {
-  const { isAuthenticated, getDefaultRoute } = useAuth();
+  const { isAuthenticated, getDefaultRoute, user } = useAuth();
+
+  // Show loading while user state is being determined
+  if (user === undefined) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh' 
+      }}>
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Redirect to="/login" />;
