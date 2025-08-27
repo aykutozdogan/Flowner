@@ -46,7 +46,12 @@ interface AppProps {
 }
 
 // Ana uygulama component'i - role-based routing ile
-function AppContent({ entryMode = 'unified' }: { entryMode?: string }) {
+function AppContent({ entryMode }: { entryMode?: string }) {
+  // URL-based entryMode detection
+  const pathname = window.location.pathname;
+  const detectedEntryMode = entryMode || 
+    (pathname.startsWith('/admin') ? 'admin' : 
+     pathname.startsWith('/portal') ? 'portal' : 'unified');
   const { user, isAuthenticated, role } = useAuth();
 
   // Error tracking başlat
@@ -69,11 +74,11 @@ function AppContent({ entryMode = 'unified' }: { entryMode?: string }) {
   const isPortalUser = role === 'user' || role === 'approver';
 
   // Entry mode'a göre routing
-  if (entryMode === 'admin' && !isAdmin) {
+  if (detectedEntryMode === 'admin' && !isAdmin) {
     return <div>Yetkiniz bulunmamaktadır. Admin rolü gereklidir.</div>;
   }
   
-  if (entryMode === 'portal' && !isPortalUser) {
+  if (detectedEntryMode === 'portal' && !isPortalUser) {
     return <div>Yetkiniz bulunmamaktadır. Portal kullanıcısı rolü gereklidir.</div>;
   }
 
@@ -131,7 +136,7 @@ function AppContent({ entryMode = 'unified' }: { entryMode?: string }) {
       )}
       
       {/* Unified mode routes */}
-      {entryMode === 'unified' && (
+      {detectedEntryMode === 'unified' && (
         <>
           <Route path="/tasks" component={Tasks} />
           <Route path="/workflows" component={Workflows} />
@@ -143,8 +148,8 @@ function AppContent({ entryMode = 'unified' }: { entryMode?: string }) {
       {/* Default redirects */}
       <Route path="/">
         {() => {
-          if (entryMode === 'admin') return <Redirect to="/admin/dashboard" />;
-          if (entryMode === 'portal') return <Redirect to="/portal/inbox" />;
+          if (detectedEntryMode === 'admin') return <Redirect to="/admin/dashboard" />;
+          if (detectedEntryMode === 'portal') return <Redirect to="/portal/inbox" />;
           if (isAdmin) return <Redirect to="/admin/dashboard" />;
           if (isPortalUser) return <Redirect to="/portal/inbox" />;
           return <Redirect to="/login" />;
