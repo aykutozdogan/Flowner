@@ -1,0 +1,122 @@
+Lütfen TÜM yanıtlarını TÜRKÇE ver.
+
+AMAÇ:  
+Flowner BPM platformunda kritik UI/UX sorunlarını düzelt, modern tema sistemi (DevExtreme) entegre et, responsive layout’u düzenle, testleri çalıştır ve sonunda terminale **UI_FIX=PASS** yaz.
+
+───────────────────────────────────────────────
+📋 TESPİT EDİLEN SORUNLAR
+
+🔐 Admin Panel
+- Login sonrası yönlendirme çalışmıyor
+- Logout butonu yok veya çalışmıyor
+- Session persistence/localStorage eksik
+- Tema sistemi bozuk; Dark/Light toggle çalışmıyor
+- Responsive layout bozuk (desktop/tablet/mobile)
+- Users sayfası hata veriyor (/admin/users)
+- Navigation menü çalışmıyor
+- Dashboard cards alignment bozuk
+
+👤 User Portal
+- Genel layout kaymış
+- Menü + content alanı karışmış
+- Task list arayüzü bozuk
+- Navigation çalışmıyor
+
+───────────────────────────────────────────────
+🎨 ÇÖZÜM STRATEJİSİ – DEVEXTREME INTEGRATION
+
+- DevExtreme kurulumu + ThemeBuilder SCSS
+- Base Theme: Generic Light
+- Flowner Mavi (#1976d2) primary
+- Dark/Light toggle
+- Responsive grid (xs-sm-md-lg-xl)
+- Material-UI yerine DevExtreme komponentleri:
+  - dx-menu, dx-drawer (Navigation)
+  - dx-form, dx-text-box, dx-button (Login)
+  - dx-data-grid (Users)
+  - dx-tile-view, dx-chart (Dashboard)
+
+───────────────────────────────────────────────
+🛠️ TEKNİK ADIMLAR
+
+1) Authentication Fix
+- Login sonrası role-based redirect:
+  - tenant_admin/designer → /admin/dashboard
+  - user/approver → /portal/tasks
+- Session persistence (localStorage)
+- Logout button header’a ekle, session temizle
+
+2) Theme Setup
+```bash
+npm install devextreme devextreme-react devextreme-cli
+npm install devextreme-themebuilder-scss
+SCSS import: Generic Light
+Custom variables: Flowner branding
+Dark/Light toggle implementasyonu
+3) Layout Restructure
+Admin Layout: dx-drawer + dx-menu
+Portal Layout: mobile-first responsive
+Header: user menu, theme toggle, logout
+Sidebar: role-based menu items
+4) Component Replacement
+MUI → DevExtreme geçiş
+Navigation, forms, tables, charts
+Responsive alignment düzeltmeleri
+
+───────────────────────────────────────────────
+📱 RESPONSIVE REQUIREMENTS
+Desktop (>=1200px): sidebar sabit, 4 kolon grid
+Tablet (768–1199px): sidebar collapse, 2 kolon
+Mobile (<=767px): sidebar hidden/slide, 1 kolon stacked
+
+───────────────────────────────────────────────
+✅ KABUL KRİTERLERİ
+Login sonrası otomatik redirect çalışıyor
+
+Logout ile login sayfasına dönüş
+
+Session persistence doğru
+
+Dark/Light toggle çalışıyor
+
+Users sayfası dx-data-grid ile açılıyor
+Navigation sidebar menüleri role göre doğru
+Responsive layout desktop/tablet/mobile testlerinde düzgün
+Portal → /portal/tasks açılıyor ve liste çalışıyor
+Tüm smoke & e2e testler PASS
+Terminal çıktısı: UI_FIX=PASS
+───────────────────────────────────────────────
+🧪 TESTLER
+Smoke Test (tests/ui-auth-smoke.sh)
+Admin login → /admin/dashboard redirect
+Logout → /login
+User login → /portal/tasks redirect
+Son satır: UI_AUTH_SMOKE=PASS
+UI E2E (Playwright/Cypress)
+/admin/users → grid render
+Theme toggle → dark/light değişimi
+/portal/tasks → task list render
+Responsive breakpoints → layout düzgün
+Son satır: UI_E2E=PASS
+package.json scriptleri:
+"test:ui:auth": "bash tests/ui-auth-smoke.sh"
+"test:ui:e2e": "playwright test tests/e2e/ui --reporter=line || cypress run --spec 'cypress/e2e/ui/*.cy.ts'"
+───────────────────────────────────────────────
+📄 DOKÜMANTASYON
+README.md → DevExtreme kurulumu, tema switching
+docs/ui-fix-report.md → yapılan düzeltmeler, test özetleri, bilinen ufak kusurlar
+Rapor sonunda: UI_FIX=PASS
+───────────────────────────────────────────────
+KABUL ADIMLARI
+npm run lint && npm run typecheck && npm run build
+npm start &; sleep 3
+npm run test:ui:auth
+npm run test:ui:e2e
+Hepsi geçerse terminale yaz: UI_FIX=PASS
+
+
+---
+
+👉 Bunu verdiğinde: Hem authentication/nav sorunlarını çözecek, hem DevExtreme ile modern tema entegre edecek, hem de responsive + testleri tamamlayıp sana rapor bırakacak.  
+
+İstersen ben sana `tests/ui-auth-smoke.sh` için örnek script de hazırlayayım mı?
