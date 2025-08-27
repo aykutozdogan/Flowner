@@ -13,6 +13,7 @@ interface AuthContextType {
   logout: () => void;
   hasAdminAccess: () => boolean;
   hasPortalAccess: () => boolean;
+  hasRole: (role: string) => boolean;
   getDefaultRoute: () => string;
 }
 
@@ -78,6 +79,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return user?.role === 'approver' || user?.role === 'user';
   };
 
+  const hasRole = (role: string) => {
+    return user?.role === role;
+  };
+
   const getDefaultRoute = () => {
     if (!user) return '/login';
     
@@ -100,6 +105,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout,
       hasAdminAccess,
       hasPortalAccess,
+      hasRole,
       getDefaultRoute,
     }}>
       {children}
