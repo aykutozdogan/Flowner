@@ -72,61 +72,83 @@ export function DevExtremeThemeProvider({ children, defaultTheme }: { children: 
     }
 
     try {
-      // Load DevExtreme theme CSS dynamically
-      const themeUrls = {
-        'generic.light': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css',
-        'generic.dark': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.dark.css',
-        'material.blue.light': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.material.blue.light.css',
-        'generic.carmine': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.carmine.css',
-        'generic.darkmoon': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.darkmoon.css',
-        'generic.softblue': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.softblue.css',
-        'generic.darkviolet': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.darkviolet.css',
-        'generic.greenmist': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.greenmist.css',
-        'generic.contrast': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.contrast.css'
-      };
+      // Apply CSS class changes for dynamic theming
+      const root = document.documentElement;
       
-      // Remove previous theme CSS
-      const existingTheme = document.querySelector('link[data-dx-theme]');
-      if (existingTheme) {
-        existingTheme.remove();
+      // Remove all existing theme classes
+      root.classList.remove('dx-theme-light', 'dx-theme-dark', 'dx-theme-corporate', 'dx-theme-carmine', 'dx-theme-dark-moon', 'dx-theme-soft-blue', 'dx-theme-dark-violet', 'dx-theme-green-mist', 'dx-theme-contrast');
+      
+      // Add current theme class
+      root.classList.add(`dx-theme-${theme}`);
+      
+      // Update CSS variables based on theme
+      let primaryColor = '#1976d2'; // Default Flowner Blue
+      let backgroundColor = '#ffffff';
+      let textColor = '#000000';
+      
+      switch (theme) {
+        case 'dark':
+          primaryColor = '#42a5f5';
+          backgroundColor = '#1e1e1e';
+          textColor = '#ffffff';
+          break;
+        case 'carmine':
+          primaryColor = '#e17055';
+          backgroundColor = '#ffeaa7';
+          textColor = '#2d3436';
+          break;
+        case 'dark-moon':
+          primaryColor = '#00b894';
+          backgroundColor = '#2d3436';
+          textColor = '#dddddd';
+          break;
+        case 'soft-blue':
+          primaryColor = '#74b9ff';
+          backgroundColor = '#f8f9fa';
+          textColor = '#2d3436';
+          break;
+        case 'dark-violet':
+          primaryColor = '#6c5ce7';
+          backgroundColor = '#2d3436';
+          textColor = '#dddddd';
+          break;
+        case 'green-mist':
+          primaryColor = '#00b894';
+          backgroundColor = '#f8f9fa';
+          textColor = '#2d3436';
+          break;
+        case 'contrast':
+          primaryColor = '#000000';
+          backgroundColor = '#ffffff';
+          textColor = '#000000';
+          break;
+        case 'corporate':
+        case 'light':
+        default:
+          primaryColor = '#1976d2';
+          backgroundColor = '#ffffff';
+          textColor = '#000000';
+          break;
       }
       
-      // Load new theme CSS
-      const themeUrl = themeUrls[themeName as keyof typeof themeUrls] || themeUrls['generic.light'];
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = themeUrl;
-      link.setAttribute('data-dx-theme', themeName);
-      document.head.appendChild(link);
+      // Apply CSS variables
+      root.style.setProperty('--dx-color-primary', primaryColor);
+      root.style.setProperty('--dx-color-background', backgroundColor);
+      root.style.setProperty('--dx-color-text', textColor);
       
-      // Try DevExtreme theme API if available  
-      if (typeof window !== 'undefined' && (window as any).DevExpress?.ui?.themes) {
-        const themes = (window as any).DevExpress.ui.themes;
-        themes.current(themeName);
-      }
+      // Force rerender of all DevExtreme components
+      setTimeout(() => {
+        const event = new CustomEvent('dx-theme-changed', { detail: { theme, primaryColor } });
+        window.dispatchEvent(event);
+        window.dispatchEvent(new Event('resize'));
+      }, 100);
+      
     } catch (error) {
-      console.warn('DevExtreme theme setting skipped:', error);
+      console.warn('DevExtreme theme setting failed:', error);
     }
-    
-    // Apply additional CSS class to document root
-    const root = document.documentElement;
-    root.classList.remove('dx-theme-light', 'dx-theme-dark', 'dx-theme-corporate', 'dx-theme-carmine', 'dx-theme-dark-moon', 'dx-theme-soft-blue', 'dx-theme-dark-violet', 'dx-theme-green-mist', 'dx-theme-contrast');
-    root.classList.add(`dx-theme-${theme}`);
     
     // Store in localStorage
     localStorage.setItem('flowner-dx-theme', theme);
-
-    // Update CSS variables for Flowner branding
-    const primaryColor = '#1976d2'; // Flowner Blue
-    root.style.setProperty('--dx-color-primary', primaryColor);
-    root.style.setProperty('--dx-color-primary-rgb', '25, 118, 210');
-    
-    // Force update all DevExtreme components
-    setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-      const event = new CustomEvent('dx-theme-changed', { detail: { theme } });
-      window.dispatchEvent(event);
-    }, 100);
     
   }, [theme]);
 
