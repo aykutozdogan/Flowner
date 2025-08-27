@@ -1,4 +1,3 @@
-
 import { 
   Inbox, 
   FileText, 
@@ -63,12 +62,12 @@ const PortalSidebar = () => {
       <div className="p-6">
         <h2 className="text-xl font-bold text-foreground">Flowner Portal</h2>
       </div>
-      
+
       <nav className="px-4 space-y-2">
         {visibleItems.map((item) => {
           const isActive = location.pathname === item.href || 
                           (item.href !== '/portal/tasks' && location.pathname.startsWith(item.href));
-          
+
           return (
             <Link
               key={item.href}
