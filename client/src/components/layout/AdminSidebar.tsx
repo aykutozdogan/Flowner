@@ -20,49 +20,49 @@ const menuItems = [
   { 
     icon: Home, 
     label: 'Dashboard', 
-    href: '/admin/dashboard',
+    href: '/dashboard',
     roles: ['tenant_admin', 'designer']
   },
   { 
     icon: FolderOpen, 
     label: 'Forms', 
-    href: '/admin/forms',
+    href: '/forms',
     roles: ['tenant_admin', 'designer']
   },
   { 
     icon: Route, 
     label: 'Workflows', 
-    href: '/admin/workflows',
+    href: '/workflows',
     roles: ['tenant_admin', 'designer']
   },
   { 
     icon: Play, 
     label: 'Processes', 
-    href: '/admin/processes',
+    href: '/processes',
     roles: ['tenant_admin', 'designer']
   },
   { 
     icon: Building, 
     label: 'Tenants', 
-    href: '/admin/tenants',
+    href: '/tenants',
     roles: ['tenant_admin']
   },
   { 
     icon: Users, 
     label: 'Users', 
-    href: '/admin/users',
+    href: '/users',
     roles: ['tenant_admin']
   },
   { 
     icon: BarChart3, 
     label: 'Analytics', 
-    href: '/admin/analytics',
+    href: '/analytics',
     roles: ['tenant_admin', 'designer']
   },
   { 
     icon: Settings, 
     label: 'Settings', 
-    href: '/admin/settings',
+    href: '/settings',
     roles: ['tenant_admin']
   }
 ];

@@ -14,37 +14,37 @@ const menuItems = [
   { 
     icon: Inbox, 
     label: 'Tasks', 
-    href: '/portal/tasks',
+    href: '/inbox',
     roles: ['user', 'approver']
   },
   { 
     icon: Play, 
     label: 'Start Process', 
-    href: '/portal/start-process',
+    href: '/start-process',
     roles: ['user', 'approver']
   },
   { 
     icon: FileText, 
     label: 'My Processes', 
-    href: '/portal/my-processes',
+    href: '/my-processes',
     roles: ['user', 'approver']
   },
   { 
     icon: FileText, 
     label: 'Forms', 
-    href: '/portal/forms',
+    href: '/forms',
     roles: ['user', 'approver']
   },
   { 
     icon: Bell, 
     label: 'Notifications', 
-    href: '/portal/notifications',
+    href: '/notifications',
     roles: ['user', 'approver']
   },
   { 
     icon: User, 
     label: 'Profile', 
-    href: '/portal/profile',
+    href: '/profile',
     roles: ['user', 'approver']
   }
 ];
@@ -72,7 +72,7 @@ const PortalSidebar = ({ onClose }: PortalSidebarProps) => {
       <nav className="px-4 space-y-2 mt-4">
         {visibleItems.map((item) => {
           const isActive = location === item.href || 
-                          (item.href !== '/portal/tasks' && location.startsWith(item.href));
+                          (item.href !== '/inbox' && location.startsWith(item.href));
 
           return (
             <Link
