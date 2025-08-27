@@ -998,6 +998,250 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Form Builder endpoints
+  /**
+   * @swagger
+   * /v1/forms/builder:
+   *   get:
+   *     summary: Get form builder interface
+   *     description: Get form builder configuration and schema templates
+   *     tags: [Forms v1]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *     responses:
+   *       200:
+   *         description: Form builder data retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     templates:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                     field_types:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   */
+  app.get("/api/v1/forms/builder", async (req: any, res) => {
+    try {
+      // Form builder configuration
+      const builderConfig = {
+        templates: [
+          {
+            id: 'basic_form',
+            name: 'Basic Form',
+            description: 'A simple form with common fields',
+            schema: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', title: 'Full Name' },
+                email: { type: 'string', format: 'email', title: 'Email' },
+                message: { type: 'string', title: 'Message' }
+              },
+              required: ['name', 'email']
+            },
+            ui_schema: {
+              message: { 'ui:widget': 'textarea' }
+            }
+          },
+          {
+            id: 'expense_request',
+            name: 'Expense Request',
+            description: 'Form for expense reimbursement requests',
+            schema: {
+              type: 'object',
+              properties: {
+                amount: { type: 'number', title: 'Amount', minimum: 0 },
+                description: { type: 'string', title: 'Description' },
+                category: {
+                  type: 'string',
+                  title: 'Category',
+                  enum: ['Travel', 'Meals', 'Office Supplies', 'Other']
+                },
+                receipt_attached: { type: 'boolean', title: 'Receipt Attached' }
+              },
+              required: ['amount', 'description', 'category']
+            },
+            ui_schema: {
+              description: { 'ui:widget': 'textarea' }
+            }
+          }
+        ],
+        field_types: [
+          { type: 'string', title: 'Text Input', widget: 'text' },
+          { type: 'string', title: 'Email', format: 'email' },
+          { type: 'string', title: 'Textarea', widget: 'textarea' },
+          { type: 'number', title: 'Number Input' },
+          { type: 'boolean', title: 'Checkbox' },
+          { type: 'string', title: 'Select Dropdown', enum: [] },
+          { type: 'string', title: 'Date', format: 'date' }
+        ],
+        ui_widgets: [
+          'text', 'textarea', 'select', 'radio', 'checkbox', 'date', 'email', 'number'
+        ]
+      };
+
+      res.json({
+        success: true,
+        data: builderConfig
+      });
+    } catch (error) {
+      console.error("Form builder config error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to get form builder configuration"
+      });
+    }
+  });
+
+  // Workflow Designer endpoints
+  /**
+   * @swagger
+   * /v1/workflows/designer:
+   *   get:
+   *     summary: Get workflow designer interface
+   *     description: Get workflow designer configuration and BPMN templates
+   *     tags: [Workflows v1]
+   *     parameters:
+   *       - $ref: '#/components/parameters/tenantId'
+   *     responses:
+   *       200:
+   *         description: Workflow designer data retrieved successfully
+   */
+  app.get("/api/v1/workflows/designer", async (req: any, res) => {
+    try {
+      // Workflow designer configuration
+      const designerConfig = {
+        templates: [
+          {
+            id: 'simple_approval',
+            name: 'Simple Approval',
+            description: 'A basic approval workflow',
+            bpmn_definition: {
+              id: 'simple_approval',
+              name: 'Simple Approval Process',
+              elements: [
+                {
+                  id: 'start',
+                  type: 'startEvent',
+                  name: 'Start',
+                  position: { x: 100, y: 100 }
+                },
+                {
+                  id: 'user_task',
+                  type: 'userTask',
+                  name: 'Review Request',
+                  assigneeRole: 'approver',
+                  formKey: 'approval_form',
+                  position: { x: 250, y: 100 }
+                },
+                {
+                  id: 'end',
+                  type: 'endEvent',
+                  name: 'End',
+                  position: { x: 400, y: 100 }
+                }
+              ],
+              flows: [
+                { from: 'start', to: 'user_task' },
+                { from: 'user_task', to: 'end' }
+              ]
+            }
+          },
+          {
+            id: 'expense_approval',
+            name: 'Expense Approval',
+            description: 'Multi-step expense approval process',
+            bpmn_definition: {
+              id: 'expense_approval',
+              name: 'Expense Approval Process',
+              elements: [
+                {
+                  id: 'start',
+                  type: 'startEvent',
+                  name: 'Start',
+                  position: { x: 50, y: 100 }
+                },
+                {
+                  id: 'submit_expense',
+                  type: 'userTask',
+                  name: 'Submit Expense',
+                  assigneeRole: 'user',
+                  formKey: 'expense_request',
+                  position: { x: 200, y: 100 }
+                },
+                {
+                  id: 'manager_approval',
+                  type: 'userTask',
+                  name: 'Manager Approval',
+                  assigneeRole: 'approver',
+                  formKey: 'approval_form',
+                  position: { x: 350, y: 100 }
+                },
+                {
+                  id: 'end',
+                  type: 'endEvent',
+                  name: 'End',
+                  position: { x: 500, y: 100 }
+                }
+              ],
+              flows: [
+                { from: 'start', to: 'submit_expense' },
+                { from: 'submit_expense', to: 'manager_approval' },
+                { from: 'manager_approval', to: 'end' }
+              ]
+            }
+          }
+        ],
+        element_types: [
+          { type: 'startEvent', name: 'Start Event', icon: 'play-circle' },
+          { type: 'endEvent', name: 'End Event', icon: 'stop-circle' },
+          { type: 'userTask', name: 'User Task', icon: 'user' },
+          { type: 'serviceTask', name: 'Service Task', icon: 'cog' },
+          { type: 'exclusiveGateway', name: 'Exclusive Gateway', icon: 'diamond' },
+          { type: 'parallelGateway', name: 'Parallel Gateway', icon: 'plus' }
+        ],
+        properties: {
+          userTask: [
+            { name: 'name', type: 'string', label: 'Task Name' },
+            { name: 'assigneeRole', type: 'select', label: 'Assignee Role', options: ['user', 'approver', 'designer', 'tenant_admin'] },
+            { name: 'formKey', type: 'string', label: 'Form Key' },
+            { name: 'dueDate', type: 'string', label: 'Due Date Expression' }
+          ],
+          serviceTask: [
+            { name: 'name', type: 'string', label: 'Task Name' },
+            { name: 'implementation', type: 'select', label: 'Implementation', options: ['webhook', 'script', 'email'] },
+            { name: 'endpoint', type: 'string', label: 'Endpoint URL' }
+          ]
+        }
+      };
+
+      res.json({
+        success: true,
+        data: designerConfig
+      });
+    } catch (error) {
+      console.error("Workflow designer config error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "Failed to get workflow designer configuration"
+      });
+    }
+  });
+
   // S3 Form Management API v1
   /**
    * @swagger
