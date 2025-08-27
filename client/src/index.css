@@ -209,20 +209,19 @@
   color: var(--text-primary) !important;
 }
 
-/* Any div with white background - nuclear option */
-:root.theme-dark div:not([class*="button"]):not([class*="icon"]) {
+/* Selective dark theme - avoid login page */
+:root.theme-dark .dashboard div:not([class*="button"]):not([class*="icon"]),
+:root.theme-dark .admin-layout div:not([class*="button"]):not([class*="icon"]),
+:root.theme-dark .portal-layout div:not([class*="button"]):not([class*="icon"]) {
   background-color: var(--bg-primary) !important;
   color: var(--text-primary) !important;
 }
 
-/* Override any remaining white backgrounds */
-:root.theme-dark * {
+/* Override borders only in app areas */
+:root.theme-dark .dashboard *,
+:root.theme-dark .admin-layout *,
+:root.theme-dark .portal-layout * {
   border-color: var(--border-color) !important;
-}
-
-:root.theme-dark *:not(button):not(svg):not(path):not(circle):not(rect):not(img) {
-  background-color: var(--bg-primary) !important;
-  color: var(--text-primary) !important;
 }
 
 /* Specific stubborn elements */
@@ -235,11 +234,25 @@
   color: var(--text-primary) !important;
 }
 
-/* Layout containers */
-:root.theme-dark .grid,
-:root.theme-dark .flex,
-:root.theme-dark .block {
+/* Layout containers - exclude login page */
+:root.theme-dark .dashboard .grid,
+:root.theme-dark .dashboard .flex,
+:root.theme-dark .dashboard .block,
+:root.theme-dark .admin-layout .grid,
+:root.theme-dark .admin-layout .flex,
+:root.theme-dark .admin-layout .block,
+:root.theme-dark .portal-layout .grid,
+:root.theme-dark .portal-layout .flex,
+:root.theme-dark .portal-layout .block {
   background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Ensure login page stays normal */
+:root.theme-dark .login-container,
+:root.theme-dark .login-page,
+:root.theme-dark .auth-container {
+  background-color: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
 }
 
