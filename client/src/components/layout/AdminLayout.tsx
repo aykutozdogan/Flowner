@@ -158,7 +158,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
           <div style={{
             fontSize: '14px',
             fontWeight: '600',
-            color: '#333'
+            color: '#1976d2'
           }}>
             Admin Menü
           </div>

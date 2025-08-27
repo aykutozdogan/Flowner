@@ -115,6 +115,26 @@
   color: var(--text-primary) !important;
 }
 
+/* AdminSidebar dark theme */
+:root.theme-dark .admin-sidebar,
+:root.theme-dark .bg-white {
+  background-color: var(--bg-primary) !important;
+}
+
+:root.theme-dark .text-gray-700,
+:root.theme-dark .text-gray-500 {
+  color: var(--text-primary) !important;
+}
+
+:root.theme-dark .hover\\:bg-gray-50:hover,
+:root.theme-dark .bg-gray-50 {
+  background-color: var(--bg-secondary) !important;
+}
+
+:root.theme-dark .bg-blue-50 {
+  background-color: var(--bg-primary) !important;
+}
+
 /* Text colors - all variations */
 :root.theme-dark .text-gray-900,
 :root.theme-dark .text-gray-800,
@@ -181,6 +201,17 @@
 :root.theme-dark .app-content {
   background-color: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
+}
+
+/* Main content area background */
+:root.theme-dark main {
+  background-color: var(--bg-secondary) !important;
+}
+
+/* Dashboard page specific fixes */
+:root.theme-dark .admin-dashboard,
+:root.theme-dark .dashboard-page {
+  background-color: var(--bg-secondary) !important;
 }
 
 /* Any remaining white backgrounds */
