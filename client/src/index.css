@@ -187,6 +187,62 @@
   border-color: var(--border-color) !important;
 }
 
+/* AGGRESSIVE DARK THEME - CATCH ALL REMAINING WHITE AREAS */
+
+/* Main content areas */
+:root.theme-dark main,
+:root.theme-dark .main-content,
+:root.theme-dark .content-area,
+:root.theme-dark .page-content {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* BPMN Designer and canvas areas */
+:root.theme-dark .bpmn-container,
+:root.theme-dark .bpmn-canvas,
+:root.theme-dark .bpmn-designer,
+:root.theme-dark .canvas-container,
+:root.theme-dark .designer-area,
+:root.theme-dark .workflow-designer {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Any div with white background - nuclear option */
+:root.theme-dark div:not([class*="button"]):not([class*="icon"]) {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Override any remaining white backgrounds */
+:root.theme-dark * {
+  border-color: var(--border-color) !important;
+}
+
+:root.theme-dark *:not(button):not(svg):not(path):not(circle):not(rect):not(img) {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Specific stubborn elements */
+:root.theme-dark .p-6,
+:root.theme-dark .p-4,
+:root.theme-dark .p-3,
+:root.theme-dark .px-6,
+:root.theme-dark .py-6 {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Layout containers */
+:root.theme-dark .grid,
+:root.theme-dark .flex,
+:root.theme-dark .block {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
 :root.dx-theme-dark {
   /* Dark theme DevExtreme customizations */
   --dx-color-primary: #42a5f5;
