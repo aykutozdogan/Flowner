@@ -75,3 +75,6 @@ args = "bash scripts/start-apps.sh"
 
 [agent]
 integrations = ["javascript_database==1.0.0", "javascript_object_storage==1.0.0"]
+
+[objectStorage]
+defaultBucketID = "replit-objstore-f7a974cc-6088-4c9a-b2d1-391710a1af3b"

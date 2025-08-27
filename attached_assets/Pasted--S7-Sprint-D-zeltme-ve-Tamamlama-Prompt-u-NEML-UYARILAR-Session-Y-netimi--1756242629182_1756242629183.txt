@@ -1,0 +1,188 @@
+# S7 Sprint Düzeltme ve Tamamlama Prompt'u
+
+## 🚨 **ÖNEMLİ UYARILAR**
+
+### Session Yönetimi
+- **SESSION'I KAPATMA!** Ben "tamam, bitir" diyene kadar conversation'ı sürdür
+- Sorun çıkarsa durma, devam et ve sorunu not al
+
+### Dil Gereksinimi  
+- **TAMAMEN TÜRKÇE** cevap ver (teknik terimler İngilizce olabilir)
+- Raporlama, açıklama, hata mesajları Türkçe
+
+## 🔄 **GERİ ALINACAK DEĞİŞİKLİKLER**
+
+### ❌ Expense Approval Workflow - GERİ AL
+**Sorun:** Demo expense approval workflow'u hard-coded implement etmişsin.
+**İstenmeyen:** 
+- Hard-coded expense form tanımları
+- Hard-coded BPMN workflow definitions
+- Otomatik seed data'ya eklenen expense workflow
+
+**İstenilen:**
+- Expense approval workflow'u runtime'da ben kendim oluşturacağım
+- Form builder ile expense form'u ben tasarlayacağım  
+- BPMN designer ile approval workflow'u ben çizeceğim
+- Sadece altyapıyı hazırla, hard-coded örnek koyma
+
+### 🧹 Temizlik Görevleri
+1. **Expense-related hard-coded data'ları sil:**
+   - `seed.sql` veya `seed.ts`'den expense form/workflow entries
+   - Hard-coded expense form schema'ları
+   - Hard-coded BPMN XML definitions
+
+2. **Generic infrastructure'ı koru:**
+   - Form builder functionality
+   - BPMN designer functionality  
+   - Process execution engine
+   - Task assignment logic
+
+## 🎯 **TAMAMLANMASI GEREKEN GÖREVLER**
+
+### 1. ✅ **Port Consolidation - EKSİK**
+**Durum:** Admin ve Portal hala ayrı portlarda çalışıyor
+**Yapılacak:**
+```bash
+# Tek komutla tüm uygulama başlamalı
+npm start  # Port 5000'de hem admin hem portal
+
+# Route yapısı:
+http://localhost:5000/admin/*  # Admin panel
+http://localhost:5000/portal/* # User portal
+http://localhost:5000/api/*    # API endpoints
+```
+
+### 2. ✅ **Eksik Route Implementasyonları - EKSİK**
+**Yapılacak:** Tüm menü itemları çalışan sayfalara yönlendirilmeli
+
+#### Admin Panel - Eksik Sayfalar
+- [ ] `/admin/tasks` - Admin task management  
+- [ ] `/admin/settings` - System settings
+- [ ] `/admin/reports` - Analytics ve raporlar
+- [ ] `/admin/integrations` - Webhook ve API ayarları
+
+#### Portal - Eksik Sayfalar  
+- [ ] `/portal/my-processes` - Kullanıcının başlattığı süreçler
+- [ ] `/portal/start-process` - Yeni süreç başlatma
+- [ ] `/portal/forms` - Kullanılabilir formlar
+- [ ] `/portal/profile` - Kullanıcı profili
+- [ ] `/portal/notifications` - Bildirimler
+
+### 3. ✅ **API Standardizasyonu - EKSİK**
+**Durum:** Hala `/api/forms` ve `/api/v1/forms` karışıklığı var
+**Yapılacak:**
+- Tüm endpoints `/api/v1/` altında standardize et
+- Eski endpoints'leri redirect et veya deprecate et
+- Swagger documentation güncelle
+
+### 4. ✅ **Smoke Test Script - TAMAMEN EKSİK**
+**Yapılacak:** `./tests/s7-smoke-test.sh` oluştur ve çalıştır
+
+```bash
+#!/bin/bash
+echo "🧪 S7 Smoke Test - Advanced BPM & UI Overhaul" 
+echo "=============================================="
+
+# Test categories:
+# 1. Application startup
+# 2. Port consolidation  
+# 3. API v1 standardization
+# 4. Theme integration
+# 5. All menu routes accessibility
+# 6. Form builder functionality
+# 7. BPMN designer functionality
+
+echo "S7_SMOKE_TEST=PASS/FAIL"
+```
+
+### 5. ✅ **Sprint Report - TAMAMEN EKSİK**  
+**Yapılacak:** `./docs/s7-sprint-report.md` oluştur
+
+**İçermesi gerekenler:**
+- Tamamlanan özellikler detayı
+- Smoke test sonuçları
+- Bilinen sorunlar listesi
+- Performans metrikleri
+- Sonraki sprint önerileri
+- Kod coverage bilgisi
+
+## 🎨 **UI/UX Gereksinimleri - KISMİ TAMAMLANDI**
+
+### Tamamlanacaklar
+- [ ] **Responsive design** - Tüm sayfalar mobile-friendly olmalı
+- [ ] **Loading states** - Tüm API callları için loading spinner
+- [ ] **Error handling** - User-friendly error mesajları
+- [ ] **Navigation consistency** - Tüm sayfalarda tutarlı menü
+
+### Theme Gereksinimleri (Doğru implement edilmiş mi kontrol et)
+```typescript
+// Renk paleti kontrolü
+const theme = {
+  primary: '#1976d2',      // Material Blue ✓
+  secondary: '#5c6bc0',    // Indigo ✓
+  success: '#388e3c',      // Dark Green ✓
+  warning: '#f57c00',      // Amber ✓
+  error: '#d32f2f',        // Dark Red ✓
+  info: '#0288d1'          // Light Blue ✓
+}
+```
+
+## 📋 **ADIM ADIM EXECUTION PLANI**
+
+### Adım 1: Temizlik
+1. Expense workflow hard-coded data'ları sil
+2. Seed data'yı temizle
+3. Generic infrastructure'ı koru
+
+### Adım 2: Port Consolidation
+1. Build configuration düzelt
+2. Routing'i unified port için ayarla
+3. Static file serving düzelt
+
+### Adım 3: Missing Routes
+1. Admin panel eksik sayfaları implement et
+2. Portal eksik sayfaları implement et
+3. Tüm menü linklerini test et
+
+### Adım 4: API Standardization
+1. Tüm endpoints `/api/v1/` altına taşı
+2. Client-side API calls güncelle
+3. Swagger doc güncelle
+
+### Adım 5: Testing & Documentation
+1. Smoke test script yaz ve çalıştır
+2. Detaylı sprint report yaz
+3. Tüm functionality'yi test et
+
+## 🎯 **BAŞARI KRİTERLERİ**
+
+### Teknik Kriterler
+- [ ] `npm start` ile tek portta uygulama çalışıyor
+- [ ] Tüm menü itemları çalışan sayfalara yönlendiriyor
+- [ ] API endpoints standardize edildi
+- [ ] Smoke test PASS durumunda
+- [ ] Mobile responsive çalışıyor
+
+### Fonksiyonel Kriterler  
+- [ ] Form builder ile form oluşturulabiliyor
+- [ ] BPMN designer ile workflow çizilebiliyor
+- [ ] Process başlatılıp task atanabiliyor
+- [ ] Theme toggle çalışıyor
+- [ ] Real-time updates çalışıyor
+
+## 🚨 **SESSION KURALLARI**
+
+1. **Her adımı ayrı ayrı yap** - toplu değişiklik yapma
+2. **Onayımı bekle** - "devam edelim" diyene kadar durma  
+3. **Hataları not al** - çözemediğin sorunları listele
+4. **Session'ı kapatma** - ben "tamam bitir" deyinceye kadar
+
+## 🎯 **İLK GÖREV**
+
+**Şimdi başla:**
+1. Mevcut durumu analiz et
+2. Expense approval hard-coded kodları tespit et  
+3. Silmeden önce bana göster
+4. Onayımı bekle
+
+**Türkçe cevap ver ve session'ı açık tut!**
