@@ -72,9 +72,36 @@ export function DevExtremeThemeProvider({ children, defaultTheme }: { children: 
     }
 
     try {
-      // Try to set DevExtreme theme if available
-      const themes = (window as any).DevExpress?.ui?.themes;
-      if (themes) {
+      // Load DevExtreme theme CSS dynamically
+      const themeUrls = {
+        'generic.light': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.light.css',
+        'generic.dark': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.dark.css',
+        'material.blue.light': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.material.blue.light.css',
+        'generic.carmine': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.carmine.css',
+        'generic.darkmoon': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.darkmoon.css',
+        'generic.softblue': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.softblue.css',
+        'generic.darkviolet': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.darkviolet.css',
+        'generic.greenmist': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.greenmist.css',
+        'generic.contrast': 'https://cdn3.devexpress.com/jslib/23.2.5/css/dx.contrast.css'
+      };
+      
+      // Remove previous theme CSS
+      const existingTheme = document.querySelector('link[data-dx-theme]');
+      if (existingTheme) {
+        existingTheme.remove();
+      }
+      
+      // Load new theme CSS
+      const themeUrl = themeUrls[themeName as keyof typeof themeUrls] || themeUrls['generic.light'];
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = themeUrl;
+      link.setAttribute('data-dx-theme', themeName);
+      document.head.appendChild(link);
+      
+      // Try DevExtreme theme API if available  
+      if (typeof window !== 'undefined' && (window as any).DevExpress?.ui?.themes) {
+        const themes = (window as any).DevExpress.ui.themes;
         themes.current(themeName);
       }
     } catch (error) {
@@ -104,20 +131,7 @@ export function DevExtremeThemeProvider({ children, defaultTheme }: { children: 
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(current => {
-      switch (current) {
-        case 'light': return 'dark';
-        case 'dark': return 'carmine';
-        case 'carmine': return 'dark-moon';
-        case 'dark-moon': return 'soft-blue';
-        case 'soft-blue': return 'dark-violet';
-        case 'dark-violet': return 'green-mist';
-        case 'green-mist': return 'contrast';
-        case 'contrast': return 'corporate';
-        case 'corporate': return 'light';
-        default: return 'light';
-      }
-    });
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (
@@ -129,8 +143,11 @@ export function DevExtremeThemeProvider({ children, defaultTheme }: { children: 
 
 export function useDevExtremeTheme() {
   const context = useContext(DevExtremeThemeContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useDevExtremeTheme must be used within a DevExtremeThemeProvider');
   }
   return context;
 }
+
+// Re-export for compatibility
+export const useTheme = useDevExtremeTheme;
