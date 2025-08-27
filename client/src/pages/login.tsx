@@ -31,7 +31,7 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await apiRequest('/api/auth/login', {
+      const response = await apiRequest('/api/v1/auth/login', {
         method: 'POST',
         body: {
           email,

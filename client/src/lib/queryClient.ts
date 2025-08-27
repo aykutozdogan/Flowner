@@ -16,20 +16,20 @@ export async function apiRequest(
   } = {},
 ): Promise<Response> {
   const { method = "GET", body, headers = {} } = options;
-  
+
   // Get auth token and tenant from localStorage
   const token = localStorage.getItem("access_token");
   const tenantId = localStorage.getItem("tenant_id") || "demo.local";
-  
+
   const reqHeaders: Record<string, string> = {
     ...headers,
     "X-Tenant-Id": tenantId,
   };
-  
+
   if (token) {
     reqHeaders["Authorization"] = `Bearer ${token}`;
   }
-  
+
   if (body) {
     reqHeaders["Content-Type"] = "application/json";
   }
@@ -52,15 +52,15 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const url = queryKey.join("/") as string;
-    
+
     // Get auth token and tenant from localStorage
     const token = localStorage.getItem("access_token");
     const tenantId = localStorage.getItem("tenant_id") || "demo.local";
-    
+
     const headers: Record<string, string> = {
       "X-Tenant-Id": tenantId,
     };
-    
+
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }

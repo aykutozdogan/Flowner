@@ -330,7 +330,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Authentication routes
+  // Authentication routes - Legacy endpoints for compatibility
+  app.post("/api/auth/login", parseTenantId, async (req, res) => {
+    try {
+      const { email, password } = loginSchema.parse(req.body);
+      const tenantIdentifierHeader = req.headers['x-tenant-id'];
+      const tenantIdentifier = Array.isArray(tenantIdentifierHeader) ? tenantIdentifierHeader[0] : tenantIdentifierHeader;
+
+      if (!tenantIdentifier) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Missing Tenant ID",
+          status: 400,
+          detail: "X-Tenant-Id header is required"
+        });
+      }
+
+      // Handle both domain and UUID formats
+      let tenant;
+      if (tenantIdentifier.includes('-') && tenantIdentifier.length === 36) {
+        // It's a UUID
+        tenant = await storage.getTenant(tenantIdentifier);
+      } else {
+        // It's a domain
+        tenant = await storage.getTenantByDomain(tenantIdentifier);
+      }
+
+      if (!tenant) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Invalid Tenant",
+          status: 400,
+          detail: "Tenant not found"
+        });
+      }
+
+      // Find user by email and tenant
+      const user = await storage.getUserByEmail(email, tenant.id);
+      if (!user || !user.is_active) {
+        return res.status(401).json({
+          type: "/api/errors/auth",
+          title: "Invalid Credentials",
+          status: 401,
+          detail: "Invalid email or password"
+        });
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          type: "/api/errors/auth",
+          title: "Invalid Credentials",
+          status: 401,
+          detail: "Invalid email or password"
+        });
+      }
+
+      // Get tenant info
+      const userTenant = await storage.getTenant(user.tenant_id);
+      if (!userTenant || !userTenant.is_active) {
+        return res.status(401).json({
+          type: "/api/errors/auth",
+          title: "Tenant Inactive",
+          status: 401,
+          detail: "Your organization account is inactive"
+        });
+      }
+
+      // Generate tokens
+      const accessToken = jwt.sign(
+        { userId: user.id, tenantId: user.tenant_id, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '60m' }
+      );
+
+      const refreshToken = jwt.sign(
+        { userId: user.id, tenantId: user.tenant_id },
+        JWT_REFRESH_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      // Update last login
+      await storage.updateUserLastLogin(user.id);
+
+      // Create audit log
+      await storage.createAuditLog({
+        tenant_id: user.tenant_id,
+        user_id: user.id,
+        action: "user_login",
+        entity_type: "user",
+        entity_id: user.id,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent']
+      });
+
+      res.json({
+        success: true,
+        data: {
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_in: 3600,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            tenant_id: user.tenant_id
+          }
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          type: "/api/errors/validation",
+          title: "Validation Failed",
+          status: 400,
+          detail: "Request body validation failed",
+          errors: error.flatten().fieldErrors
+        });
+      }
+
+      console.error("Login error:", error);
+      res.status(500).json({
+        type: "/api/errors/internal",
+        title: "Internal Server Error",
+        status: 500,
+        detail: "An unexpected error occurred"
+      });
+    }
+  });
+
+  app.get("/api/auth/me", parseTenantId, authenticateToken, async (req: any, res) => {
+    const user = (req as ExtendedRequest).user;
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        tenant: {
+          id: user.tenant.id,
+          name: user.tenant.name,
+          domain: user.tenant.domain
+        },
+        permissions: [] // TODO: Calculate permissions based on role
+      }
+    });
+  });
+
+  // V1 Authentication routes
   /**
    * @swagger
    * /auth/login:
