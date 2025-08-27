@@ -24,18 +24,6 @@ const menuItems = [
     roles: ['tenant_admin', 'designer']
   },
   { 
-    icon: FormInput, 
-    label: 'Form Tasarımı', 
-    href: '/admin/form-builder',
-    roles: ['tenant_admin', 'designer']
-  },
-  { 
-    icon: Workflow, 
-    label: 'BPMN Tasarımı', 
-    href: '/admin/bpmn-designer',
-    roles: ['tenant_admin', 'designer']
-  },
-  { 
     icon: FolderOpen, 
     label: 'Forms', 
     href: '/admin/forms',

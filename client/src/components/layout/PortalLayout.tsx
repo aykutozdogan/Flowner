@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button as DxButton } from 'devextreme-react';
 import { useAuth } from '@/hooks/useAuth';
-import { DevExtremeThemeSelector } from '@/components/ui/devextreme-theme-selector-dx';
+import { DevExtremeThemeSelector } from '@/components/ui/devextreme-theme-selector';
 import PortalSidebar from './PortalSidebar';
 
 interface PortalLayoutProps {

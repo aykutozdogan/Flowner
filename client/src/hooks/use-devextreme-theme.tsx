@@ -94,6 +94,13 @@ export function DevExtremeThemeProvider({ children, defaultTheme }: { children: 
     root.style.setProperty('--dx-color-primary', primaryColor);
     root.style.setProperty('--dx-color-primary-rgb', '25, 118, 210');
     
+    // Force update all DevExtreme components
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      const event = new CustomEvent('dx-theme-changed', { detail: { theme } });
+      window.dispatchEvent(event);
+    }, 100);
+    
   }, [theme]);
 
   const toggleTheme = () => {
