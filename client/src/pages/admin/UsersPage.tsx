@@ -35,7 +35,7 @@ const availableRoles = [
   { id: 'approver', label: 'Approver' }
 ];
 
-export const UsersPage = () => {
+const UsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -308,3 +308,5 @@ export const UsersPage = () => {
     </div>
   );
 };
+
+export default UsersPage;

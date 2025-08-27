@@ -25,7 +25,7 @@ interface TenantFormData {
   description: string;
 }
 
-export const TenantsPage = () => {
+const TenantsPage = () => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -241,3 +241,5 @@ export const TenantsPage = () => {
     </div>
   );
 };
+
+export default TenantsPage;

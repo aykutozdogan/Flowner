@@ -166,25 +166,6 @@ export const api = {
     return response.json();
   },
 
-  // S7: Expense Approval Workflow
-  startExpenseApproval: async (amount: number, description: string, category?: string) => {
-    const response = await apiRequest('POST', '/api/v1/workflows/expense-approval/start', {
-      amount,
-      description,
-      category: category || 'General',
-    });
-    return response.json();
-  },
-
-  completeExpenseApproval: async (processId: string, taskId: string, decision: 'approved' | 'rejected', comments?: string) => {
-    const response = await apiRequest('POST', '/api/v1/workflows/expense-approval/complete', {
-      processId,
-      taskId,
-      decision,
-      comments: comments || '',
-    });
-    return response.json();
-  },
 };
 
 export { APIError };

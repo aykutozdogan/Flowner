@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Save, Eye, ArrowLeft, Publish } from 'lucide-react';
+import { useLocation } from 'wouter';
+import { Save, Eye, ArrowLeft, Upload } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
@@ -24,9 +24,10 @@ interface FormDefinition {
   updatedAt?: string;
 }
 
-export const FormBuilderPage = () => {
-  const { key } = useParams();
-  const navigate = useNavigate();
+const FormBuilderPage = () => {
+  const [location, navigate] = useLocation();
+  // Extract key from route path /admin/forms/:key
+  const key = location.split('/').pop();
   const [form, setForm] = useState<FormDefinition>({
     key: '',
     name: '',
@@ -173,7 +174,7 @@ export const FormBuilderPage = () => {
               Save Draft
             </Button>
             <Button onClick={handlePublish} disabled={isSaving}>
-              <Publish className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-2" />
               Publish
             </Button>
           </div>
@@ -261,3 +262,5 @@ export const FormBuilderPage = () => {
     </div>
   );
 };
+
+export default FormBuilderPage;

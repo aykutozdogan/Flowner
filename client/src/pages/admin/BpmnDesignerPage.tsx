@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft, Publish, Settings } from 'lucide-react';
+import { useLocation } from 'wouter';
+import { Save, ArrowLeft, Upload, Settings } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
@@ -32,9 +32,10 @@ interface FormOption {
   version: number;
 }
 
-export const BpmnDesignerPage = () => {
-  const { key } = useParams();
-  const navigate = useNavigate();
+const BpmnDesignerPage = () => {
+  const [location, navigate] = useLocation();
+  // Extract key from route path /admin/workflows/:key
+  const key = location.split('/').pop();
   const [workflow, setWorkflow] = useState<WorkflowDefinition>({
     key: '',
     name: '',
@@ -191,7 +192,7 @@ export const BpmnDesignerPage = () => {
               Save Draft
             </Button>
             <Button onClick={handlePublish} disabled={isSaving}>
-              <Publish className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-2" />
               Publish
             </Button>
           </div>
@@ -308,3 +309,5 @@ export const BpmnDesignerPage = () => {
     </div>
   );
 };
+
+export default BpmnDesignerPage;

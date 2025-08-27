@@ -3,9 +3,11 @@ import {
   Inbox, 
   FileText, 
   User,
-  CheckSquare
+  CheckSquare,
+  Play,
+  Bell
 } from 'lucide-react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link } from 'wouter';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -17,15 +19,27 @@ const menuItems = [
     roles: ['user', 'approver']
   },
   { 
+    icon: Play, 
+    label: 'Start Process', 
+    href: '/portal/start-process',
+    roles: ['user', 'approver']
+  },
+  { 
     icon: FileText, 
     label: 'My Processes', 
     href: '/portal/my-processes',
     roles: ['user', 'approver']
   },
   { 
-    icon: CheckSquare, 
-    label: 'Completed Tasks', 
-    href: '/portal/completed',
+    icon: FileText, 
+    label: 'Forms', 
+    href: '/portal/forms',
+    roles: ['user', 'approver']
+  },
+  { 
+    icon: Bell, 
+    label: 'Notifications', 
+    href: '/portal/notifications',
     roles: ['user', 'approver']
   },
   { 
@@ -36,8 +50,8 @@ const menuItems = [
   }
 ];
 
-export const PortalSidebar = () => {
-  const location = useLocation();
+const PortalSidebar = () => {
+  const [location] = useLocation();
   const { hasRole } = useAuth();
 
   const visibleItems = menuItems.filter(item => 
@@ -75,3 +89,5 @@ export const PortalSidebar = () => {
     </div>
   );
 };
+
+export default PortalSidebar;

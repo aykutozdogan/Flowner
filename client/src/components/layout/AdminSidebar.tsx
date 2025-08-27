@@ -9,7 +9,7 @@ import {
   Settings,
   BarChart3
 } from 'lucide-react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link } from 'wouter';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -64,8 +64,8 @@ const menuItems = [
   }
 ];
 
-export const AdminSidebar = () => {
-  const location = useLocation();
+const AdminSidebar = () => {
+  const [location] = useLocation();
   const { hasRole } = useAuth();
 
   const visibleItems = menuItems.filter(item => 
@@ -103,3 +103,5 @@ export const AdminSidebar = () => {
     </div>
   );
 };
+
+export default AdminSidebar;

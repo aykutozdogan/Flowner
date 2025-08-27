@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { api } from '../lib/api';
 
 interface User {
@@ -26,8 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [location, navigate] = useLocation();
 
   const checkAuth = async () => {
     try {

@@ -2,7 +2,6 @@ import React from 'react';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import StatsCards from '@/components/dashboard/stats-cards';
 import QuickActions from '@/components/dashboard/quick-actions';
-import { ExpenseApprovalForm } from '@/components/workflows/ExpenseApprovalForm';
 import RecentActivity from '@/components/dashboard/recent-activity';
 import ActiveProcesses from '@/components/dashboard/active-processes';
 import SystemHealth from '@/components/dashboard/system-health';
@@ -25,8 +24,18 @@ export default function AdminDashboard() {
       >
         <QuickActions />
         <div>
-          <h3 className="text-lg font-semibold mb-3">S7 Demo Workflow</h3>
-          <ExpenseApprovalForm />
+          <h3 className="text-lg font-semibold mb-3">Workflow Engine</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Use Form Builder and BPMN Designer to create custom workflows.
+          </p>
+          <div className="flex gap-2">
+            <button className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+              Form Builder
+            </button>
+            <button className="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700">
+              BPMN Designer
+            </button>
+          </div>
         </div>
         <RecentActivity />
       </Box>

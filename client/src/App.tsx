@@ -22,6 +22,13 @@ import BpmnDesignerPage from "@/pages/admin/BpmnDesignerPage";
 import FormsPage from "@/pages/admin/FormsPage";
 import TenantsPage from "@/pages/admin/TenantsPage";
 import UsersPage from "@/pages/admin/UsersPage";
+import AdminTasksPage from "@/pages/admin/AdminTasksPage";
+import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
+import PortalMyProcesses from "@/pages/portal/PortalMyProcesses";
+import PortalProfile from "@/pages/portal/PortalProfile";
+import PortalStartProcess from "@/pages/portal/PortalStartProcess";
+import PortalForms from "@/pages/portal/PortalForms";
+import PortalNotifications from "@/pages/portal/PortalNotifications";
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { PortalLayout } from '@/components/layout/PortalLayout';
 
@@ -274,6 +281,14 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/admin/settings">
+        <ProtectedRoute requireAdmin>
+          <AdminLayout>
+            <AdminSettingsPage />
+          </AdminLayout>
+        </ProtectedRoute>
+      </Route>
+
       {/* Portal Routes */}
       <Route path="/portal/inbox">
         <ProtectedRoute requirePortal>
@@ -291,6 +306,46 @@ function Router() {
         <ProtectedRoute requirePortal>
           <PortalLayout>
             <PortalInbox />
+          </PortalLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/portal/my-processes">
+        <ProtectedRoute requirePortal>
+          <PortalLayout>
+            <PortalMyProcesses />
+          </PortalLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/portal/start-process">
+        <ProtectedRoute requirePortal>
+          <PortalLayout>
+            <PortalStartProcess />
+          </PortalLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/portal/forms">
+        <ProtectedRoute requirePortal>
+          <PortalLayout>
+            <PortalForms />
+          </PortalLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/portal/profile">
+        <ProtectedRoute requirePortal>
+          <PortalLayout>
+            <PortalProfile />
+          </PortalLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/portal/notifications">
+        <ProtectedRoute requirePortal>
+          <PortalLayout>
+            <PortalNotifications />
           </PortalLayout>
         </ProtectedRoute>
       </Route>
