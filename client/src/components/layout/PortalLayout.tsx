@@ -61,8 +61,6 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
     borderBottom: '1px solid #e0e0e0',
     boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
     zIndex: 1000,
-    transition: 'margin-left 0.3s ease',
-    marginLeft: sidebarPinned ? '280px' : '0',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',

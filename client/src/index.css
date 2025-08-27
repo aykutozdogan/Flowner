@@ -41,14 +41,52 @@
   --dx-color-primary: #42a5f5;
 }
 
-:root.theme-dark .dx-widget {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+:root.theme-dark body {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
 }
 
-:root.theme-dark body {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
+:root.theme-dark .dx-widget {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+:root.theme-dark .bg-white {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+:root.theme-dark .text-gray-900,
+:root.theme-dark .text-gray-600,
+:root.theme-dark .text-gray-500 {
+  color: var(--text-primary) !important;
+}
+
+:root.theme-dark .border,
+:root.theme-dark .border-gray-200 {
+  border-color: var(--border-color) !important;
+}
+
+:root.theme-dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Header/Layout dark theme */
+:root.theme-dark .header,
+:root.theme-dark [style*="backgroundColor: '#fff'"],
+:root.theme-dark [style*="backgroundColor: '#fafafa'"] {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Cards and containers dark theme */  
+:root.theme-dark .card,
+:root.theme-dark .container,
+:root.theme-dark .rounded-lg {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
 }
 
 :root.dx-theme-dark {
