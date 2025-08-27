@@ -33,8 +33,14 @@ export default function Login() {
     setError('');
 
     try {
+      // Set tenant header for login
+      localStorage.setItem('tenant_domain', 'demo.local');
+      
       const response = await apiRequest('/api/v1/auth/login', {
         method: 'POST',
+        headers: {
+          'X-Tenant-Id': 'demo.local'
+        },
         body: {
           email,
           password
@@ -44,6 +50,10 @@ export default function Login() {
       const data = await response.json();
       
       if (data.success) {
+        // Store tenant info
+        localStorage.setItem('tenant_id', data.data.user.tenant_id);
+        localStorage.setItem('tenant_domain', 'demo.local');
+        
         // Use AuthContext login method
         login(data.data.user, data.data.access_token, data.data.refresh_token);
 
