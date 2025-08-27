@@ -81,12 +81,110 @@
   border-color: var(--border-color) !important;
 }
 
+/* COMPREHENSIVE DARK THEME - ALL COMPONENTS */
+
 /* Cards and containers dark theme */  
 :root.theme-dark .card,
 :root.theme-dark .container,
-:root.theme-dark .rounded-lg {
+:root.theme-dark .rounded-lg,
+:root.theme-dark .bg-white,
+:root.theme-dark .bg-gray-50,
+:root.theme-dark .bg-gray-100,
+:root.theme-dark .bg-background {
   background-color: var(--bg-primary) !important;
   color: var(--text-primary) !important;
+}
+
+/* DataGrid dark theme */
+:root.theme-dark .dx-datagrid,
+:root.theme-dark .dx-datagrid-headers,
+:root.theme-dark .dx-datagrid-rowsview,
+:root.theme-dark .dx-datagrid-content,
+:root.theme-dark .dx-header-row,
+:root.theme-dark .dx-row {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Sidebar dark theme */
+:root.theme-dark [style*="backgroundColor: '#fafafa'"],
+:root.theme-dark [style*="backgroundColor: '#f8fafc'"],
+:root.theme-dark [style*="backgroundColor: '#f5f5f5'"] {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Text colors - all variations */
+:root.theme-dark .text-gray-900,
+:root.theme-dark .text-gray-800,
+:root.theme-dark .text-gray-700,
+:root.theme-dark .text-gray-600,
+:root.theme-dark .text-gray-500,
+:root.theme-dark .text-gray-400,
+:root.theme-dark .text-black,
+:root.theme-dark .text-slate-900,
+:root.theme-dark .text-slate-800 {
+  color: var(--text-primary) !important;
+}
+
+/* Borders and shadows */
+:root.theme-dark .border,
+:root.theme-dark .border-gray-200,
+:root.theme-dark .border-gray-300,
+:root.theme-dark .border-t,
+:root.theme-dark .border-b,
+:root.theme-dark .border-l,
+:root.theme-dark .border-r {
+  border-color: var(--border-color) !important;
+}
+
+/* DevExtreme specific components */
+:root.theme-dark .dx-button,
+:root.theme-dark .dx-textbox,
+:root.theme-dark .dx-selectbox,
+:root.theme-dark .dx-form,
+:root.theme-dark .dx-popup-content,
+:root.theme-dark .dx-overlay-content {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Dashboard stats cards */
+:root.theme-dark .stats-card,
+:root.theme-dark .metric-card,
+:root.theme-dark .widget {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Any remaining white backgrounds */
+:root.theme-dark div[style*="background"],
+:root.theme-dark div[style*="backgroundColor"] {
+  background-color: var(--bg-primary) !important;
+}
+
+/* Force all elements with inline white background */
+:root.theme-dark [style*="background-color: rgb(255, 255, 255)"],
+:root.theme-dark [style*="background-color: #fff"],
+:root.theme-dark [style*="background-color: #ffffff"],
+:root.theme-dark [style*="background-color: white"] {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Table and list elements */
+:root.theme-dark table,
+:root.theme-dark tbody,
+:root.theme-dark thead,
+:root.theme-dark tr,
+:root.theme-dark td,
+:root.theme-dark th {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
 }
 
 :root.dx-theme-dark {
