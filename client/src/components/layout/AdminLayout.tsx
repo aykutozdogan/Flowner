@@ -69,7 +69,9 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
           color: theme.palette.text.primary,
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
           borderBottom: `1px solid ${theme.palette.divider}`,
-          zIndex: theme.zIndex.drawer + 1
+          zIndex: theme.zIndex.drawer + 1,
+          transition: 'margin-left 0.3s ease',
+          marginLeft: sidebarPinned ? '280px' : 0
         }}
       >
         <Toolbar sx={{ justifyContent: 'space-between' }}>
@@ -81,6 +83,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
               onClick={handleToggleSidebar}
               data-testid="button-toggle-sidebar"
               icon="menu"
+              title={sidebarOpen ? "Menüyü Kapat" : "Menüyü Aç"}
             />
 
             <Typography 
@@ -150,7 +153,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
       <Drawer
         variant={sidebarPinned ? "persistent" : "temporary"}
         anchor="left"
-        open={sidebarOpen || sidebarPinned}
+        open={sidebarOpen}
         onClose={handleCloseSidebar}
         sx={{
           width: 280,
@@ -160,11 +163,30 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
             boxSizing: 'border-box',
             mt: 8, // AppBar height offset
             height: 'calc(100% - 64px)',
+            borderRight: '1px solid #e0e0e0',
+            backgroundColor: '#fafafa',
+            position: sidebarPinned ? 'fixed' : 'absolute',
+            zIndex: sidebarPinned ? theme.zIndex.drawer - 1 : theme.zIndex.drawer,
           },
         }}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile
+        }}
       >
-        {/* Pin/Unpin Button */}
-        <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid #e0e0e0' }}>
+        {/* Pin/Unpin Button Header */}
+        <Box 
+          sx={{ 
+            p: 2, 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            borderBottom: '1px solid #e0e0e0',
+            backgroundColor: 'white'
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            Admin Menü
+          </Typography>
           <Button
             variant="secondary"
             size="small"
@@ -182,12 +204,13 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
         component="main" 
         sx={{ 
           flexGrow: 1, 
-          mt: 8, // AppBar height offset - boşluğu kaldırdık
+          mt: 8, // AppBar height offset
           ml: sidebarPinned ? '280px' : 0,
           bgcolor: '#f8fafc',
           minHeight: 'calc(100vh - 64px)',
           transition: 'margin-left 0.3s ease',
-          p: 0 // Padding'i kaldırdık
+          p: 0,
+          width: sidebarPinned ? 'calc(100% - 280px)' : '100%',
         }}
       >
         {children}
