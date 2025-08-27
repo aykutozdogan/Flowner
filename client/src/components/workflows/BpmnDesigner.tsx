@@ -149,10 +149,10 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
         const paletteContainer = document.querySelector('.djs-palette');
         if (paletteContainer) {
           paletteContainer.setAttribute('style', `
-            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border: 1px solid rgba(255,255,255,0.2);
+            background: var(--background);
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
           `);
           
           // Add tooltips and descriptions
@@ -553,11 +553,11 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
           display: 'flex', 
           gap: 1, 
           alignItems: 'center',
-          background: 'linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          background: 'var(--background)',
+          border: '1px solid var(--border)'
         }}>
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
-            🎨 BPMN Designer
+            BPMN Designer
           </Typography>
           
           <Button
@@ -577,7 +577,7 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
             variant="outlined"
             data-testid="save-bpmn"
           >
-            💾 Taslak Kaydet
+            Taslak Kaydet
           </Button>
           
           <Button
@@ -585,26 +585,14 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
             startIcon={<PublishIcon />}
             variant="contained"
             data-testid="publish-bpmn"
-            sx={{
-              background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #45a049 0%, #3d8b40 100%)'
-              }
-            }}
           >
-            🚀 Yayınla
+            Yayınla
           </Button>
 
           <IconButton
             onClick={() => setPropertiesPanelOpen(!propertiesPanelOpen)}
             color={propertiesPanelOpen ? 'primary' : 'default'}
             data-testid="toggle-properties"
-            sx={{
-              background: propertiesPanelOpen ? 'rgba(25, 118, 210, 0.1)' : 'transparent',
-              '&:hover': {
-                background: 'rgba(25, 118, 210, 0.15)'
-              }
-            }}
           >
             <SettingsIcon />
           </IconButton>
@@ -651,8 +639,8 @@ export const BpmnDesigner: React.FC<BpmnDesignerProps> = ({
                 left: 10,
                 zIndex: 100,
                 p: 1,
-                background: 'rgba(255,255,255,0.9)',
-                backdropFilter: 'blur(8px)'
+                background: 'var(--background)',
+                border: '1px solid var(--border)'
               }}
             >
               <IconButton
