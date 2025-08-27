@@ -53,10 +53,13 @@ export default function WorkflowsPage() {
   const { data: workflows, isLoading, error } = useQuery({
     queryKey: ['/api/v1/workflows'],
     queryFn: async () => {
+      const token = localStorage.getItem('access_token');
+      const tenantId = localStorage.getItem('tenant_id') || localStorage.getItem('tenant_domain') || 'demo.local';
+      
       const response = await fetch('/api/v1/workflows', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'X-Tenant-Id': localStorage.getItem('tenant_domain') || 'demo.local',
+          'Authorization': `Bearer ${token}`,
+          'X-Tenant-Id': tenantId,
           'Content-Type': 'application/json'
         }
       });
@@ -74,8 +77,12 @@ export default function WorkflowsPage() {
     setLocation('/admin/workflows/designer');
   };
 
-  const handleEditWorkflow = (workflowKey: string | undefined) => {
-    const key = workflowKey || 'new';
+  const handleEditWorkflow = (workflowKey: string | undefined, workflowId?: string) => {
+    if (!workflowKey && !workflowId) {
+      setLocation('/admin/workflows/designer/new');
+      return;
+    }
+    const key = workflowKey || workflowId || 'new';
     setLocation(`/admin/workflows/designer/${key}`);
   };
 
@@ -153,7 +160,7 @@ export default function WorkflowsPage() {
                     </TableCell>
                     <TableCell>
                       <IconButton
-                        onClick={() => handleEditWorkflow(workflow.key)}
+                        onClick={() => handleEditWorkflow(workflow.key, workflow.id)}
                         size="small"
                         title="Düzenle"
                         data-testid={`button-edit-workflow-${workflow.id}`}

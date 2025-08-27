@@ -54,7 +54,25 @@ export default function FormsPage() {
   // Fetch forms
   const { data: forms, isLoading, error } = useQuery({
     queryKey: ['/api/v1/forms'],
-    select: (data: any) => data.data || data,
+    queryFn: async () => {
+      const token = localStorage.getItem('access_token');
+      const tenantId = localStorage.getItem('tenant_id') || localStorage.getItem('tenant_domain') || 'demo.local';
+      
+      const response = await fetch('/api/v1/forms', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-Tenant-Id': tenantId,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.data || data;
+    },
   });
 
   const handleNewForm = () => {

@@ -10,7 +10,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { FormBuilder } from '../../components/forms/FormBuilder';
 import { useToast } from '../../hooks/use-toast';
-import { api } from '../../lib/api';
+import { apiRequest } from '../../lib/queryClient';
 
 interface FormDefinition {
   id?: string;
@@ -50,10 +50,10 @@ const FormBuilderPage = () => {
 
   const loadForm = async () => {
     try {
-      const response = await api.get(`/forms/${key}`);
-      if (response.ok) {
-        const data = await response.json();
-        setForm(data.form);
+      const response = await apiRequest(`/api/v1/forms/${key}`);
+      const data = await response.json();
+      if (data.success) {
+        setForm(data.data);
       } else {
         throw new Error('Form not found');
       }
@@ -94,14 +94,14 @@ const FormBuilderPage = () => {
         payload.changelog = changelogText;
       }
 
-      const response = await api.request(endpoint, {
+      const response = await apiRequest(`/api/v1${endpoint}`, {
         method,
-        body: JSON.stringify(payload)
+        body: payload
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setForm(data.form);
+      const data = await response.json();
+      if (data.success) {
+        setForm(data.data);
         toast({
           title: 'Success',
           description: `Form ${isDraft ? 'saved as draft' : 'published'} successfully`

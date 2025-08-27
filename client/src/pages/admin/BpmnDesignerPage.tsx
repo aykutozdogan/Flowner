@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { BpmnDesigner } from '../../components/workflows/BpmnDesigner';
 import { useToast } from '../../hooks/use-toast';
-import { api } from '../../lib/api';
+import { apiRequest } from '../../lib/queryClient';
 
 interface WorkflowDefinition {
   id?: string;
@@ -60,10 +60,10 @@ const BpmnDesignerPage = () => {
 
   const loadWorkflow = async () => {
     try {
-      const response = await api.get(`/workflows/${key}`);
-      if (response.ok) {
-        const data = await response.json();
-        setWorkflow(data.workflow);
+      const response = await apiRequest(`/api/v1/workflows/${key}`);
+      const data = await response.json();
+      if (data.success) {
+        setWorkflow(data.data);
       } else {
         throw new Error('Workflow not found');
       }
@@ -82,10 +82,10 @@ const BpmnDesignerPage = () => {
 
   const loadForms = async () => {
     try {
-      const response = await api.get('/forms?status=published');
-      if (response.ok) {
-        const data = await response.json();
-        setForms(data.forms || []);
+      const response = await apiRequest('/api/v1/forms?status=published');
+      const data = await response.json();
+      if (data.success) {
+        setForms(data.data || []);
       }
     } catch (error) {
       console.error('Failed to load forms:', error);
@@ -116,14 +116,14 @@ const BpmnDesignerPage = () => {
         payload.changelog = changelogText;
       }
 
-      const response = await api.request(endpoint, {
+      const response = await apiRequest(`/api/v1${endpoint}`, {
         method,
-        body: JSON.stringify(payload)
+        body: payload
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setWorkflow(data.workflow);
+      const data = await response.json();
+      if (data.success) {
+        setWorkflow(data.data);
         toast({
           title: 'Success',
           description: `Workflow ${isDraft ? 'saved as draft' : 'published'} successfully`
@@ -134,8 +134,7 @@ const BpmnDesignerPage = () => {
           setChangelogText('');
         }
       } else {
-        const error = await response.json();
-        throw new Error(error.detail || 'Save failed');
+        throw new Error(data.detail || 'Save failed');
       }
     } catch (error) {
       console.error('Failed to save workflow:', error);

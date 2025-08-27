@@ -19,7 +19,7 @@ export async function apiRequest(
 
   // Get auth token and tenant from localStorage
   const token = localStorage.getItem("access_token");
-  const tenantId = localStorage.getItem("tenant_id") || "demo.local";
+  const tenantId = localStorage.getItem("tenant_id") || localStorage.getItem("tenant_domain") || "demo.local";
 
   const reqHeaders: Record<string, string> = {
     ...headers,
@@ -55,7 +55,7 @@ export const getQueryFn: <T>(options: {
 
     // Get auth token and tenant from localStorage
     const token = localStorage.getItem("access_token");
-    const tenantId = localStorage.getItem("tenant_id") || "demo.local";
+    const tenantId = localStorage.getItem("tenant_id") || localStorage.getItem("tenant_domain") || "demo.local";
 
     const headers: Record<string, string> = {
       "X-Tenant-Id": tenantId,
