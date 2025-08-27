@@ -65,8 +65,8 @@ const PortalSidebar = () => {
 
       <nav className="px-4 space-y-2">
         {visibleItems.map((item) => {
-          const isActive = location.pathname === item.href || 
-                          (item.href !== '/portal/tasks' && location.pathname.startsWith(item.href));
+          const isActive = location === item.href || 
+                          (item.href !== '/portal/tasks' && location.startsWith(item.href));
 
           return (
             <Link
