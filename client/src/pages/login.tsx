@@ -63,12 +63,25 @@ export default function Login() {
         });
 
         // Handle redirect - redirectTo param takes priority
-        const targetRoute = redirectTo || getDefaultRoute();
+        let targetRoute = redirectTo;
+        
+        if (!targetRoute) {
+          // Determine route based on user role
+          if (data.data.user.role === 'tenant_admin' || data.data.user.role === 'designer') {
+            targetRoute = '/admin/dashboard';
+          } else if (data.data.user.role === 'approver' || data.data.user.role === 'user') {
+            targetRoute = '/portal/inbox';
+          } else {
+            targetRoute = '/login';
+          }
+        }
+        
+        console.log('User role:', data.data.user.role, 'Target route:', targetRoute);
         
         // Use a small delay to ensure state is updated
         setTimeout(() => {
           setLocation(targetRoute);
-        }, 100);
+        }, 200);
         
       } else {
         setError(data.detail || 'Login failed');
