@@ -160,6 +160,29 @@
   border-color: var(--border-color) !important;
 }
 
+/* Specific app areas that should be dark */
+:root.theme-dark .quick-actions,
+:root.theme-dark .form-builder,
+:root.theme-dark .form-builder-area,
+:root.theme-dark .designer-panel,
+:root.theme-dark .properties-panel,
+:root.theme-dark .canvas-area,
+:root.theme-dark .workflow-area {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* App content areas */
+:root.theme-dark .admin-layout .content,
+:root.theme-dark .portal-layout .content,
+:root.theme-dark .dashboard .content,
+:root.theme-dark .main-area,
+:root.theme-dark .app-content {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
 /* Any remaining white backgrounds */
 :root.theme-dark div[style*="background"],
 :root.theme-dark div[style*="backgroundColor"] {
@@ -209,10 +232,12 @@
   color: var(--text-primary) !important;
 }
 
-/* Selective dark theme - avoid login page */
-:root.theme-dark .dashboard div:not([class*="button"]):not([class*="icon"]),
-:root.theme-dark .admin-layout div:not([class*="button"]):not([class*="icon"]),
-:root.theme-dark .portal-layout div:not([class*="button"]):not([class*="icon"]) {
+/* Selective dark theme - target specific app areas */
+:root.theme-dark .dashboard div:not([class*="button"]):not([class*="icon"]):not([class*="MuiButton"]),
+:root.theme-dark .admin-layout div:not([class*="button"]):not([class*="icon"]):not([class*="MuiButton"]),
+:root.theme-dark .portal-layout div:not([class*="button"]):not([class*="icon"]):not([class*="MuiButton"]),
+:root.theme-dark .form-designer div:not([class*="button"]):not([class*="icon"]):not([class*="MuiButton"]),
+:root.theme-dark .workflow-designer div:not([class*="button"]):not([class*="icon"]):not([class*="MuiButton"]) {
   background-color: var(--bg-primary) !important;
   color: var(--text-primary) !important;
 }
