@@ -3,9 +3,9 @@ import {
   Button as DxButton,
   Drawer as DxDrawer
 } from 'devextreme-react';
-import { useTheme as useCustomTheme } from '@/hooks/use-theme';
+import { useSimpleTheme } from '@/hooks/use-simple-theme';
 import { useAuth } from '@/hooks/useAuth';
-import { DevExtremeThemeSelector } from '@/components/ui/devextreme-theme-selector';
+import { ProfileDropdown, ThemeToggle } from '@/components/ui/profile-dropdown';
 import AdminSidebar from './AdminSidebar';
 
 interface AdminLayoutProps {
@@ -18,7 +18,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
   const [sidebarPinned, setSidebarPinned] = useState(() => {
     return localStorage.getItem('admin_sidebar_pinned') === 'true';
   });
-  const { theme: currentTheme, toggleTheme } = useCustomTheme();
+  const { isDark, toggleTheme } = useSimpleTheme();
   const { logout } = useAuth();
 
   useEffect(() => {
@@ -130,13 +130,9 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
             hint="Arama"
           />
 
-          <DevExtremeThemeSelector />
-
-          <DxButton
-            icon={currentTheme === 'light' ? 'sun' : currentTheme === 'dark' ? 'moon' : 'home'}
-            stylingMode="text"
-            onClick={toggleTheme}
-            hint={`Tema: ${currentTheme === 'light' ? 'Açık' : currentTheme === 'dark' ? 'Koyu' : 'Kurumsal'}`}
+          <ThemeToggle 
+            isDark={isDark}
+            onToggle={toggleTheme}
           />
 
           <DxButton
@@ -145,12 +141,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
             hint="Bildirimler"
           />
 
-          <DxButton
-            icon="runner"
-            stylingMode="text"
-            onClick={logout}
-            hint="Çıkış Yap"
-          />
+          <ProfileDropdown userType="admin" />
         </div>
       </div>
 

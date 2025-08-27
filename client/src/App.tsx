@@ -1,8 +1,7 @@
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { DevExtremeThemeProvider } from '@/hooks/use-devextreme-theme';
-import { ThemeProvider } from '@/hooks/use-theme';
+import { SimpleThemeProvider } from '@/hooks/use-simple-theme';
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
@@ -167,16 +166,14 @@ function App({ entryMode = 'unified', defaultTheme = 'light' }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider>
-          <DevExtremeThemeProvider defaultTheme={defaultTheme}>
-            <TooltipProvider>
-              <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-                <AppContent entryMode={entryMode} />
-                <Toaster />
-              </div>
-            </TooltipProvider>
-          </DevExtremeThemeProvider>
-        </ThemeProvider>
+        <SimpleThemeProvider>
+          <TooltipProvider>
+            <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-secondary, #f5f5f5)' }}>
+              <AppContent entryMode={entryMode} />
+              <Toaster />
+            </div>
+          </TooltipProvider>
+        </SimpleThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -10,40 +10,45 @@
 @tailwind components;
 @tailwind utilities;
 
-/* DevExtreme Dynamic Theme Overrides */
+/* Simple Light/Dark Theme System */
 .dx-widget {
   font-family: 'Roboto', sans-serif !important;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Theme-specific overrides */
-:root.dx-theme-light .dx-widget,
-:root.dx-theme-corporate .dx-widget {
-  --dx-color-primary: var(--dx-color-primary, #1976d2);
+/* Light Theme (default) */
+:root.theme-light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --border-color: #e0e0e0;
+  --dx-color-primary: #1976d2;
 }
 
-:root.dx-theme-dark .dx-widget {
-  --dx-color-primary: var(--dx-color-primary, #42a5f5);
-  background-color: var(--dx-color-background, #1e1e1e);
-  color: var(--dx-color-text, #ffffff);
+:root.theme-light .dx-widget {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-:root.dx-theme-carmine .dx-widget {
-  --dx-color-primary: var(--dx-color-primary, #e17055);
+/* Dark Theme */
+:root.theme-dark {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #2d3436;
+  --text-primary: #ffffff;
+  --text-secondary: #dddddd;
+  --border-color: #404040;
+  --dx-color-primary: #42a5f5;
 }
 
-:root.dx-theme-dark-moon .dx-widget,
-:root.dx-theme-dark-violet .dx-widget {
-  background-color: var(--dx-color-background, #2d3436);
-  color: var(--dx-color-text, #dddddd);
+:root.theme-dark .dx-widget {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-:root.dx-theme-soft-blue .dx-widget,
-:root.dx-theme-green-mist .dx-widget {
-  background-color: var(--dx-color-background, #f8f9fa);
-}
-
-:root.dx-theme-contrast .dx-widget {
-  --dx-color-primary: var(--dx-color-primary, #000000);
+:root.theme-dark body {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 :root.dx-theme-dark {

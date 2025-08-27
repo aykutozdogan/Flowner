@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button as DxButton } from 'devextreme-react';
 import { useAuth } from '@/hooks/useAuth';
-import { DevExtremeThemeSelector } from '@/components/ui/devextreme-theme-selector';
+import { useSimpleTheme } from '@/hooks/use-simple-theme';
+import { ProfileDropdown, ThemeToggle } from '@/components/ui/profile-dropdown';
 import PortalSidebar from './PortalSidebar';
 
 interface PortalLayoutProps {
@@ -15,6 +16,7 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
     return localStorage.getItem('portal_sidebar_pinned') === 'true';
   });
   const { logout } = useAuth();
+  const { isDark, toggleTheme } = useSimpleTheme();
 
   useEffect(() => {
     localStorage.setItem('portal_sidebar_pinned', sidebarPinned.toString());
@@ -177,14 +179,12 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
             </div>
           </div>
 
-          <DevExtremeThemeSelector />
-
-          <DxButton
-            icon="runner"
-            stylingMode="text"
-            onClick={logout}
-            hint="Çıkış Yap"
+          <ThemeToggle 
+            isDark={isDark}
+            onToggle={toggleTheme}
           />
+
+          <ProfileDropdown userType="portal" />
         </div>
       </div>
 
