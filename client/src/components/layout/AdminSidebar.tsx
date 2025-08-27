@@ -6,7 +6,11 @@ import {
   Building, 
   Users, 
   Settings,
-  BarChart3
+  BarChart3,
+  FormInput,
+  Workflow,
+  FolderOpen,
+  Route
 } from 'lucide-react';
 import { useLocation, Link } from 'wouter';
 import { cn } from '../../lib/utils';
@@ -20,13 +24,25 @@ const menuItems = [
     roles: ['tenant_admin', 'designer']
   },
   { 
-    icon: FileText, 
+    icon: FormInput, 
+    label: 'Form Tasarımı', 
+    href: '/admin/form-builder',
+    roles: ['tenant_admin', 'designer']
+  },
+  { 
+    icon: Workflow, 
+    label: 'BPMN Tasarımı', 
+    href: '/admin/bpmn-designer',
+    roles: ['tenant_admin', 'designer']
+  },
+  { 
+    icon: FolderOpen, 
     label: 'Forms', 
     href: '/admin/forms',
     roles: ['tenant_admin', 'designer']
   },
   { 
-    icon: GitBranch, 
+    icon: Route, 
     label: 'Workflows', 
     href: '/admin/workflows',
     roles: ['tenant_admin', 'designer']

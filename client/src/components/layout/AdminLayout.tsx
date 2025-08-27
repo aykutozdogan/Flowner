@@ -5,7 +5,7 @@ import {
 } from 'devextreme-react';
 import { useTheme as useCustomTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
-import { DevExtremeThemeSelector } from '@/components/ui/devextreme-theme-selector';
+import { DevExtremeThemeSelector } from '@/components/ui/devextreme-theme-selector-dx';
 import AdminSidebar from './AdminSidebar';
 
 interface AdminLayoutProps {
