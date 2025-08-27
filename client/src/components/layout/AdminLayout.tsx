@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme, alpha, Drawer } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, Notifications, Search, LightMode, DarkMode, BusinessCenter, Logout, PushPin, PushPinOutlined } from '@mui/icons-material';
+import { 
+  Button as DxButton,
+  Drawer as DxDrawer
+} from 'devextreme-react';
 import { useTheme as useCustomTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/devextreme';
 import { DevExtremeThemeSelector } from '@/components/ui/devextreme-theme-selector';
 import AdminSidebar from './AdminSidebar';
 
@@ -17,7 +18,6 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
   const [sidebarPinned, setSidebarPinned] = useState(() => {
     return localStorage.getItem('admin_sidebar_pinned') === 'true';
   });
-  const theme = useTheme();
   const { theme: currentTheme, toggleTheme } = useCustomTheme();
   const { logout } = useAuth();
 
@@ -29,7 +29,6 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Pinleme durumu değiştiğinde sidebar'ı aç
   useEffect(() => {
     if (sidebarPinned) {
       setSidebarOpen(true);
@@ -55,164 +54,145 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
     }
   };
 
+  const headerStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '64px',
+    backgroundColor: '#fff',
+    borderBottom: '1px solid #e0e0e0',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    zIndex: 1000,
+    transition: 'margin-left 0.3s ease',
+    marginLeft: sidebarPinned ? '280px' : '0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 24px'
+  };
+
+  const sidebarStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: '64px',
+    left: 0,
+    width: '280px',
+    height: 'calc(100vh - 64px)',
+    backgroundColor: '#fafafa',
+    borderRight: '1px solid #e0e0e0',
+    zIndex: sidebarPinned ? 999 : 1001,
+    transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+    transition: 'transform 0.3s ease'
+  };
+
+  const mainStyle: React.CSSProperties = {
+    marginTop: '64px',
+    marginLeft: sidebarPinned ? '280px' : '0',
+    backgroundColor: '#f8fafc',
+    minHeight: 'calc(100vh - 64px)',
+    transition: 'margin-left 0.3s ease',
+    width: sidebarPinned ? 'calc(100% - 280px)' : '100%'
+  };
+
+  const backdropStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 998
+  };
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* AppBar */}
-      <AppBar 
-        position="fixed" 
-        sx={{ 
-          bgcolor: 'white',
-          color: theme.palette.text.primary,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          zIndex: theme.zIndex.drawer + 1,
-          transition: 'margin-left 0.3s ease',
-          marginLeft: sidebarPinned ? '280px' : 0
-        }}
-      >
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          {/* Left side */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={handleToggleSidebar}
-              data-testid="button-toggle-sidebar"
-              icon="menu"
-              title={sidebarOpen ? "Menüyü Kapat" : "Menüyü Aç"}
-            />
-
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                fontWeight: 600, 
-                color: theme.palette.primary.main,
-                display: { xs: 'none', sm: 'block' }
-              }}
-            >
-              Flowner Admin
-            </Typography>
-          </Box>
-
-          {/* Right side */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Button
-              variant="secondary"
-              size="small"
-              icon="search"
-              data-testid="button-search"
-            />
-
-            <DevExtremeThemeSelector />
-
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={toggleTheme}
-              icon={currentTheme === 'light' ? 'sun' : currentTheme === 'dark' ? 'moon' : 'home'}
-              title={`Tema: ${currentTheme === 'light' ? 'Açık' : currentTheme === 'dark' ? 'Koyu' : 'Kurumsal'}`}
-              data-testid="button-theme-toggle"
-            />
-
-            <Button
-              variant="secondary"
-              size="small"
-              icon="bell"
-              data-testid="button-notifications"
-            />
-
-            <Button
-              variant="danger"
-              size="small"
-              onClick={logout}
-              icon="runner"
-              title="Çıkış Yap"
-              data-testid="button-logout"
-            />
-
-            <IconButton 
-              sx={{ 
-                '&:hover': { 
-                  bgcolor: alpha(theme.palette.action.hover, 0.1) 
-                } 
-              }}
-            >
-              <Avatar sx={{ width: 32, height: 32 }}>
-                <AccountCircle />
-              </Avatar>
-            </IconButton>
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      {/* Sidebar Drawer */}
-      <Drawer
-        variant={sidebarPinned ? "persistent" : "temporary"}
-        anchor="left"
-        open={sidebarOpen}
-        onClose={handleBackdropClick}
-        sx={{
-          width: 280,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: 280,
-            boxSizing: 'border-box',
-            mt: 8, // AppBar height offset
-            height: 'calc(100% - 64px)',
-            borderRight: '1px solid #e0e0e0',
-            backgroundColor: '#fafafa',
-            position: sidebarPinned ? 'fixed' : 'absolute',
-            zIndex: sidebarPinned ? theme.zIndex.drawer - 1 : theme.zIndex.drawer,
-          },
-        }}
-        ModalProps={{
-          keepMounted: true,
-          onBackdropClick: handleBackdropClick,
-        }}
-      >
-        {/* Pin/Unpin Button Header */}
-        <Box 
-          sx={{ 
-            p: 2, 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            borderBottom: '1px solid #e0e0e0',
-            backgroundColor: 'white'
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Admin Menü
-          </Typography>
-          <Button
-            variant="secondary"
-            size="small"
-            onClick={handlePinSidebar}
-            icon={sidebarPinned ? "unpin" : "pin"}
-            title={sidebarPinned ? "Menüyü Serbest Bırak" : "Menüyü Sabitle"}
-            data-testid="button-pin-sidebar"
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Header */}
+      <div style={headerStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <DxButton
+            icon="menu"
+            stylingMode="text"
+            onClick={handleToggleSidebar}
+            hint={sidebarOpen ? "Menüyü Kapat" : "Menüyü Aç"}
           />
-        </Box>
+          
+          <div style={{
+            fontSize: '20px',
+            fontWeight: '600',
+            color: '#1976d2'
+          }}>
+            Flowner Admin
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <DxButton
+            icon="search"
+            stylingMode="text"
+            hint="Arama"
+          />
+
+          <DevExtremeThemeSelector />
+
+          <DxButton
+            icon={currentTheme === 'light' ? 'sun' : currentTheme === 'dark' ? 'moon' : 'home'}
+            stylingMode="text"
+            onClick={toggleTheme}
+            hint={`Tema: ${currentTheme === 'light' ? 'Açık' : currentTheme === 'dark' ? 'Koyu' : 'Kurumsal'}`}
+          />
+
+          <DxButton
+            icon="bell"
+            stylingMode="text"
+            hint="Bildirimler"
+          />
+
+          <DxButton
+            icon="runner"
+            stylingMode="text"
+            onClick={logout}
+            hint="Çıkış Yap"
+          />
+        </div>
+      </div>
+
+      {/* Sidebar */}
+      <div style={sidebarStyle}>
+        <div style={{
+          padding: '16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          borderBottom: '1px solid #e0e0e0',
+          backgroundColor: '#fff'
+        }}>
+          <div style={{
+            fontSize: '14px',
+            fontWeight: '600',
+            color: '#333'
+          }}>
+            Admin Menü
+          </div>
+          <DxButton
+            icon={sidebarPinned ? "unpin" : "pin"}
+            stylingMode="text"
+            onClick={handlePinSidebar}
+            hint={sidebarPinned ? "Menüyü Serbest Bırak" : "Menüyü Sabitle"}
+          />
+        </div>
         <AdminSidebar onClose={handleCloseSidebar} />
-      </Drawer>
+      </div>
+
+      {/* Backdrop for mobile */}
+      {sidebarOpen && !sidebarPinned && (
+        <div style={backdropStyle} onClick={handleBackdropClick} />
+      )}
 
       {/* Main Content */}
-      <Box 
-        component="main" 
-        sx={{ 
-          flexGrow: 1, 
-          mt: 8, // AppBar height offset
-          ml: sidebarPinned ? '280px' : 0,
-          bgcolor: '#f8fafc',
-          minHeight: 'calc(100vh - 64px)',
-          transition: 'margin-left 0.3s ease',
-          p: 0,
-          width: sidebarPinned ? 'calc(100% - 280px)' : '100%',
-        }}
-      >
+      <main style={mainStyle}>
         {children}
-      </Box>
-    </Box>
+      </main>
+    </div>
   );
 }
 
