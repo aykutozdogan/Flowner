@@ -32,6 +32,7 @@ import PortalForms from "@/pages/portal/PortalForms";
 import PortalNotifications from "@/pages/portal/PortalNotifications";
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { PortalLayout } from '@/components/layout/PortalLayout';
+import { useErrorTracking } from '@/hooks/useErrorTracking';
 
 // Create Material-UI theme matching the design reference
 const theme = createTheme({
@@ -375,6 +376,9 @@ function Router() {
 }
 
 function App() {
+  // Error tracking başlat
+  useErrorTracking();
+  
   // Clean props to avoid Material-UI warnings
   const cleanThemeProviderProps = {
     theme
