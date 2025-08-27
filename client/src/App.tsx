@@ -1,14 +1,16 @@
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider as CustomThemeProvider } from './hooks/use-theme';
 import { DevExtremeThemeProvider } from '@/hooks/use-devextreme-theme';
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+
+// DevExtreme imports
+import 'devextreme/dist/css/dx.light.css';
+
+// Pages imports
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -30,376 +32,145 @@ import PortalProfile from "@/pages/portal/PortalProfile";
 import PortalStartProcess from "@/pages/portal/PortalStartProcess";
 import PortalForms from "@/pages/portal/PortalForms";
 import PortalNotifications from "@/pages/portal/PortalNotifications";
+
+// Layout imports
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { PortalLayout } from '@/components/layout/PortalLayout';
 import { useErrorTracking } from '@/hooks/useErrorTracking';
 
-// Create Material-UI theme matching the design reference
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2', // S7 Primary Blue - güvenilir, profesyonel
-      dark: '#1565c0',
-      light: '#42a5f5',
-      contrastText: '#ffffff',
-    },
-    secondary: {
-      main: '#5c6bc0', // S7 Indigo - modern accent
-      dark: '#3f51b5',
-      light: '#9575cd',
-      contrastText: '#ffffff',
-    },
-    success: {
-      main: '#388e3c', // S7 Success Green
-      dark: '#2e7d32',
-      light: '#66bb6a',
-    },
-    warning: {
-      main: '#f57c00', // S7 Warning Amber
-      dark: '#ef6c00',
-      light: '#ff9800',
-    },
-    error: {
-      main: '#d32f2f', // S7 Error Red
-      dark: '#c62828',
-      light: '#f44336',
-    },
-    info: {
-      main: '#0288d1', // S7 Info Light Blue
-      dark: '#0277bd',
-      light: '#03a9f4',
-    },
-    background: {
-      default: '#fafafa', // S7 Enterprise Background
-      paper: '#ffffff',
-    },
-    text: {
-      primary: 'rgba(0, 0, 0, 0.87)',
-      secondary: 'rgba(0, 0, 0, 0.6)',
-    },
-  },
-  typography: {
-    fontFamily: 'Roboto, "Helvetica Neue", Arial, sans-serif',
-    h1: {
-      fontSize: '2.25rem',
-      fontWeight: 700,
-      letterSpacing: '-0.01em',
-    },
-    h2: {
-      fontSize: '1.875rem',
-      fontWeight: 600,
-      letterSpacing: '-0.01em',
-    },
-    h3: {
-      fontSize: '1.5rem',
-      fontWeight: 600,
-    },
-    h4: {
-      fontSize: '1.25rem',
-      fontWeight: 600,
-    },
-    body1: {
-      fontSize: '0.875rem',
-      lineHeight: 1.5,
-    },
-    body2: {
-      fontSize: '0.75rem',
-      lineHeight: 1.4,
-    },
-    button: {
-      textTransform: 'none',
-      fontWeight: 500,
-    },
-  },
-  shape: {
-    borderRadius: 8, // S7 Consistent border radius
-  },
-  components: {
-    // S7 Component Simplification
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: 'none',
-          fontWeight: 500,
-          boxShadow: 'none',
-          '&:hover': {
-            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-          },
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-          border: '1px solid #f0f0f0',
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 8,
-          },
-        },
-      },
-    },
-  },
-  shadows: [
-    'none',
-    '0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12)', // material shadow
-    '0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)', // material-lg shadow
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-    '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)',
-  ] as any,
-});
+// Unified App Props Interface
+interface AppProps {
+  entryMode?: 'admin' | 'portal' | 'unified';
+  defaultTheme?: string;
+}
 
-function RootRedirect() {
-  const { isAuthenticated, getDefaultRoute, user } = useAuth();
+// Ana uygulama component'i - role-based routing ile
+function AppContent({ entryMode = 'unified' }: { entryMode?: string }) {
+  const { user, isAuthenticated, role } = useAuth();
 
-  // Show loading while user state is being determined
-  if (user === undefined) {
+  // Error tracking başlat
+  useErrorTracking();
+
+  // Login kontrolü
+  if (!isAuthenticated) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh' 
-      }}>
-        <div>Loading...</div>
-      </div>
+      <Switch>
+        <Route path="/login" component={Login} />
+        <Route>
+          <Redirect to="/login" />
+        </Route>
+      </Switch>
     );
   }
 
-  if (!isAuthenticated) {
-    return <Redirect to="/login" />;
+  // Role-based layout seçimi
+  const isAdmin = role === 'tenant_admin' || role === 'designer';
+  const isPortalUser = role === 'user' || role === 'approver';
+
+  // Entry mode'a göre routing
+  if (entryMode === 'admin' && !isAdmin) {
+    return <div>Yetkiniz bulunmamaktadır. Admin rolü gereklidir.</div>;
+  }
+  
+  if (entryMode === 'portal' && !isPortalUser) {
+    return <div>Yetkiniz bulunmamaktadır. Portal kullanıcısı rolü gereklidir.</div>;
   }
 
-  return <Redirect to={getDefaultRoute()} />;
-}
-
-function Router() {
   return (
     <Switch>
-      {/* Public Routes */}
+      {/* Login route */}
       <Route path="/login" component={Login} />
-
-      {/* Admin Routes */}
-      <Route path="/admin/dashboard">
-        <ProtectedRoute requireAdmin>
-          <AdminDashboard />
-        </ProtectedRoute>
+      
+      {/* Admin routes - sadece admin rolü */}
+      {isAdmin && (
+        <>
+          <Route path="/admin" nest>
+            <AdminLayout>
+              <Switch>
+                <Route path="/dashboard" component={AdminDashboard} />
+                <Route path="/users" component={UsersPage} />
+                <Route path="/tenants" component={TenantsPage} />
+                <Route path="/forms" component={FormsPage} />
+                <Route path="/form-builder" component={FormBuilderPage} />
+                <Route path="/workflows" component={Workflows} />
+                <Route path="/bpmn-designer" component={BpmnDesignerPage} />
+                <Route path="/processes" component={Processes} />
+                <Route path="/tasks" component={AdminTasksPage} />
+                <Route path="/engine-stats" component={EngineStats} />
+                <Route path="/settings" component={AdminSettingsPage} />
+                <Route>
+                  <Redirect to="/admin/dashboard" />
+                </Route>
+              </Switch>
+            </AdminLayout>
+          </Route>
+        </>
+      )}
+      
+      {/* Portal routes - portal kullanıcıları */}
+      {isPortalUser && (
+        <>
+          <Route path="/portal" nest>
+            <PortalLayout>
+              <Switch>
+                <Route path="/inbox" component={PortalInbox} />
+                <Route path="/task/:id" component={PortalTaskDetail} />
+                <Route path="/my-processes" component={PortalMyProcesses} />
+                <Route path="/start-process" component={PortalStartProcess} />
+                <Route path="/forms" component={PortalForms} />
+                <Route path="/profile" component={PortalProfile} />
+                <Route path="/notifications" component={PortalNotifications} />
+                <Route>
+                  <Redirect to="/portal/inbox" />
+                </Route>
+              </Switch>
+            </PortalLayout>
+          </Route>
+        </>
+      )}
+      
+      {/* Unified mode routes */}
+      {entryMode === 'unified' && (
+        <>
+          <Route path="/tasks" component={Tasks} />
+          <Route path="/workflows" component={Workflows} />
+          <Route path="/processes" component={Processes} />
+          <Route path="/engine-stats" component={EngineStats} />
+        </>
+      )}
+      
+      {/* Default redirects */}
+      <Route path="/">
+        {() => {
+          if (entryMode === 'admin') return <Redirect to="/admin/dashboard" />;
+          if (entryMode === 'portal') return <Redirect to="/portal/inbox" />;
+          if (isAdmin) return <Redirect to="/admin/dashboard" />;
+          if (isPortalUser) return <Redirect to="/portal/inbox" />;
+          return <Redirect to="/login" />;
+        }}
       </Route>
-
-      <Route path="/admin/forms">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <FormsPage />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/admin/tenants">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <TenantsPage />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/admin/users">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <UsersPage />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/admin/workflows">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <Workflows />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/admin/workflows/designer/:key?">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <BpmnDesignerPage />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/admin/forms/builder/:key?">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <FormBuilderPage />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/admin/processes">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <Processes />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/admin/tasks">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <Tasks />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/admin/analytics">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <EngineStats />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/admin/settings">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <AdminSettingsPage />
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
-
-      {/* Portal Routes */}
-      <Route path="/portal/inbox">
-        <ProtectedRoute requirePortal>
-          <PortalInbox />
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/portal/tasks/:id">
-        <ProtectedRoute requirePortal>
-          <PortalTaskDetail />
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/portal/tasks">
-        <ProtectedRoute requirePortal>
-          <PortalLayout>
-            <PortalInbox />
-          </PortalLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/portal/my-processes">
-        <ProtectedRoute requirePortal>
-          <PortalLayout>
-            <PortalMyProcesses />
-          </PortalLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/portal/start-process">
-        <ProtectedRoute requirePortal>
-          <PortalLayout>
-            <PortalStartProcess />
-          </PortalLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/portal/forms">
-        <ProtectedRoute requirePortal>
-          <PortalLayout>
-            <PortalForms />
-          </PortalLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/portal/profile">
-        <ProtectedRoute requirePortal>
-          <PortalLayout>
-            <PortalProfile />
-          </PortalLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/portal/notifications">
-        <ProtectedRoute requirePortal>
-          <PortalLayout>
-            <PortalNotifications />
-          </PortalLayout>
-        </ProtectedRoute>
-      </Route>
-
-      {/* Root Redirect */}
-      <Route path="/" component={RootRedirect} />
-
+      
       {/* 404 */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-function App() {
-  // Error tracking başlat
-  useErrorTracking();
-  
-  // Clean props to avoid Material-UI warnings
-  const cleanThemeProviderProps = {
-    theme
-  };
-
+// Main App Component
+function App({ entryMode = 'unified', defaultTheme = 'light' }: AppProps) {
   return (
-    <CustomThemeProvider>
-      <DevExtremeThemeProvider>
-        <ThemeProvider {...cleanThemeProviderProps}>
-          <CssBaseline />
-          <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Router />
-              </TooltipProvider>
-            </AuthProvider>
-          </QueryClientProvider>
-        </ThemeProvider>
-      </DevExtremeThemeProvider>
-    </CustomThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <DevExtremeThemeProvider defaultTheme={defaultTheme}>
+          <TooltipProvider>
+            <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+              <AppContent entryMode={entryMode} />
+              <Toaster />
+            </div>
+          </TooltipProvider>
+        </DevExtremeThemeProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

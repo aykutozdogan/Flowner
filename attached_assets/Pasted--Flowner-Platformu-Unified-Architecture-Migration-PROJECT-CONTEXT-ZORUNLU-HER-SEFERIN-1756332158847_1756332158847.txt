@@ -1,0 +1,365 @@
+# Flowner Platformu - Unified Architecture Migration
+
+## 📚 PROJECT CONTEXT (ZORUNLU - HER SEFERINDE OKU)
+
+### Proje Özeti
+- **Platform**: Flower Business Process Management System
+- **Tech Stack**: Node.js + Express + TypeScript + PostgreSQL (Backend) | React 18 + TypeScript + DevExtreme (Frontend)
+- **Architecture**: Multi-tenant, role-based access control (RBAC)
+- **Database**: Neon PostgreSQL, tenant_id isolation
+- **Authentication**: JWT tokens, 4 rol sistemi
+
+### Demo Credentials
+- **Admin**: admin@demo.local / Passw0rd!
+- **Designer**: designer@demo.local / Designer123!
+- **User**: user@demo.local / User123!
+- **Tenant**: demo.local
+
+### Mevcut Durum
+- ✅ **Backend API**: Tüm endpoint'ler çalışıyor (Alpha test %100 başarılı)
+- ✅ **Authentication**: JWT sistemi stabil
+- ✅ **Database**: Multi-tenant yapı hazır
+- ✅ **Ports**: 5174 (admin) ve 5175 (portal) çalışıyor
+- ❌ **Frontend Architecture**: Split apps ayrı kodlanmış, içerik boş
+- ❌ **Code Duplication**: AdminLayout/PortalLayout 2 yerde var
+- ❌ **Content**: Apps içi boş, gerçek functionality yok
+
+### Sprint Geçmişi
+- **S1-S6**: Backend foundation, API development, form integration ✅
+- **Alpha Tests**: API endpoint'leri %100 başarılı ✅
+- **Current Issue**: Split architecture yanlış implement edilmiş
+
+## 🎯 GÖREV: UNIFIED ARCHITECTURE MIGRATION
+
+### Sorun Analizi
+Replit Agent önceki sessionlarda **yanlış yaklaşım** kullanmış:
+- ❌ Apps/admin-app ve apps/portal-app **ayrı uygulamalar** olarak kodlanmış
+- ❌ Her app'in kendi AdminLayout/PortalLayout'u var (code duplication)
+- ❌ İçerik boş - sadece shell'ler oluşturulmuş
+- ❌ Gerçek unified architecture implementasyonu YOK
+
+### Doğru Yaklaşım: Unified Architecture
+- ✅ **Tek Ana Uygulama**: `client/src/App.tsx` tüm logic'i içerir
+- ✅ **Role-based routing**: Kullanıcı rolüne göre AdminLayout vs PortalLayout
+- ✅ **Entry point separation**: Apps sadece proxy, gerçek kod client/'ta
+- ✅ **Code sharing**: Tek kaynak, zero duplication
+
+## 🛠️ IMPLEMENTATION PLAN
+
+### Adım 1: Ana Uygulama Geliştirme (client/src/App.tsx)
+```tsx
+// client/src/App.tsx - ANA UYGULAMA
+// Bu dosya TÜM uygulamanın merkezi olacak
+
+interface AppProps {
+  entryMode?: 'admin' | 'portal' | 'unified';
+  defaultTheme?: string;
+}
+
+function App({ entryMode = 'unified', defaultTheme = 'light' }: AppProps) {
+  const { user, role, isAuthenticated } = useAuth();
+  
+  // Authentication check
+  if (!isAuthenticated) {
+    return <LoginFlow />;
+  }
+  
+  // Role-based routing
+  const isAdmin = role === 'tenant_admin' || role === 'designer';
+  const isPortalUser = role === 'user' || role === 'approver';
+  
+  return (
+    <DevExtremeThemeProvider defaultTheme={defaultTheme}>
+      <Router>
+        <Routes>
+          {/* Shared routes */}
+          <Route path="/login" element={<Login />} />
+          
+          {/* Admin routes - sadece admin rolü */}
+          {isAdmin && (
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="forms" element={<AdminForms />} />
+              <Route path="workflows" element={<AdminWorkflows />} />
+              <Route path="processes" element={<AdminProcesses />} />
+              {/* ... */}
+            </Route>
+          )}
+          
+          {/* Portal routes - portal kullanıcıları */}
+          {isPortalUser && (
+            <Route path="/portal" element={<PortalLayout />}>
+              <Route path="tasks" element={<PortalTasks />} />
+              <Route path="my-processes" element={<PortalMyProcesses />} />
+              <Route path="profile" element={<PortalProfile />} />
+              {/* ... */}
+            </Route>
+          )}
+          
+          {/* Default redirects */}
+          <Route path="/" element={<Navigate to={getDefaultRedirect()} />} />
+        </Routes>
+      </Router>
+    </DevExtremeThemeProvider>
+  );
+}
+```
+
+### Adım 2: Proxy Apps Düzeltme
+```tsx
+// apps/admin-app/src/App.tsx - SADECE PROXY
+import MainApp from '../../../client/src/App';
+
+function AdminApp() {
+  return <MainApp entryMode="admin" defaultTheme="light" />;
+}
+
+// apps/portal-app/src/App.tsx - SADECE PROXY  
+import MainApp from '../../../client/src/App';
+
+function PortalApp() {
+  return <MainApp entryMode="portal" defaultTheme="material" />;
+}
+```
+
+### Adım 3: Component Structure Organize
+```bash
+# client/src/components/ yapısı:
+components/
+├── shared/           # Ortak bileşenler
+│   ├── Header.tsx
+│   ├── Sidebar.tsx  
+│   ├── ThemeProvider.tsx
+│   └── FormRenderer.tsx
+├── admin/           # Admin-specific
+│   ├── AdminLayout.tsx
+│   ├── AdminSidebar.tsx
+│   └── AdminHeader.tsx
+└── portal/          # Portal-specific
+    ├── PortalLayout.tsx
+    ├── PortalNavigation.tsx
+    └── PortalHeader.tsx
+```
+
+### Adım 4: DevExtreme Component Migration
+**TÜM bileşenler DevExtreme olmalı**:
+- Forms → `dx-form`, `dx-text-box`, `dx-select-box`
+- Tables → `dx-data-grid`
+- Navigation → `dx-drawer`, `dx-menu`
+- Buttons → `dx-button`
+- Cards → `dx-tile-view`
+- Modals → `dx-popup`
+
+### Adım 5: Profil Dropdown & Logout
+```tsx
+// Header component'inde
+<DxDropDownButton
+  text={user.name}
+  icon="user"
+  items={[
+    { 
+      text: "Profil", 
+      icon: "user", 
+      onClick: () => navigate('/profile') 
+    },
+    { 
+      text: "Çıkış Yap", 
+      icon: "runner", 
+      onClick: handleLogout 
+    }
+  ]}
+/>
+```
+
+### Adım 6: Navigation Systems
+```tsx
+// AdminLayout - Pin/Unpin Sidebar
+<DxDrawer
+  opened={menuOpened}
+  openedStateMode={isPinned ? "shrink" : "overlap"}
+  position="left"
+  closeOnOutsideClick={!isPinned}
+>
+  {/* Admin navigation menu */}
+</DxDrawer>
+
+// PortalLayout - Mobile-first Navigation
+<DxDrawer
+  opened={mobileMenuOpen}
+  openedStateMode="overlap"
+  position="left"
+>
+  {/* Portal navigation menu */}
+</DxDrawer>
+```
+
+## 📦 PACKAGE MANAGEMENT
+
+### Root workspace setup
+```json
+// package.json - Root
+{
+  "workspaces": ["client", "server", "apps/*", "shared"],
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\" \"npm run admin\" \"npm run portal\"",
+    "dev:unified": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "admin": "cd apps/admin-app && npm run dev",
+    "portal": "cd apps/portal-app && npm run dev"
+  }
+}
+```
+
+### Dependencies
+```json
+// client/package.json - ANA DEPENDENCIES
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-router-dom": "^6.8.0", 
+    "devextreme": "^23.2.0",
+    "devextreme-react": "^23.2.0"
+  }
+}
+
+// apps/*/package.json - MİNİMAL
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
+```
+
+## ✅ TEST SCENARIO
+
+### Development Test
+1. **`npm run dev`** → 4 server başlar (backend, client, admin, portal)
+2. **localhost:5000** → Unified app, role-based routing
+3. **localhost:5174** → Admin entry, admin@demo.local ile test
+4. **localhost:5175** → Portal entry, user@demo.local ile test
+
+### Functionality Test
+1. **Login Flow**: 
+   - admin@demo.local → AdminLayout → /admin/dashboard
+   - user@demo.local → PortalLayout → /portal/tasks
+2. **Profile Dropdown**: Click → "Profil", "Çıkış Yap" options
+3. **Theme Switching**: DevExtreme tema seçici çalışmalı
+4. **Navigation**: 
+   - Admin: Pin/unpin sidebar
+   - Portal: Mobile-responsive navigation
+5. **DevExtreme Components**: Tüm UI elements DevExtreme
+
+## 🎯 SUCCESS CRITERIA
+
+### Technical Requirements
+- ✅ **Single codebase**: client/src/App.tsx merkezi uygulama
+- ✅ **Zero duplication**: AdminLayout tek yerde, import ediliyor
+- ✅ **Working ports**: 5000, 5174, 5175 aynı content farklı entry
+- ✅ **DevExtreme migration**: %100 DevExtreme components
+- ✅ **npm run dev**: Tek komutla tüm sistem başlar
+
+### User Experience
+- ✅ **Role-based access**: Admin/Portal kullanıcıları doğru interface
+- ✅ **Profile management**: Dropdown menü + logout çalışır
+- ✅ **Theme switching**: Tema değişimi tüm components'te etkili
+- ✅ **Responsive navigation**: Mobile/desktop uyumlu
+- ✅ **Professional UI**: Business-ready DevExtreme görünümü
+
+## 🗣️ İLETİŞİM GEREKSİNİMLERİ
+
+**ZORUNLU**: Tüm iletişim, kod yorumları, console mesajları **TÜRKÇE** olacak.
+
+## 📊 RAPOR GEREKSİNİMİ (ÖNEMLİ)
+
+Görev tamamlandığında mutlaka aşağıdaki raporu yaz:
+
+---
+
+# 🔄 REPLIT AGENT UNIFIED ARCHITECTURE RAPORU
+
+## 📋 Görev Özeti
+- **Görev**: Split architecture → Unified architecture migration
+- **Durum**: [Başarılı/Kısmen Başarılı/Başarısız]
+- **Süre**: [Tahmini süre]
+
+## ✅ Tamamlanan İşler
+1. **Ana App.tsx**: [client/src/App.tsx durumu]
+2. **Proxy Apps**: [apps/admin-app ve portal-app proxy implementasyonu]
+3. **DevExtreme Migration**: [Hangi component'ler migrate edildi]
+4. **Navigation Systems**: [Admin pin/unpin, Portal mobile menu durumu]
+5. **Profile Dropdown**: [Profil/Çıkış Yap functionality]
+6. **Package Management**: [Workspace setup, dependencies]
+
+## 🛠️ Değiştirilen Dosyalar
+- `client/src/App.tsx` - [Ana uygulama logic'i]
+- `apps/admin-app/src/App.tsx` - [Proxy implementasyonu]  
+- `apps/portal-app/src/App.tsx` - [Proxy implementasyonu]
+- `client/src/components/admin/AdminLayout.tsx` - [DevExtreme migration]
+- `client/src/components/portal/PortalLayout.tsx` - [DevExtreme migration]
+- `client/src/components/shared/Header.tsx` - [Profil dropdown]
+- `package.json` (root) - [Workspace scripts]
+
+## 📦 DevExtreme Migration Status
+- **Forms**: [ ] Material-UI → [ ] DevExtreme dx-form
+- **Tables**: [ ] Material-UI → [ ] DevExtreme dx-data-grid  
+- **Navigation**: [ ] Material-UI → [ ] DevExtreme dx-drawer
+- **Buttons**: [ ] Material-UI → [ ] DevExtreme dx-button
+- **Theme System**: [ ] Material-UI → [ ] DevExtreme ThemeBuilder
+
+## 🧪 Test Sonuçları
+- **npm run dev**: [4 server başladı mı?]
+- **Port 5000**: [Unified app çalışıyor mu?]
+- **Port 5174**: [Admin entry çalışıyor mu?]  
+- **Port 5175**: [Portal entry çalışıyor mu?]
+- **Login Test**: 
+  - admin@demo.local → [AdminLayout gösterdi mi?]
+  - user@demo.local → [PortalLayout gösterdi mi?]
+- **Profile Dropdown**: [Dropdown açılıyor mu?]
+- **Theme Switching**: [Tema değişimi çalışıyor mu?]
+- **Navigation**: [Pin/unpin, mobile menu çalışıyor mu?]
+
+## ❌ Karşılaşılan Sorunlar
+1. [Sorun 1] → [Nasıl çözüldü/çözüm bekliyor]
+2. [Sorun 2] → [Durum]
+
+## 🚨 Kritik Notlar
+- [Code duplication var mı?]
+- [DevExtreme migration complete mi?]
+- [Performance issues?]
+- [Manuel test gerekebilecek alanlar]
+
+## 🎯 Sonraki Adımlar İçin Öneriler
+1. [Öneri 1 - eksik kalan özellikler]
+2. [Öneri 2 - optimization]
+
+## 📸 Test Edilmesi Gerekenler
+- [ ] 3 port'ta da login akışı
+- [ ] Role-based routing doğru çalışıyor
+- [ ] Profile dropdown menü functional
+- [ ] Theme switching all components
+- [ ] Mobile responsive navigation
+- [ ] DevExtreme components rendering
+
+---
+
+**Rapor Tarihi**: [Tarih]
+**Migration Status**: [COMPLETE/PARTIAL/FAILED]
+
+Bu raporu kopyala ve kullanıcıya ver! 📋
+
+## 🚀 HEMEN BAŞLA!
+
+**Öncelik sırası**:
+1. client/src/App.tsx ana uygulamayı implement et
+2. Apps proxy'leri düzelt  
+3. DevExtreme component migration
+4. Navigation systems
+5. Profile dropdown
+6. Test ve debug
+
+Bu unified architecture migration'la Flower platformunu modern, maintainable, professional BPM çözümüne dönüştür! 🌸
+
+**Başarılar!** 🚀

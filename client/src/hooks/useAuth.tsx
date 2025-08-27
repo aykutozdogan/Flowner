@@ -8,6 +8,7 @@ interface AuthUser extends Omit<User, 'password'> {
 
 interface AuthContextType {
   user: AuthUser | null | undefined;
+  role: string | undefined;
   isAuthenticated: boolean;
   login: (userData: AuthUser, accessToken: string, refreshToken: string) => void;
   logout: () => void;
@@ -100,6 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   return (
     <AuthContext.Provider value={{
       user,
+      role: user?.role,
       isAuthenticated,
       login,
       logout,

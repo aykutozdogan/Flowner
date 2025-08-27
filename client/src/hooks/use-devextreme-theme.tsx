@@ -10,8 +10,13 @@ interface DevExtremeThemeContextType {
 
 const DevExtremeThemeContext = createContext<DevExtremeThemeContextType | undefined>(undefined);
 
-export function DevExtremeThemeProvider({ children }: { children: React.ReactNode }) {
+export function DevExtremeThemeProvider({ children, defaultTheme }: { children: React.ReactNode; defaultTheme?: string }) {
   const [theme, setTheme] = useState<DevExtremeThemeMode>(() => {
+    // Use defaultTheme if provided
+    if (defaultTheme && ['light', 'dark', 'corporate', 'carmine', 'dark-moon', 'soft-blue', 'dark-violet', 'green-mist', 'contrast'].includes(defaultTheme)) {
+      return defaultTheme as DevExtremeThemeMode;
+    }
+    
     // Check localStorage first
     const stored = localStorage.getItem('flowner-dx-theme') as DevExtremeThemeMode;
     if (stored && ['light', 'dark', 'corporate', 'carmine', 'dark-moon', 'soft-blue', 'dark-violet', 'green-mist', 'contrast'].includes(stored)) {
