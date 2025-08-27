@@ -29,6 +29,60 @@
   --dx-color-primary-active: #0d47a1;
 }
 
+:root.dx-theme-carmine {
+  /* Carmine theme - Warm red tones */
+  --dx-color-primary: #e17055;
+  --dx-color-primary-hover: #d63031;
+  --dx-color-primary-active: #c0392b;
+  --dx-color-background: #ffeaa7;
+  --dx-color-text: #2d3436;
+}
+
+:root.dx-theme-dark-moon {
+  /* Dark Moon theme - Night blue */
+  --dx-color-primary: #00b894;
+  --dx-color-primary-hover: #00a085;
+  --dx-color-primary-active: #008d72;
+  --dx-color-background: #2d3436;
+  --dx-color-text: #ddd;
+}
+
+:root.dx-theme-soft-blue {
+  /* Soft Blue theme - Gentle blue tones */
+  --dx-color-primary: #74b9ff;
+  --dx-color-primary-hover: #0984e3;
+  --dx-color-primary-active: #0770c4;
+  --dx-color-background: #f8f9fa;
+  --dx-color-text: #2d3436;
+}
+
+:root.dx-theme-dark-violet {
+  /* Dark Violet theme - Deep purple tones */
+  --dx-color-primary: #6c5ce7;
+  --dx-color-primary-hover: #5f3dc4;
+  --dx-color-primary-active: #4c2a8a;
+  --dx-color-background: #2d3436;
+  --dx-color-text: #ddd;
+}
+
+:root.dx-theme-green-mist {
+  /* Green Mist theme - Fresh green */
+  --dx-color-primary: #00b894;
+  --dx-color-primary-hover: #00a085;
+  --dx-color-primary-active: #008d72;
+  --dx-color-background: #f8f9fa;
+  --dx-color-text: #2d3436;
+}
+
+:root.dx-theme-contrast {
+  /* Contrast theme - High contrast */
+  --dx-color-primary: #000000;
+  --dx-color-primary-hover: #333333;
+  --dx-color-primary-active: #666666;
+  --dx-color-background: #ffffff;
+  --dx-color-text: #000000;
+}
+
 /* DevExtreme Component Customizations */
 .flowner-data-grid .dx-datagrid {
   border: 1px solid #e0e0e0;

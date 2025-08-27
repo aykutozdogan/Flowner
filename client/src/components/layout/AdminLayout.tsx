@@ -1,10 +1,11 @@
-
 import React, { useState } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, useTheme, alpha } from '@mui/material';
 import { Menu as MenuIcon, AccountCircle, Notifications, Search, LightMode, DarkMode, BusinessCenter, Logout } from '@mui/icons-material';
 import { useTheme as useCustomTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
 import AdminSidebar from './AdminSidebar';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { DevExtremeThemeSelector } from '@/components/ui/devextreme-theme-selector';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -18,6 +19,12 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
   const theme = useTheme();
   const { theme: currentTheme, toggleTheme } = useCustomTheme();
   const { logout } = useAuth();
+
+  // Mock handleLogout function, replace with actual logout logic
+  const handleLogout = () => {
+    console.log("Logging out...");
+    logout();
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -47,7 +54,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
             >
               <MenuIcon sx={{ color: theme.palette.primary.main }} />
             </IconButton>
-            
+
             <Typography 
               variant="h6" 
               sx={{ 
@@ -71,7 +78,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
             >
               <Search />
             </IconButton>
-            
+
             {/* S7 Theme Toggle */}
             <IconButton 
               onClick={toggleTheme}
@@ -87,7 +94,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
               {currentTheme === 'dark' && <DarkMode />}
               {currentTheme === 'corporate' && <BusinessCenter />}
             </IconButton>
-            
+
             <IconButton 
               sx={{ 
                 '&:hover': { 
@@ -97,9 +104,9 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
             >
               <Notifications />
             </IconButton>
-            
+
             <IconButton 
-              onClick={logout}
+              onClick={handleLogout}
               sx={{ 
                 '&:hover': { 
                   bgcolor: alpha(theme.palette.error.main, 0.1) 
@@ -111,7 +118,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
             >
               <Logout />
             </IconButton>
-            
+
             <IconButton 
               sx={{ 
                 '&:hover': { 

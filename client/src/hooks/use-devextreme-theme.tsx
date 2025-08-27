@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type DevExtremeThemeMode = 'light' | 'dark' | 'corporate';
+type DevExtremeThemeMode = 'light' | 'dark' | 'corporate' | 'carmine' | 'dark-moon' | 'soft-blue' | 'dark-violet' | 'green-mist' | 'contrast';
 
 interface DevExtremeThemeContextType {
   theme: DevExtremeThemeMode;
@@ -14,7 +14,7 @@ export function DevExtremeThemeProvider({ children }: { children: React.ReactNod
   const [theme, setTheme] = useState<DevExtremeThemeMode>(() => {
     // Check localStorage first
     const stored = localStorage.getItem('flowner-dx-theme') as DevExtremeThemeMode;
-    if (stored && ['light', 'dark', 'corporate'].includes(stored)) {
+    if (stored && ['light', 'dark', 'corporate', 'carmine', 'dark-moon', 'soft-blue', 'dark-violet', 'green-mist', 'contrast'].includes(stored)) {
       return stored;
     }
     
@@ -42,6 +42,24 @@ export function DevExtremeThemeProvider({ children }: { children: React.ReactNod
       case 'corporate':
         themeName = 'material.blue.light';
         break;
+      case 'carmine':
+        themeName = 'generic.carmine';
+        break;
+      case 'dark-moon':
+        themeName = 'generic.darkmoon';
+        break;
+      case 'soft-blue':
+        themeName = 'generic.softblue';
+        break;
+      case 'dark-violet':
+        themeName = 'generic.darkviolet';
+        break;
+      case 'green-mist':
+        themeName = 'generic.greenmist';
+        break;
+      case 'contrast':
+        themeName = 'generic.contrast';
+        break;
       case 'light':
       default:
         themeName = 'generic.light';
@@ -60,7 +78,7 @@ export function DevExtremeThemeProvider({ children }: { children: React.ReactNod
     
     // Apply additional CSS class to document root
     const root = document.documentElement;
-    root.classList.remove('dx-theme-light', 'dx-theme-dark', 'dx-theme-corporate');
+    root.classList.remove('dx-theme-light', 'dx-theme-dark', 'dx-theme-corporate', 'dx-theme-carmine', 'dx-theme-dark-moon', 'dx-theme-soft-blue', 'dx-theme-dark-violet', 'dx-theme-green-mist', 'dx-theme-contrast');
     root.classList.add(`dx-theme-${theme}`);
     
     // Store in localStorage
@@ -77,7 +95,13 @@ export function DevExtremeThemeProvider({ children }: { children: React.ReactNod
     setTheme(current => {
       switch (current) {
         case 'light': return 'dark';
-        case 'dark': return 'corporate';
+        case 'dark': return 'carmine';
+        case 'carmine': return 'dark-moon';
+        case 'dark-moon': return 'soft-blue';
+        case 'soft-blue': return 'dark-violet';
+        case 'dark-violet': return 'green-mist';
+        case 'green-mist': return 'contrast';
+        case 'contrast': return 'corporate';
         case 'corporate': return 'light';
         default: return 'light';
       }
