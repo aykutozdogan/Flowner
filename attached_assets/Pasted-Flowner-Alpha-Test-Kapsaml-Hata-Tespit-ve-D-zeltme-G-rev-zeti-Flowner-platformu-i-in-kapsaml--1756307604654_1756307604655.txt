@@ -1,0 +1,169 @@
+Flowner Alpha Test - Kapsamlı Hata Tespit ve Düzeltme
+🎯 Görev Özeti
+Flowner platformu için kapsamlı alpha test sistemi kurulacak ve çalıştırılacak. Test sistemi 3 farklı kullanıcı rolü ile tüm menüleri test edecek ve bulunan hataları otomatik olarak raporlayacak.
+📋 Test Sistemi Kurulumu
+1. Test Script Kurulumu
+bash# Test sistemini çalıştırılabilir yap
+chmod +x alpha_test_system.sh
+
+# İlk test çalıştırması
+./alpha_test_system.sh
+2. Playwright Kurulumu (Optimal Test İçin)
+bash# Playwright test kütüphanesini kur
+npm install -D playwright
+
+# Browser driver'ları kur
+npx playwright install
+
+# Kapsamlı test çalıştır
+./alpha_test_system.sh
+3. Test Sonuçlarını İncele
+bash# Test log dosyalarını listele
+ls alpha-test-logs/
+
+# Son test session'ının detaylarını görüntüle
+cat alpha-test-logs/alpha_test_*.log
+
+# Hata raporunu incele
+cat alpha-test-logs/alpha_test_*.errors.json
+🔧 Test Kapsamı
+Sistem Durumu Kontrolleri
+
+✅ Backend API health check (port 5000)
+✅ Frontend architecture detection (unified 5000 vs split 5174/5175)
+✅ Database connectivity
+✅ Authentication system
+
+Kullanıcı Rolleri ve Test Senaryoları
+1. Admin Kullanıcı (admin@demo.local / Passw0rd!)
+
+Login → /admin/dashboard redirect kontrolü
+Menu testleri: Dashboard, Forms, Workflows, Processes, Tenants, Users
+API endpoint testleri: /api/v1/tenants, /api/v1/users, /api/analytics/dashboard
+Logout functionality
+
+2. Designer Kullanıcı (designer@demo.local / Designer123!)
+
+Login → /admin/dashboard redirect kontrolü
+Menu testleri: Dashboard, Forms, Workflows, Processes
+API endpoint testleri: /api/workflows, /api/forms, /api/processes
+Role-based access control validation
+
+3. User Kullanıcı (user@demo.local / User123!)
+
+Login → /portal/tasks redirect kontrolü
+Menu testleri: Tasks, My Processes, Profile
+API endpoint testleri: /api/tasks/my-tasks, /api/processes?status=active
+Portal interface navigation
+
+Browser Automation Tests
+
+🌐 Gerçek browser ile sayfa yükleme
+🔐 Form doldurma ve authentication akışı
+🖱️ Menü navigation ve click testleri
+📸 Her adımda screenshot alma
+📝 Console error, network failure, page error yakalama
+
+⚡ Görev Adımları
+Adım 1: Test Sistemini Çalıştır
+Önce temel test sistemini çalıştır ve çıktısını analiz et:
+bash./alpha_test_system.sh
+Beklenen Çıktılar:
+
+Backend health check sonucu
+Frontend architecture detection (unified/split)
+Basic URL accessibility testleri
+API endpoint test sonuçları
+
+Adım 2: Playwright Kurulumunu Kontrol Et
+Eğer Playwright kurulu değilse:
+bashnpm install -D playwright
+npx playwright install
+Sonra kapsamlı testleri çalıştır.
+Adım 3: Hataları Tespit Et ve Düzelt
+Test çıktısında bulunan her hatayı analiz et:
+Kritik Hatalar (🔥):
+
+Backend API çalışmıyor
+Authentication başarısız
+Database bağlantı sorunu
+
+Önemli Hatalar (⚠️):
+
+Frontend JavaScript hataları
+Menu navigation sorunları
+Role-based redirect hataları
+
+Bilgi Amaçlı (📝):
+
+Console warning'leri
+Minor UI issues
+
+Adım 4: Döngüsel Düzeltme
+Her düzeltmeden sonra testi tekrar çalıştır:
+bash./alpha_test_system.sh
+Tüm testler geçene kadar bu döngüyü devam ettir.
+🎯 Başarı Kriterleri
+Test sistemi şu kriterleri karşılamalı:
+Sistem Seviyesi
+
+✅ Backend health check: 200 OK
+✅ Frontend accessible: Admin + Portal interfaces
+✅ Database queries working
+✅ API authentication working
+
+Kullanıcı Seviyesi
+
+✅ Admin: Login → Dashboard redirect, 6 menu erişimi, tenant/user management
+✅ Designer: Login → Dashboard redirect, 4 menu erişimi, form/workflow management
+✅ User: Login → Tasks redirect, 3 menu erişimi, task completion flow
+
+Browser Seviyesi (Playwright ile)
+
+✅ Console error count: 0 critical
+✅ Network request failures: 0 critical
+✅ Page load errors: 0
+✅ Navigation success rate: 100%
+
+🔍 Debug ve Troubleshooting
+Test Log Analizi
+bash# Test session loglarını incele
+grep "ERROR\|FAIL" alpha-test-logs/alpha_test_*.log
+
+# Browser error'larını analiz et
+jq '.' alpha-test-logs/browser_errors.json
+
+# User test sonuçlarını görüntüle
+jq '.[] | {user: .user, success: .success, tests: .tests}' alpha-test-logs/user_test_results.json
+Yaygın Sorun Çözümleri
+1. Port Conflict:
+bash# Portları kontrol et
+netstat -tulpn | grep -E ':(5000|5174|5175)'
+2. Permission Issues:
+bash# Script permission ver
+chmod +x alpha_test_system.sh
+3. Node Dependencies:
+bash# Missing packages kur
+npm install
+📊 Beklenen Test Çıktı Örneği
+Başarılı test çıktısı şu şekilde olmalı:
+🎉 Tüm S6 Alpha testleri başarıyla tamamlandı!
+
+📊 Test Summary:
+   Users tested: 3/3
+   Tests passed: 15/15
+   Errors found: 0 (0 critical)
+
+🚀 All tests PASSED! System is production ready.
+ALPHA_TEST=PASS
+🚨 Kritik Nokta
+Eğer test çalıştırmada herhangi bir hata alırsan (script hatası, permission error, missing dependency, etc.), hatayı tamamen çözene kadar test sistemini düzelt. Test sistemi önce çalışmalı, sonra uygulama testleri yapılmalı.
+Test sırası:
+
+Test script'inin kendisi çalışmalı
+Backend/Frontend erişilebilir olmalı
+Playwright kurulumu tamamlanmalı
+Tüm kullanıcı testleri geçmeli
+Hata sayısı 0 olmalı
+
+Test sistemini çalıştır ve sonuçları raporla!

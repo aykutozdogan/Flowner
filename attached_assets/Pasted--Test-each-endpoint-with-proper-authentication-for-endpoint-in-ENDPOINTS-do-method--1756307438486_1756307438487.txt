@@ -1,0 +1,960 @@
+# Test each endpoint with proper authentication
+for endpoint in "${ENDPOINTS[@]}"; do
+    method=$(echo "$endpoint" | cut -d' ' -f1)
+    path=$(echo "$endpoint" | cut -d' ' -f2)
+    
+    echo -e "🔍 Testing: $method $path" | tee -a "$TEST_LOG"
+    
+    if [[ "$method" == "GET" ]]; then
+        if [[ -n "$AUTH_HEADER" ]]; then
+            response=$(curl -s -w "%{http_code}" "$API_BASE$path" \
+              -H "$AUTH_HEADER" \
+              -H "X-Tenant-Id: demo.local" 2>/dev/null || echo "000")
+        else
+            response=$(curl -s -w "%{http_code}" "$API_BASE$path" 2>/dev/null || echo "000")
+        fi
+        
+        status_code="${response: -3}"
+        
+        if [[ "$status_code" =~ ^[23] ]]; then
+            echo -e "${GREEN}   ✅ $status_code${NC}" | tee -a "$TEST_LOG"
+        else
+            echo -e "${RED}   ❌ $status_code${NC}" | tee -a "$TEST_LOG"
+            echo '{"error": "API endpoint failed", "method": "'$method'", "path": "'$path'", "status": '$status_code', "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"}' >> "$ERROR_LOG"
+        fi
+    elif [[ "$method" == "POST" && "$path" == "/api/auth/login" ]]; then
+        # Login endpoint'i zaten test edildi, skip
+        echo -e "${GREEN}   ✅ Already tested (login)${NC}" | tee -a "$TEST_LOG"
+    fi
+done
+
+# Test user-specific endpoints with different credentials
+echo -e "${BLUE}🔐 Testing User-Specific Endpoints${NC}" | tee -a "$TEST_LOG"
+echo "===================================" | tee -a "$TEST_LOG"
+
+USER_TESTS=(
+    "admin@demo.local:Passw0rd!:admin"
+    "designer@demo.local:Designer123!:designer"
+    "user@demo.local:User123!:user"
+)
+
+for user_test in "${USER_TESTS[@]}"; do
+    IFS=':' read -r email password role <<< "$user_test"
+    echo -e "👤 Testing as $role ($email)..." | tee -a "$TEST_LOG"
+    
+    # Login with specific user
+    user_login_response=$(curl -s -X POST "$API_BASE/api/auth/login" \
+        -H "Content-Type: application/json" \
+        -H "X-Tenant-Id: demo.local" \
+        -d "{\"email\":\"$email\",\"password\":\"$password\"}" 2>/dev/null || echo '{}')
+    
+    user_token=$(echo "$user_login_response" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4 || echo "")
+    
+    if [[ -n "$user_token" ]]; then
+        echo -e "   ✅ Login successful" | tee -a "$TEST_LOG"
+        
+        # Test role-specific endpoints
+        case "$role" in
+            "admin")
+                USER_ENDPOINTS=(
+                    "GET /api/v1/tenants"
+                    "GET /api/v1/users"
+                    "GET /api/analytics/dashboard"
+                )
+                ;;
+            "designer")
+                USER_ENDPOINTS=(
+                    "GET /api/workflows"
+                    "GET /api/forms"
+                    "GET /api/processes"
+                )
+                ;;
+            "user")
+                USER_ENDPOINTS=(
+                    "GET /api/tasks/my-tasks"
+                    "GET /api/processes?status=active"
+                )
+                ;;
+        esac
+        
+        for user_endpoint in "${USER_ENDPOINTS[@]}"; do
+            user_method=$(echo "$user_endpoint" | cut -d' ' -f1)
+            user_path=$(echo "$user_endpoint" | cut -d' ' -f2)
+            
+            echo -e "   🔍 $user_method $user_path" | tee -a "$TEST_LOG"
+            
+            if [[ "$user_method" == "GET" ]]; then
+                user_response=$(curl -s -w "%{http_code}" "$API_BASE$user_path" \
+                    -H "Authorization: Bearer $user_token" \
+                    -H "X-Tenant-Id: demo.local" 2>/dev/null || echo "000")
+                
+                user_status="${user_response: -3}"
+                
+                if [[ "$user_status" =~ ^[23] ]]; then
+                    echo -e "      ${GREEN}✅ $user_status${NC}" | tee -a "$TEST_LOG"
+                else
+                    echo -e "      ${RED}❌ $user_status${NC}" | tee -a "$TEST_LOG"
+                    echo '{"error": "User-specific endpoint failed", "user": "'$role'", "method": "'$user_method'", "path": "'$user_path'", "status": '$user_status', "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"}' >> "$ERROR_LOG"
+                fi
+            fi
+        done
+        
+    else
+        echo -e "   ${RED}❌ Login failed${NC}" | tee -a "$TEST_LOG"
+        echo '{"error": "User login failed", "user": "'$role'", "email": "'$email'", "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"}' >> "$ERROR_LOG"
+    fi
+    
+    echo "" | tee -a "$TEST_LOG"
+done#!/bin/bash
+
+# =============================================================================
+# Flowner Alpha Test Automation System
+# Otomatik hata tespit, loglama ve düzeltme prompt üretimi
+# =============================================================================
+
+set -e
+
+PROJECT_ROOT="."
+LOG_DIR="./alpha-test-logs"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+TEST_SESSION="alpha_test_$TIMESTAMP"
+
+# Renkli output için
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}🚀 Flowner Alpha Test Automation System${NC}"
+echo -e "${BLUE}=====================================${NC}"
+echo ""
+
+# Log dizinini oluştur
+mkdir -p "$LOG_DIR"
+cd "$LOG_DIR"
+
+# Test session dosyası
+TEST_LOG="$TEST_SESSION.log"
+ERROR_LOG="$TEST_SESSION.errors.json"
+PROMPT_FILE="$TEST_SESSION.prompt.md"
+
+echo -e "${YELLOW}📁 Test Session: $TEST_SESSION${NC}"
+echo -e "${YELLOW}📝 Logs: $LOG_DIR/$TEST_LOG${NC}"
+echo ""
+
+# =============================================================================
+# 1. SISTEM DURUMU KONTROLÜ
+# =============================================================================
+
+echo -e "${BLUE}1️⃣ Sistem Durumu Kontrolü${NC}" | tee -a "$TEST_LOG"
+echo "================================" | tee -a "$TEST_LOG"
+
+# Backend health check
+echo -e "🔍 Backend Health Check..." | tee -a "$TEST_LOG"
+if curl -s http://localhost:5000/api/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Backend running on port 5000${NC}" | tee -a "$TEST_LOG"
+    BACKEND_STATUS="OK"
+else
+    echo -e "${RED}❌ Backend not running on port 5000${NC}" | tee -a "$TEST_LOG"
+    BACKEND_STATUS="ERROR"
+    echo '{"error": "Backend not running", "port": 5000, "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"}' >> "$ERROR_LOG"
+fi
+
+# Frontend check - Test both unified (5000) and split (5174, 5175) architectures
+echo -e "🔍 Frontend Architecture Check..." | tee -a "$TEST_LOG"
+FRONTEND_PORTS=(5000 5174 5175)
+FRONTEND_STATUS="OK"
+
+# Test unified architecture (port 5000)
+if curl -s http://localhost:5000/admin/dashboard > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Unified frontend on port 5000 (serving admin + portal)${NC}" | tee -a "$TEST_LOG"
+    ARCHITECTURE="unified"
+    ADMIN_BASE_URL="http://localhost:5000"
+    PORTAL_BASE_URL="http://localhost:5000"
+else
+    echo -e "${YELLOW}⚠️ Unified frontend not detected on port 5000${NC}" | tee -a "$TEST_LOG"
+    ARCHITECTURE="split"
+fi
+
+# Test split architecture (5174 admin, 5175 portal)
+if curl -s http://localhost:5174 > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Admin app running on port 5174${NC}" | tee -a "$TEST_LOG"
+    ADMIN_BASE_URL="http://localhost:5174"
+    ARCHITECTURE="split"
+else
+    echo -e "${YELLOW}⚠️ No admin app on port 5174${NC}" | tee -a "$TEST_LOG"
+fi
+
+if curl -s http://localhost:5175 > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Portal app running on port 5175${NC}" | tee -a "$TEST_LOG"
+    PORTAL_BASE_URL="http://localhost:5175"
+    ARCHITECTURE="split"
+else
+    echo -e "${YELLOW}⚠️ No portal app on port 5175${NC}" | tee -a "$TEST_LOG"
+fi
+
+# Set default URLs if not detected
+ADMIN_BASE_URL=${ADMIN_BASE_URL:-"http://localhost:5000"}
+PORTAL_BASE_URL=${PORTAL_BASE_URL:-"http://localhost:5000"}
+
+echo -e "${BLUE}📐 Architecture: $ARCHITECTURE${NC}" | tee -a "$TEST_LOG"
+echo -e "${BLUE}🔗 Admin URL: $ADMIN_BASE_URL${NC}" | tee -a "$TEST_LOG"
+echo -e "${BLUE}🔗 Portal URL: $PORTAL_BASE_URL${NC}" | tee -a "$TEST_LOG"
+
+echo "" | tee -a "$TEST_LOG"
+
+# =============================================================================
+# 2. BROWSER CONSOLE LOG COLLECTION
+# =============================================================================
+
+echo -e "${BLUE}2️⃣ Browser Console Log Collection${NC}" | tee -a "$TEST_LOG"
+echo "===================================" | tee -a "$TEST_LOG"
+
+# Playwright ile komprehensif browser testing
+cat > browser_test.js << 'EOF'
+const { chromium } = require('playwright');
+const fs = require('fs');
+
+// Test kullanıcıları
+const TEST_USERS = [
+  {
+    role: 'admin',
+    email: 'admin@demo.local',
+    password: 'Passw0rd!',
+    expectedRedirect: '/admin/dashboard',
+    testMenus: ['dashboard', 'forms', 'workflows', 'processes', 'tenants', 'users']
+  },
+  {
+    role: 'designer', 
+    email: 'designer@demo.local',
+    password: 'Designer123!',
+    expectedRedirect: '/admin/dashboard',
+    testMenus: ['dashboard', 'forms', 'workflows', 'processes']
+  },
+  {
+    role: 'user',
+    email: 'user@demo.local', 
+    password: 'User123!',
+    expectedRedirect: '/portal/tasks',
+    testMenus: ['tasks', 'my-processes', 'profile']
+  }
+];
+
+// URL configuration
+const ADMIN_BASE_URL = process.env.ADMIN_BASE_URL || 'http://localhost:5000';
+const PORTAL_BASE_URL = process.env.PORTAL_BASE_URL || 'http://localhost:5000';
+
+async function collectBrowserLogs() {
+  const browser = await chromium.launch({ 
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
+  
+  const context = await browser.newContext({
+    viewport: { width: 1920, height: 1080 },
+    userAgent: 'AlphaTest-Bot/1.0'
+  });
+  
+  const logs = [];
+  const errors = [];
+  const testResults = [];
+
+  console.log(`🔧 Testing Architecture: ${ADMIN_BASE_URL === PORTAL_BASE_URL ? 'Unified' : 'Split'}`);
+  console.log(`🔗 Admin Base: ${ADMIN_BASE_URL}`);
+  console.log(`🔗 Portal Base: ${PORTAL_BASE_URL}`);
+
+  // Global error handler
+  const setupPageErrorHandlers = (page, testContext) => {
+    page.on('console', msg => {
+      const log = {
+        context: testContext,
+        type: msg.type(),
+        text: msg.text(),
+        location: msg.location(),
+        timestamp: new Date().toISOString()
+      };
+      logs.push(log);
+      
+      if (msg.type() === 'error') {
+        errors.push({...log, severity: 'error'});
+      }
+    });
+    
+    page.on('requestfailed', request => {
+      const error = {
+        context: testContext,
+        type: 'network_error',
+        url: request.url(),
+        failure: request.failure()?.errorText || 'Unknown network error',
+        timestamp: new Date().toISOString(),
+        severity: 'error'
+      };
+      errors.push(error);
+    });
+    
+    page.on('pageerror', error => {
+      errors.push({
+        context: testContext,
+        type: 'page_error',
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString(),
+        severity: 'critical'
+      });
+    });
+  };
+
+  // Test her kullanıcı için
+  for (const user of TEST_USERS) {
+    console.log(`\n👤 Testing user: ${user.role} (${user.email})`);
+    
+    const page = await context.newPage();
+    const testContext = `user_${user.role}`;
+    
+    setupPageErrorHandlers(page, testContext);
+    
+    const userTestResult = {
+      user: user.role,
+      email: user.email,
+      tests: [],
+      success: true,
+      errors: []
+    };
+
+    try {
+      // 1. Login testi
+      console.log('  🔐 Testing login...');
+      
+      const loginUrl = `${ADMIN_BASE_URL}/login`;
+      await page.goto(loginUrl, { waitUntil: 'networkidle', timeout: 10000 });
+      
+      // Login form screenshot
+      await page.screenshot({ 
+        path: `login_${user.role}_step1.png`,
+        fullPage: true 
+      });
+      
+      // Login form doldur
+      const emailSelector = 'input[name="email"], input[type="email"], #email';
+      const passwordSelector = 'input[name="password"], input[type="password"], #password';
+      const loginButtonSelector = 'button[type="submit"], button:has-text("Giriş"), button:has-text("Login")';
+      
+      await page.waitForSelector(emailSelector, { timeout: 5000 });
+      await page.fill(emailSelector, user.email);
+      await page.fill(passwordSelector, user.password);
+      
+      // Login butonuna tıkla
+      await page.click(loginButtonSelector);
+      
+      // Redirect bekle
+      await page.waitForLoadState('networkidle', { timeout: 10000 });
+      
+      const currentUrl = page.url();
+      const expectedPath = user.expectedRedirect;
+      
+      if (currentUrl.includes(expectedPath)) {
+        console.log(`    ✅ Login successful, redirected to ${expectedPath}`);
+        userTestResult.tests.push({
+          name: 'login',
+          status: 'success',
+          message: `Redirected to ${expectedPath}`
+        });
+      } else {
+        console.log(`    ❌ Login failed, expected ${expectedPath}, got ${currentUrl}`);
+        userTestResult.tests.push({
+          name: 'login',
+          status: 'failed',
+          message: `Expected ${expectedPath}, got ${currentUrl}`
+        });
+        userTestResult.success = false;
+      }
+
+      // Login sonrası screenshot
+      await page.screenshot({ 
+        path: `login_${user.role}_step2.png`,
+        fullPage: true 
+      });
+
+      // 2. Menü testleri
+      console.log('  📋 Testing navigation menus...');
+      
+      for (const menu of user.testMenus) {
+        console.log(`    🧭 Testing menu: ${menu}`);
+        
+        try {
+          // Menü linkini ara
+          let menuSelector;
+          let targetUrl;
+          
+          if (user.role === 'user') {
+            // Portal menüler
+            switch (menu) {
+              case 'tasks':
+                menuSelector = 'a[href*="/portal/tasks"], nav a:has-text("Görevlerim"), nav a:has-text("Tasks")';
+                targetUrl = `${PORTAL_BASE_URL}/portal/tasks`;
+                break;
+              case 'my-processes':
+                menuSelector = 'a[href*="/portal/my-processes"], nav a:has-text("Süreçlerim"), nav a:has-text("My Processes")';
+                targetUrl = `${PORTAL_BASE_URL}/portal/my-processes`;
+                break;
+              case 'profile':
+                menuSelector = 'a[href*="/portal/profile"], nav a:has-text("Profil"), nav a:has-text("Profile")';
+                targetUrl = `${PORTAL_BASE_URL}/portal/profile`;
+                break;
+            }
+          } else {
+            // Admin menüler
+            switch (menu) {
+              case 'dashboard':
+                menuSelector = 'a[href*="/admin/dashboard"], nav a:has-text("Dashboard")';
+                targetUrl = `${ADMIN_BASE_URL}/admin/dashboard`;
+                break;
+              case 'forms':
+                menuSelector = 'a[href*="/admin/forms"], nav a:has-text("Formlar"), nav a:has-text("Forms")';
+                targetUrl = `${ADMIN_BASE_URL}/admin/forms`;
+                break;
+              case 'workflows':
+                menuSelector = 'a[href*="/admin/workflows"], nav a:has-text("İş Akışları"), nav a:has-text("Workflows")';
+                targetUrl = `${ADMIN_BASE_URL}/admin/workflows`;
+                break;
+              case 'processes':
+                menuSelector = 'a[href*="/admin/processes"], nav a:has-text("Süreçler"), nav a:has-text("Processes")';
+                targetUrl = `${ADMIN_BASE_URL}/admin/processes`;
+                break;
+              case 'tenants':
+                menuSelector = 'a[href*="/admin/tenants"], nav a:has-text("Tenants")';
+                targetUrl = `${ADMIN_BASE_URL}/admin/tenants`;
+                break;
+              case 'users':
+                menuSelector = 'a[href*="/admin/users"], nav a:has-text("Users"), nav a:has-text("Kullanıcılar")';
+                targetUrl = `${ADMIN_BASE_URL}/admin/users`;
+                break;
+            }
+          }
+          
+          // Menüyü bul ve tıkla
+          const menuElement = await page.locator(menuSelector).first();
+          
+          if (await menuElement.count() > 0) {
+            await menuElement.click();
+            await page.waitForLoadState('networkidle', { timeout: 5000 });
+            
+            const menuUrl = page.url();
+            await page.screenshot({ 
+              path: `menu_${user.role}_${menu}.png`,
+              fullPage: true 
+            });
+            
+            console.log(`      ✅ Menu ${menu} accessible: ${menuUrl}`);
+            userTestResult.tests.push({
+              name: `menu_${menu}`,
+              status: 'success',
+              message: `Navigated to ${menuUrl}`
+            });
+            
+            // 2 saniye bekle sayfa yüklensin
+            await page.waitForTimeout(2000);
+            
+          } else {
+            console.log(`      ❌ Menu ${menu} not found or not clickable`);
+            userTestResult.tests.push({
+              name: `menu_${menu}`,
+              status: 'failed',
+              message: `Menu element not found: ${menuSelector}`
+            });
+            userTestResult.success = false;
+          }
+          
+        } catch (error) {
+          console.log(`      ❌ Menu ${menu} error: ${error.message}`);
+          userTestResult.tests.push({
+            name: `menu_${menu}`,
+            status: 'error',
+            message: error.message
+          });
+          userTestResult.success = false;
+          
+          userTestResult.errors.push({
+            menu: menu,
+            error: error.message,
+            stack: error.stack
+          });
+        }
+      }
+
+      // 3. Logout testi
+      console.log('  🚪 Testing logout...');
+      
+      try {
+        // Logout button'ını ara (genelde header'da user menu içinde)
+        const userMenuSelectors = [
+          'button:has-text("admin@demo.local")',
+          'button:has-text("designer@demo.local")',
+          'button:has-text("user@demo.local")',
+          '[data-testid="user-menu"]',
+          '.user-menu',
+          'button[aria-label*="user"]'
+        ];
+        
+        let userMenuFound = false;
+        for (const selector of userMenuSelectors) {
+          const menuButton = page.locator(selector).first();
+          if (await menuButton.count() > 0) {
+            await menuButton.click();
+            await page.waitForTimeout(1000); // Dropdown açılması için bekle
+            userMenuFound = true;
+            break;
+          }
+        }
+        
+        if (userMenuFound) {
+          // Logout linkini ara
+          const logoutSelectors = [
+            'a:has-text("Çıkış")',
+            'a:has-text("Logout")',
+            'button:has-text("Çıkış")',
+            'button:has-text("Logout")',
+            '[data-testid="logout"]'
+          ];
+          
+          let loggedOut = false;
+          for (const selector of logoutSelectors) {
+            const logoutButton = page.locator(selector).first();
+            if (await logoutButton.count() > 0) {
+              await logoutButton.click();
+              await page.waitForLoadState('networkidle', { timeout: 5000 });
+              
+              if (page.url().includes('/login')) {
+                console.log('    ✅ Logout successful');
+                userTestResult.tests.push({
+                  name: 'logout',
+                  status: 'success',
+                  message: 'Redirected to login page'
+                });
+              }
+              loggedOut = true;
+              break;
+            }
+          }
+          
+          if (!loggedOut) {
+            console.log('    ⚠️ Logout button not found in user menu');
+            userTestResult.tests.push({
+              name: 'logout',
+              status: 'warning',
+              message: 'Logout button not found in user menu'
+            });
+          }
+        } else {
+          console.log('    ⚠️ User menu not found for logout test');
+          userTestResult.tests.push({
+            name: 'logout',
+            status: 'warning',
+            message: 'User menu not found'
+          });
+        }
+        
+      } catch (error) {
+        console.log(`    ❌ Logout error: ${error.message}`);
+        userTestResult.tests.push({
+          name: 'logout',
+          status: 'error',
+          message: error.message
+        });
+      }
+
+    } catch (error) {
+      console.log(`  ❌ User test failed: ${error.message}`);
+      userTestResult.success = false;
+      userTestResult.errors.push({
+        general: error.message,
+        stack: error.stack
+      });
+    }
+
+    await page.close();
+    testResults.push(userTestResult);
+    
+    // Her kullanıcı arasında 1 saniye bekle
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+
+  await browser.close();
+  
+  // Test sonuçlarını kaydet
+  fs.writeFileSync('browser_logs.json', JSON.stringify(logs, null, 2));
+  fs.writeFileSync('browser_errors.json', JSON.stringify(errors, null, 2));
+  fs.writeFileSync('user_test_results.json', JSON.stringify(testResults, null, 2));
+  
+  // Özet rapor
+  const summary = {
+    totalUsers: testResults.length,
+    successfulUsers: testResults.filter(r => r.success).length,
+    totalTests: testResults.reduce((sum, r) => sum + r.tests.length, 0),
+    successfulTests: testResults.reduce((sum, r) => sum + r.tests.filter(t => t.status === 'success').length, 0),
+    totalErrors: errors.length,
+    criticalErrors: errors.filter(e => e.severity === 'critical').length
+  };
+  
+  fs.writeFileSync('test_summary.json', JSON.stringify(summary, null, 2));
+  
+  console.log(`\n📊 Test Summary:`);
+  console.log(`   Users tested: ${summary.successfulUsers}/${summary.totalUsers}`);
+  console.log(`   Tests passed: ${summary.successfulTests}/${summary.totalTests}`);
+  console.log(`   Errors found: ${summary.totalErrors} (${summary.criticalErrors} critical)`);
+  
+  return { logs, errors, testResults, summary };
+}
+
+// Export environment variables for browser test
+process.env.ADMIN_BASE_URL = process.env.ADMIN_BASE_URL || 'http://localhost:5000';
+process.env.PORTAL_BASE_URL = process.env.PORTAL_BASE_URL || 'http://localhost:5000';
+
+collectBrowserLogs().then(result => {
+  const success = result.summary.successfulUsers === result.summary.totalUsers && 
+                  result.summary.criticalErrors === 0;
+  
+  console.log(success ? '\n🎉 All user tests passed!' : '\n❌ Some tests failed!');
+  process.exit(success ? 0 : 1);
+}).catch(error => {
+  console.error('Browser test failed:', error);
+  process.exit(1);
+});
+EOF
+
+# Eğer playwright kuruluysa komprehensif user testini çalıştır
+if command -v npx > /dev/null && npx playwright --version > /dev/null 2>&1; then
+    echo -e "🌐 Running comprehensive user testing..." | tee -a "$TEST_LOG"
+    
+    # Environment variables'ları browser testine geçir
+    export ADMIN_BASE_URL="$ADMIN_BASE_URL"
+    export PORTAL_BASE_URL="$PORTAL_BASE_URL"
+    
+    echo -e "🔧 Architecture Configuration:" | tee -a "$TEST_LOG"
+    echo -e "   Admin URL: $ADMIN_BASE_URL" | tee -a "$TEST_LOG"
+    echo -e "   Portal URL: $PORTAL_BASE_URL" | tee -a "$TEST_LOG"
+    
+    if node browser_test.js 2>&1 | tee -a "$TEST_LOG"; then
+        echo -e "${GREEN}✅ Comprehensive user tests completed${NC}" | tee -a "$TEST_LOG"
+        
+        # User test sonuçlarını ana error log'a ekle
+        if [[ -f "browser_errors.json" ]]; then
+            cat browser_errors.json >> "$ERROR_LOG"
+        fi
+        
+        # Test summary göster
+        if [[ -f "test_summary.json" ]]; then
+            echo -e "${BLUE}📊 User Test Summary:${NC}" | tee -a "$TEST_LOG"
+            cat test_summary.json | tee -a "$TEST_LOG"
+        fi
+        
+        # User test sonuçlarını göster
+        if [[ -f "user_test_results.json" ]]; then
+            echo -e "${BLUE}👥 User Test Details:${NC}" | tee -a "$TEST_LOG"
+            
+            # Her kullanıcı için özet
+            for role in admin designer user; do
+                echo -e "  👤 $role:" | tee -a "$TEST_LOG"
+                grep -A 20 "\"user\": \"$role\"" user_test_results.json | grep -E "(success|status)" | head -5 | tee -a "$TEST_LOG"
+            done
+        fi
+        
+    else
+        echo -e "${RED}❌ Comprehensive user tests failed${NC}" | tee -a "$TEST_LOG"
+        echo '{"error": "Comprehensive user tests failed", "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"}' >> "$ERROR_LOG"
+    fi
+else
+    echo -e "${YELLOW}⚠️ Playwright not available, running basic browser tests...${NC}" | tee -a "$TEST_LOG"
+    echo -e "Install with: npm install -D playwright && npx playwright install" | tee -a "$TEST_LOG"
+    
+    # Basic curl testleri
+    echo -e "🌐 Running basic URL tests..." | tee -a "$TEST_LOG"
+    BASIC_URLS=(
+        "$ADMIN_BASE_URL/login"
+        "$ADMIN_BASE_URL/admin/dashboard" 
+        "$PORTAL_BASE_URL/portal/tasks"
+    )
+    
+    for url in "${BASIC_URLS[@]}"; do
+        echo -e "🔍 Testing: $url" | tee -a "$TEST_LOG"
+        
+        if curl -s -o /dev/null -w "%{http_code}" "$url" | grep -E "^[23]" > /dev/null; then
+            echo -e "${GREEN}   ✅ Accessible${NC}" | tee -a "$TEST_LOG"
+        else
+            echo -e "${RED}   ❌ Not accessible${NC}" | tee -a "$TEST_LOG"
+            echo '{"error": "URL not accessible", "url": "'$url'", "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"}' >> "$ERROR_LOG"
+        fi
+    done
+fi
+
+echo "" | tee -a "$TEST_LOG"
+
+# =============================================================================
+# 3. API ENDPOINT TESTING
+# =============================================================================
+
+echo -e "${BLUE}3️⃣ API Endpoint Testing${NC}" | tee -a "$TEST_LOG"
+echo "========================" | tee -a "$TEST_LOG"
+
+# Test API endpoints
+API_BASE="http://localhost:5000"
+ENDPOINTS=(
+    "GET /api/health"
+    "POST /api/auth/login"
+    "GET /api/forms"
+    "GET /api/workflows"
+    "GET /api/processes"
+    "GET /api/tasks"
+)
+
+# Login token al
+LOGIN_RESPONSE=$(curl -s -X POST "$API_BASE/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: demo.local" \
+  -d '{"email":"admin@demo.local","password":"Passw0rd!"}' 2>/dev/null || echo '{}')
+
+TOKEN=$(echo "$LOGIN_RESPONSE" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4 || echo "")
+
+if [[ -n "$TOKEN" ]]; then
+    echo -e "${GREEN}✅ Got auth token${NC}" | tee -a "$TEST_LOG"
+    AUTH_HEADER="Authorization: Bearer $TOKEN"
+else
+    echo -e "${RED}❌ Failed to get auth token${NC}" | tee -a "$TEST_LOG"
+    AUTH_HEADER=""
+    echo '{"error": "Failed to authenticate", "endpoint": "/api/auth/login", "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"}' >> "$ERROR_LOG"
+fi
+
+# Test each endpoint
+for endpoint in "${ENDPOINTS[@]}"; do
+    method=$(echo "$endpoint" | cut -d' ' -f1)
+    path=$(echo "$endpoint" | cut -d' ' -f2)
+    
+    echo -e "🔍 Testing: $method $path" | tee -a "$TEST_LOG"
+    
+    if [[ "$method" == "GET" ]]; then
+        if [[ -n "$AUTH_HEADER" ]]; then
+            response=$(curl -s -w "%{http_code}" "$API_BASE$path" \
+              -H "$AUTH_HEADER" \
+              -H "X-Tenant-Id: demo.local" 2>/dev/null || echo "000")
+        else
+            response=$(curl -s -w "%{http_code}" "$API_BASE$path" 2>/dev/null || echo "000")
+        fi
+        
+        status_code="${response: -3}"
+        
+        if [[ "$status_code" =~ ^[23] ]]; then
+            echo -e "${GREEN}   ✅ $status_code${NC}" | tee -a "$TEST_LOG"
+        else
+            echo -e "${RED}   ❌ $status_code${NC}" | tee -a "$TEST_LOG"
+            echo '{"error": "API endpoint failed", "method": "'$method'", "path": "'$path'", "status": '$status_code', "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"}' >> "$ERROR_LOG"
+        fi
+    fi
+done
+
+echo "" | tee -a "$TEST_LOG"
+
+# =============================================================================
+# 4. LOG FILE ANALYSIS
+# =============================================================================
+
+echo -e "${BLUE}4️⃣ Log File Analysis${NC}" | tee -a "$TEST_LOG"
+echo "====================" | tee -a "$TEST_LOG"
+
+# Backend log dosyalarını ara
+BACKEND_LOGS=(
+    "../server.log"
+    "../app.log" 
+    "../combined.log"
+    "../error.log"
+    "../logs/app.log"
+)
+
+for logfile in "${BACKEND_LOGS[@]}"; do
+    if [[ -f "$logfile" ]]; then
+        echo -e "📄 Analyzing: $logfile" | tee -a "$TEST_LOG"
+        
+        # Son 100 satırdan error'ları ara
+        tail -100 "$logfile" | grep -i "error\|exception\|fail" | while read line; do
+            echo "   🔥 $line" | tee -a "$TEST_LOG"
+            echo '{"error": "Backend log error", "message": "'$line'", "file": "'$logfile'", "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"}' >> "$ERROR_LOG"
+        done
+    fi
+done
+
+echo "" | tee -a "$TEST_LOG"
+
+# =============================================================================
+# 5. REPLIT AGENT PROMPT GENERATION
+# =============================================================================
+
+echo -e "${BLUE}5️⃣ Replit Agent Prompt Generation${NC}" | tee -a "$TEST_LOG"
+echo "=================================" | tee -a "$TEST_LOG"
+
+# Error sayısını hesapla
+ERROR_COUNT=0
+if [[ -f "$ERROR_LOG" ]]; then
+    ERROR_COUNT=$(grep -c '^{' "$ERROR_LOG" 2>/dev/null || echo 0)
+fi
+
+echo -e "📊 Total errors found: $ERROR_COUNT" | tee -a "$TEST_LOG"
+
+if [[ "$ERROR_COUNT" -gt 0 ]]; then
+    echo -e "${YELLOW}⚡ Generating Replit Agent prompt...${NC}" | tee -a "$TEST_LOG"
+    
+    cat > "$PROMPT_FILE" << EOF
+# Flowner Alpha Test - Hata Düzeltme Görevi
+
+## Test Özeti
+- **Test Session**: $TEST_SESSION
+- **Test Tarihi**: $(date)
+- **Bulunan Hata Sayısı**: $ERROR_COUNT
+- **Backend Status**: $BACKEND_STATUS
+- **Architecture**: $ARCHITECTURE
+
+## Tespit Edilen Hatalar
+
+\`\`\`json
+$(cat "$ERROR_LOG" 2>/dev/null || echo '[]')
+\`\`\`
+
+## Test Detayları
+
+### 🔧 Sistem Yapılandırması
+- **Backend API**: http://localhost:5000
+- **Admin Interface**: $ADMIN_BASE_URL
+- **Portal Interface**: $PORTAL_BASE_URL
+- **Architecture**: $ARCHITECTURE (${ADMIN_BASE_URL} & ${PORTAL_BASE_URL})
+
+### 👥 Test Edilen Kullanıcılar
+1. **Admin**: admin@demo.local / Passw0rd!
+   - Expected redirect: /admin/dashboard
+   - Test menus: dashboard, forms, workflows, processes, tenants, users
+
+2. **Designer**: designer@demo.local / Designer123!
+   - Expected redirect: /admin/dashboard  
+   - Test menus: dashboard, forms, workflows, processes
+
+3. **User**: user@demo.local / User123!
+   - Expected redirect: /portal/tasks
+   - Test menus: tasks, my-processes, profile
+
+### 🌐 Browser Test Results
+$(if [[ -f "test_summary.json" ]]; then
+    echo "- **Users tested**: $(grep -o '"successfulUsers":[0-9]*' test_summary.json | cut -d':' -f2)/$(grep -o '"totalUsers":[0-9]*' test_summary.json | cut -d':' -f2)"
+    echo "- **Tests passed**: $(grep -o '"successfulTests":[0-9]*' test_summary.json | cut -d':' -f2)/$(grep -o '"totalTests":[0-9]*' test_summary.json | cut -d':' -f2)"
+    echo "- **Critical errors**: $(grep -o '"criticalErrors":[0-9]*' test_summary.json | cut -d':' -f2)"
+else
+    echo "- Browser tests not available (install Playwright)"
+fi)
+
+### 🔗 API Test Results
+- **Health Check**: $(if curl -s http://localhost:5000/api/health > /dev/null 2>&1; then echo "✅ PASS"; else echo "❌ FAIL"; fi)
+- **Authentication**: $(if [[ -n "$TOKEN" ]]; then echo "✅ PASS"; else echo "❌ FAIL"; fi)
+- **Multi-user Auth**: $(if grep -q "admin.*designer.*user" "$TEST_LOG" 2>/dev/null; then echo "✅ PASS"; else echo "⚠️ PARTIAL"; fi)
+
+## Görev
+Yukarıdaki hataları analiz et ve düzelt. Özellikle:
+
+1. **🔥 Kritik Hatalar**:
+   - Backend API çalışmıyor (port 5000)
+   - Authentication başarısız 
+   - Database connection sorunları
+
+2. **⚠️ Önemli Hatalar**:
+   - Frontend JavaScript hataları
+   - Login/logout akış sorunları
+   - Menu navigation hataları
+   - Role-based redirect sorunları
+
+3. **📋 Test Edilecek Senaryolar**:
+   - Her 3 kullanıcı ile login
+   - Role-based menu erişimi
+   - Admin: tenant/user management
+   - Designer: form/workflow creation
+   - User: task completion flow
+
+4. **🔧 Architecture Check**:
+   - Unified vs Split frontend architecture
+   - Port 5000 vs 5174/5175 configuration
+   - Cross-origin request handling
+
+## Öncelik Sırası
+1. 🔥 **Backend Health**: API server çalışması kritik
+2. 🔥 **Authentication**: 3 kullanıcı login akışı
+3. ⚠️ **Frontend Render**: Sayfa yükleme ve JavaScript
+4. ⚠️ **Navigation**: Menu tıklama ve yönlendirme
+5. 📝 **UI/UX**: Console warning'leri ve minor bugs
+
+## Test Doğrulama
+Düzeltmelerden sonra şu komutu çalıştır:
+\`\`\`bash
+./alpha_test_system.sh
+\`\`\`
+
+**Başarı Kriterleri**:
+- ✅ Backend health check geçiyor
+- ✅ 3 kullanıcı da başarıyla login oluyor
+- ✅ Role-based redirect çalışıyor (admin→/admin/dashboard, user→/portal/tasks)
+- ✅ Temel menü navigation çalışıyor
+- ✅ API endpoint'leri 200/201 dönüyor
+- ✅ JavaScript console'da kritik hata yok
+- ✅ Playwright testleri geçiyor (eğer kuruluysa)
+
+## Debug Info
+- **Log files**: $LOG_DIR/
+- **Screenshots**: login_*.png, menu_*.png (eğer Playwright kuruluysa)
+- **Detailed logs**: $TEST_LOG
+- **Error JSON**: $ERROR_LOG
+
+Hataları düzelt ve test sonuçlarını paylaş!
+EOF
+
+    echo -e "${GREEN}✅ Prompt generated: $PROMPT_FILE${NC}" | tee -a "$TEST_LOG"
+    echo -e "${BLUE}📋 You can now copy this prompt to Replit Agent:${NC}"
+    echo ""
+    cat "$PROMPT_FILE"
+    
+else
+    echo -e "${GREEN}🎉 No errors found! System is working correctly.${NC}" | tee -a "$TEST_LOG"
+    
+    cat > "$PROMPT_FILE" << EOF
+# Flowner Alpha Test - Başarılı! ✅
+
+## Test Özeti
+- **Test Session**: $TEST_SESSION
+- **Test Tarihi**: $(date)
+- **Bulunan Hata Sayısı**: 0
+- **Sistem Durumu**: Tüm testler geçti!
+
+## Sonuç
+Flowner platformu alfa test aşamasını başarıyla geçti. Tüm temel özellikler çalışıyor:
+
+- ✅ Backend API'leri responsive
+- ✅ Authentication akışı sorunsuz
+- ✅ Admin panel erişilebilir
+- ✅ User portal çalışıyor
+- ✅ Database bağlantısı OK
+
+## Sonraki Adımlar
+1. **Beta Test**: Gerçek kullanıcı senaryoları
+2. **Performance Test**: Yük testi
+3. **Security Test**: Güvenlik açığı taraması
+4. **Production Deploy**: Canlı ortam hazırlığı
+
+Mükemmel iş! 🚀
+EOF
+fi
+
+echo ""
+echo -e "${BLUE}📁 Test files saved to: $LOG_DIR/${NC}"
+echo -e "${BLUE}📝 Session log: $TEST_LOG${NC}"
+echo -e "${BLUE}📋 Replit prompt: $PROMPT_FILE${NC}"
+
+if [[ "$ERROR_COUNT" -gt 0 ]]; then
+    echo -e "${RED}🔥 Errors found: $ERROR_COUNT${NC}"
+    exit 1
+else
+    echo -e "${GREEN}🎉 All tests passed!${NC}"
+    exit 0
+fi
