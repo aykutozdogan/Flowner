@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+// MUI removed - using native elements
 import Sidebar from '@/components/layout/sidebar';
 import Header from '@/components/layout/header';
 import StatsCards from '@/components/dashboard/stats-cards';
@@ -9,61 +9,51 @@ import SystemHealth from '@/components/dashboard/system-health';
 
 export default function Dashboard() {
   return (
-    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg-primary, #f5f5f5)' }}>
       <Sidebar />
       
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header />
         
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 3,
-            overflow: 'auto',
-          }}
-        >
+        <main style={{
+          flexGrow: 1,
+          padding: '24px',
+          overflow: 'auto'
+        }}>
           {/* Stats Cards */}
           <StatsCards />
           
           {/* Main Content Grid */}
-          <Box 
-            sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' },
-              gap: 3,
-              mb: 4
-            }}
-          >
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '24px',
+            marginBottom: '32px'
+          }}>
             <QuickActions />
             <RecentActivity />
-          </Box>
+          </div>
           
           {/* Bottom Grid */}
-          <Box 
-            sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
-              gap: 3,
-              mb: 4
-            }}
-          >
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+            gap: '24px',
+            marginBottom: '32px'
+          }}>
             <ActiveProcesses />
             <SystemHealth />
-          </Box>
+          </div>
           
           {/* Workflow Designer Preview */}
-          <Box
-            sx={{
-              bgcolor: 'background.paper',
-              borderRadius: 2,
-              boxShadow: 1,
-              p: 3,
-              border: '1px solid',
-              borderColor: 'grey.200',
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            padding: '24px',
+            border: '1px solid #e0e0e0'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Featured: Workflow Designer</h3>
                 <p className="text-sm text-gray-500 mt-2">
@@ -76,22 +66,19 @@ export default function Dashboard() {
               >
                 Open Designer
               </button>
-            </Box>
+            </div>
             
             {/* BPMN Canvas Preview */}
-            <Box
-              sx={{
-                bgcolor: 'grey.50',
-                borderRadius: 2,
-                p: 4,
-                border: '2px dashed',
-                borderColor: 'grey.300',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: 200,
-              }}
-            >
+            <div style={{
+              backgroundColor: '#f5f5f5',
+              borderRadius: '8px',
+              padding: '32px',
+              border: '2px dashed #ccc',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '200px'
+            }}>
               <div className="flex items-center justify-center space-x-8">
                 {/* Start Event */}
                 <div className="flex flex-col items-center">
@@ -134,14 +121,14 @@ export default function Dashboard() {
                   <span className="text-xs text-gray-600 mt-2">End</span>
                 </div>
               </div>
-            </Box>
+            </div>
             
             <div className="text-center mt-6">
               <p className="text-sm text-gray-500">Drag and drop BPMN elements to create complex workflows</p>
             </div>
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </main>
+      </div>
       
       {/* Floating Action Button */}
       <button 
@@ -150,6 +137,6 @@ export default function Dashboard() {
       >
         <span className="material-icons">add</span>
       </button>
-    </Box>
+    </div>
   );
 }

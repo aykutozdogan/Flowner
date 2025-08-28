@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation } from 'wouter';
-import { Box, Paper, Typography, Button, Card, CardContent, CardActions, Chip, Grid } from '@mui/material';
+import { Button as DxButton, DataGrid as DxDataGrid } from 'devextreme-react';
+import { Column } from 'devextreme-react/data-grid';
 import { Assignment, PlayArrow, Schedule, Person, CheckCircle } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 
@@ -61,99 +62,152 @@ export function Portal() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+    <div style={{ padding: '24px' }}>
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ 
+          fontSize: '32px', 
+          fontWeight: '400', 
+          margin: '0 0 16px 0',
+          color: '#333'
+        }}>
           Kullanıcı Portalı
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </h1>
+        <p style={{ 
+          fontSize: '16px', 
+          color: '#666',
+          margin: '0'
+        }}>
           Size atanan task'ları görüntüleyebilir ve tamamlayabilirsiniz.
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
       {/* Stats Cards */}
       {meta && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 3, mb: 4 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Assignment color="primary" />
-                <Box>
-                  <Typography variant="h6">{meta.counts.pending}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Bekleyen Task'lar
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+          gap: '24px', 
+          marginBottom: '32px' 
+        }}>
+          <div style={{
+            border: '1px solid #e0e0e0',
+            borderRadius: '8px',
+            backgroundColor: 'white',
+            padding: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Assignment style={{ color: '#1976d2', fontSize: '32px' }} />
+              <div>
+                <div style={{ fontSize: '24px', fontWeight: '600', color: '#333' }}>
+                  {meta.counts.pending}
+                </div>
+                <div style={{ fontSize: '14px', color: '#666' }}>
+                  Bekleyen Task'lar
+                </div>
+              </div>
+            </div>
+          </div>
           
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <CheckCircle color="success" />
-                <Box>
-                  <Typography variant="h6">{meta.counts.completed}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Tamamlanan Task'lar
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+          <div style={{
+            border: '1px solid #e0e0e0',
+            borderRadius: '8px',
+            backgroundColor: 'white',
+            padding: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <CheckCircle style={{ color: '#4caf50', fontSize: '32px' }} />
+              <div>
+                <div style={{ fontSize: '24px', fontWeight: '600', color: '#333' }}>
+                  {meta.counts.completed}
+                </div>
+                <div style={{ fontSize: '14px', color: '#666' }}>
+                  Tamamlanan Task'lar
+                </div>
+              </div>
+            </div>
+          </div>
           
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Schedule color="warning" />
-                <Box>
-                  <Typography variant="h6">{meta.counts.overdue}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Süresi Geçen Task'lar
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Box>
+          <div style={{
+            border: '1px solid #e0e0e0',
+            borderRadius: '8px',
+            backgroundColor: 'white',
+            padding: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Schedule style={{ color: '#ff9800', fontSize: '32px' }} />
+              <div>
+                <div style={{ fontSize: '24px', fontWeight: '600', color: '#333' }}>
+                  {meta.counts.overdue}
+                </div>
+                <div style={{ fontSize: '14px', color: '#666' }}>
+                  Süresi Geçen Task'lar
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Tasks List */}
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <div style={{ 
+        padding: '24px',
+        backgroundColor: 'white',
+        border: '1px solid #e0e0e0',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      }}>
+        <h2 style={{ 
+          fontSize: '20px', 
+          fontWeight: '600', 
+          margin: '0 0 16px 0',
+          color: '#333'
+        }}>
           Bekleyen Task'larım ({tasks.length})
-        </Typography>
+        </h2>
         
         {isLoading && (
-          <Typography>Yükleniyor...</Typography>
+          <div style={{ padding: '32px', textAlign: 'center', color: '#666' }}>
+            Yükleniyor...
+          </div>
         )}
         
         {tasks.length === 0 && !isLoading && (
-          <Box sx={{ py: 4, textAlign: 'center' }}>
-            <Assignment sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary">
+          <div style={{ padding: '32px', textAlign: 'center' }}>
+            <Assignment style={{ fontSize: '48px', color: '#ccc', marginBottom: '16px' }} />
+            <h3 style={{ fontSize: '20px', color: '#666', margin: '0 0 8px 0' }}>
               Bekleyen task'ınız bulunmuyor
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </h3>
+            <p style={{ fontSize: '14px', color: '#666', margin: '0' }}>
               Yeni task'lar atandığında burada görüntülenecektir.
-            </Typography>
-          </Box>
+            </p>
+          </div>
         )}
         
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: 2 }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+          gap: '16px' 
+        }}>
           {tasks.map((task) => (
             <Card variant="outlined" key={task.id}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <Assignment fontSize="small" color="primary" />
-                    <Typography variant="h6" component="h3" noWrap>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <Assignment style={{ fontSize: '20px', color: '#1976d2' }} />
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {task.name}
-                    </Typography>
-                  </Box>
+                    </h3>
+                  </div>
                   
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, minHeight: '40px' }}>
+                  <p style={{ 
+                    fontSize: '14px', 
+                    color: '#666', 
+                    marginBottom: '16px', 
+                    minHeight: '40px',
+                    margin: '0 0 16px 0',
+                    lineHeight: '1.4'
+                  }}>
                     {task.description}
-                  </Typography>
+                  </p>
                   
                   <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
                     <Chip 
@@ -176,14 +230,14 @@ export function Portal() {
                         data-testid={`chip-form-${task.id}`}
                       />
                     )}
-                  </Box>
+                  </div>
                   
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <PlayArrow fontSize="small" color="disabled" />
                     <Typography variant="body2" color="text.secondary" noWrap>
                       {task.process.name}
                     </Typography>
-                  </Box>
+                  </div>
                   
                   {task.due_date && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -191,11 +245,11 @@ export function Portal() {
                       <Typography variant="body2" color="text.secondary">
                         {new Date(task.due_date).toLocaleDateString('tr-TR')}
                       </Typography>
-                    </Box>
+                    </div>
                   )}
-                </CardContent>
+                </div>
                 
-                <CardActions>
+                <div style={{ padding: '16px', borderTop: '1px solid #f0f0f0' }}>
                   <Button 
                     size="small" 
                     variant="contained"
@@ -204,11 +258,11 @@ export function Portal() {
                   >
                     Task'ı Aç
                   </Button>
-                </CardActions>
-              </Card>
+                </div>
+              </div>
           ))}
-        </Box>
-      </Paper>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }
