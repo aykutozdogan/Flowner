@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Typography } from '@mui/material';
+import { LoadIndicator } from 'devextreme-react';
 import { 
   PlayCircleOutline as ProcessIcon,
   Schedule as ScheduleIcon,
@@ -67,89 +67,109 @@ export default function StatsCards() {
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 3, mb: 4 }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+        gap: '24px', 
+        marginBottom: '32px' 
+      }}>
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} sx={{ height: 140 }}>
-            <CardContent sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Typography color="text.secondary">Loading...</Typography>
-            </CardContent>
-          </Card>
+          <div key={i} style={{ 
+            height: '140px', 
+            border: '1px solid #e0e0e0', 
+            borderRadius: '8px',
+            padding: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff'
+          }}>
+            <LoadIndicator visible={true} />
+          </div>
         ))}
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box 
-      sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
-        gap: 3,
-        mb: 4
-      }}
-    >
+    <div style={{ 
+      display: 'grid', 
+      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: '24px',
+      marginBottom: '32px'
+    }}>
       {cards.map((card, index) => {
         const Icon = card.icon;
         
         return (
-          <Card
+          <div
             key={index}
-            sx={{
-              boxShadow: 1,
-              border: '1px solid',
-              borderColor: 'grey.200',
-              '&:hover': {
-                boxShadow: 2,
-              },
+            style={{
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              backgroundColor: '#fff',
+              transition: 'box-shadow 0.2s ease',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
             }}
             data-testid={`stat-card-${index}`}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 1 }}>
+            <div style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    color: '#666', 
+                    fontWeight: '500',
+                    marginBottom: '8px'
+                  }}>
                     {card.title}
-                  </Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                  </div>
+                  <div style={{ 
+                    fontSize: '28px', 
+                    fontWeight: '700', 
+                    color: '#333' 
+                  }}>
                     {card.value}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    bgcolor: card.iconBg,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Icon sx={{ fontSize: 24, color: card.iconColor }} />
-                </Box>
-              </Box>
+                  </div>
+                </div>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  borderRadius: '8px', 
+                  backgroundColor: card.iconBg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Icon style={{ fontSize: '24px', color: card.iconColor }} />
+                </div>
+              </div>
               
-              <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 500,
-                    color: card.changeType === 'positive' ? 'success.main' : 'warning.main',
-                  }}
-                >
+              <div style={{ display: 'flex', alignItems: 'center', marginTop: '16px' }}>
+                <span style={{ 
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: card.changeType === 'positive' ? '#4caf50' : '#ff9800'
+                }}>
                   {card.change}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
+                </span>
+                <span style={{ fontSize: '14px', color: '#666', marginLeft: '4px' }}>
                   {index === 0 && 'from last month'}
                   {index === 1 && 'from last week'}
                   {index === 2 && 'from yesterday'}
                   {index === 3 && 'improvement'}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
+                </span>
+              </div>
+            </div>
+          </div>
         );
       })}
-    </Box>
+    </div>
   );
 }

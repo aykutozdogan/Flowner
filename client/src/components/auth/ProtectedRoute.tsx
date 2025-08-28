@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { LoadIndicator } from 'devextreme-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,17 +22,17 @@ export function ProtectedRoute({
   // Yükleniyor durumu kontrolü
   if (user === undefined) {
     return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
-        minHeight="100vh"
-        flexDirection="column"
-        gap={2}
-      >
-        <CircularProgress />
-        <Typography color="text.secondary">Yetkilendirme kontrol ediliyor...</Typography>
-      </Box>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        flexDirection: 'column',
+        gap: '16px'
+      }}>
+        <LoadIndicator visible={true} />
+        <div style={{ color: '#666', fontSize: '14px' }}>Yetkilendirme kontrol ediliyor...</div>
+      </div>
     );
   }
 

@@ -157,8 +157,8 @@ export default function WorkflowsPage() {
               width="120"
               alignment="center"
               cellRender={(data) => {
-                const status = data.value;
-                const colors = {
+                const status = data.value as keyof typeof STATUS_LABELS;
+                const colors: Record<string, string> = {
                   draft: '#ff9800',
                   published: '#4caf50',
                   archived: '#757575'
