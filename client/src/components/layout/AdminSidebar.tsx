@@ -82,7 +82,7 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar = ({ onClose, isCollapsed = false }: AdminSidebarProps) => {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { hasRole } = useAuth();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Management', 'Administration']);
 
@@ -152,7 +152,7 @@ const AdminSidebar = ({ onClose, isCollapsed = false }: AdminSidebarProps) => {
           onClick={() => {
             handleLinkClick();
             if (item.href) {
-              window.location.href = item.href;
+              setLocation(item.href);
             }
           }}
           style={{

@@ -55,7 +55,7 @@ interface PortalSidebarProps {
 }
 
 const PortalSidebar = ({ onClose, isCollapsed = false }: PortalSidebarProps) => {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { hasRole } = useAuth();
 
   const visibleItems = menuItems.filter(item => 
@@ -100,7 +100,7 @@ const PortalSidebar = ({ onClose, isCollapsed = false }: PortalSidebarProps) => 
               onClick={() => {
                 handleLinkClick();
                 if (item.href) {
-                  window.location.href = item.href;
+                  setLocation(`/portal${item.href}`);
                 }
               }}
               style={{
