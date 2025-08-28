@@ -12,43 +12,19 @@ interface PortalLayoutProps {
 
 function PortalLayout({ children, user }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarPinned, setSidebarPinned] = useState(() => {
-    return localStorage.getItem('portal_sidebar_pinned') === 'true';
-  });
   const { logout } = useAuth();
   const { isDark, toggleTheme } = useSimpleTheme();
-
-  useEffect(() => {
-    localStorage.setItem('portal_sidebar_pinned', sidebarPinned.toString());
-  }, [sidebarPinned]);
 
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  useEffect(() => {
-    if (sidebarPinned) {
-      setSidebarOpen(true);
-    }
-  }, [sidebarPinned]);
-
-  const handlePinSidebar = () => {
-    setSidebarPinned(!sidebarPinned);
-    if (!sidebarPinned) {
-      setSidebarOpen(true);
-    }
-  };
-
   const handleCloseSidebar = () => {
-    if (!sidebarPinned) {
-      setSidebarOpen(false);
-    }
+    setSidebarOpen(false);
   };
 
   const handleBackdropClick = () => {
-    if (!sidebarPinned) {
-      setSidebarOpen(false);
-    }
+    setSidebarOpen(false);
   };
 
   const headerStyle: React.CSSProperties = {
@@ -114,7 +90,7 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
           <div style={{
             fontSize: '20px',
             fontWeight: '600',
-            color: '#1976d2'
+            color: isDark ? '#ffffff' : '#1976d2'
           }}>
             Flowner Portal
           </div>

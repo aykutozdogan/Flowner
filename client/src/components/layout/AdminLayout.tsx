@@ -15,43 +15,19 @@ interface AdminLayoutProps {
 
 function AdminLayout({ children, user }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarPinned, setSidebarPinned] = useState(() => {
-    return localStorage.getItem('admin_sidebar_pinned') === 'true';
-  });
   const { isDark, toggleTheme } = useSimpleTheme();
   const { logout } = useAuth();
-
-  useEffect(() => {
-    localStorage.setItem('admin_sidebar_pinned', sidebarPinned.toString());
-  }, [sidebarPinned]);
 
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  useEffect(() => {
-    if (sidebarPinned) {
-      setSidebarOpen(true);
-    }
-  }, [sidebarPinned]);
-
-  const handlePinSidebar = () => {
-    setSidebarPinned(!sidebarPinned);
-    if (!sidebarPinned) {
-      setSidebarOpen(true);
-    }
-  };
-
   const handleCloseSidebar = () => {
-    if (!sidebarPinned) {
-      setSidebarOpen(false);
-    }
+    setSidebarOpen(false);
   };
 
   const handleBackdropClick = () => {
-    if (!sidebarPinned) {
-      setSidebarOpen(false);
-    }
+    setSidebarOpen(false);
   };
 
   const headerStyle: React.CSSProperties = {
@@ -78,18 +54,18 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
     height: 'calc(100vh - 64px)',
     backgroundColor: '#fafafa',
     borderRight: '1px solid #e0e0e0',
-    zIndex: sidebarPinned ? 999 : 1001,
+    zIndex: 1001,
     transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
     transition: 'transform 0.3s ease'
   };
 
   const mainStyle: React.CSSProperties = {
     marginTop: '64px',
-    marginLeft: sidebarPinned ? '280px' : '0',
+    marginLeft: '0',
     backgroundColor: '#f8fafc',
     minHeight: 'calc(100vh - 64px)',
     transition: 'margin-left 0.3s ease',
-    width: sidebarPinned ? 'calc(100% - 280px)' : '100%'
+    width: '100%'
   };
 
   const backdropStyle: React.CSSProperties = {
@@ -117,7 +93,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
           <div style={{
             fontSize: '20px',
             fontWeight: '600',
-            color: '#1976d2'
+            color: isDark ? '#ffffff' : '#1976d2'
           }}>
             Flowner Admin
           </div>
@@ -162,18 +138,12 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
           }}>
             Admin Menü
           </div>
-          <DxButton
-            icon={sidebarPinned ? "unpin" : "pin"}
-            stylingMode="text"
-            onClick={handlePinSidebar}
-            hint={sidebarPinned ? "Menüyü Serbest Bırak" : "Menüyü Sabitle"}
-          />
         </div>
         <AdminSidebar onClose={handleCloseSidebar} />
       </div>
 
       {/* Backdrop for mobile */}
-      {sidebarOpen && !sidebarPinned && (
+      {sidebarOpen && (
         <div style={backdropStyle} onClick={handleBackdropClick} />
       )}
 

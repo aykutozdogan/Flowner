@@ -135,6 +135,49 @@
   background-color: var(--bg-primary) !important;
 }
 
+/* Fix hover states in dark mode */
+:root.theme-dark .hover\\:bg-gray-50:hover {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* BPMN Designer dark theme */
+:root.theme-dark .bpmn-modeler,
+:root.theme-dark .bpmn-container,
+:root.theme-dark .canvas,
+:root.theme-dark .djs-container {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Form Builder dark theme */
+:root.theme-dark .form-builder-canvas,
+:root.theme-dark .form-builder-area,
+:root.theme-dark .drag-drop-area,
+:root.theme-dark .form-field,
+:root.theme-dark .field-panel,
+:root.theme-dark .component-list {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Grid dark theme fixes */
+:root.theme-dark .dx-datagrid-rowsview .dx-row {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+:root.theme-dark .dx-datagrid-headers .dx-header-row {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Header dark theme */
+:root.theme-dark [style*="backgroundColor: '#fff'"] {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
 /* Text colors - all variations */
 :root.theme-dark .text-gray-900,
 :root.theme-dark .text-gray-800,
