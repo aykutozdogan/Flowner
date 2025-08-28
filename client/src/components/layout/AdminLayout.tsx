@@ -35,10 +35,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
     setSidebarCollapsed(false);
   };
 
-  const handleBackdropClick = () => {
-    setSidebarOpen(false);
-    setSidebarCollapsed(false);
-  };
+  // No backdrop click needed for desktop usage
 
   const headerStyle: React.CSSProperties = {
     position: 'fixed',
@@ -78,15 +75,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
     width: sidebarOpen ? (sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 280px)') : '100%'
   };
 
-  const backdropStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 998
-  };
+  // Backdrop removed - desktop sidebar should stay persistent
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -154,10 +143,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
         <AdminSidebar onClose={handleCloseSidebar} isCollapsed={sidebarCollapsed} />
       </div>
 
-      {/* Backdrop for mobile */}
-      {sidebarOpen && (
-        <div style={backdropStyle} onClick={handleBackdropClick} />
-      )}
+      {/* No backdrop - sidebar should stay open on desktop */}
 
       {/* Main Content */}
       <main style={mainStyle}>
