@@ -34,17 +34,24 @@ function isThemeStyleSheet(styleSheet: CSSStyleSheet, theme: Theme) {
   if(process.env.NODE_ENV === 'production') {
     return styleSheet?.href?.includes(`${themeMarker}`);
   } else {
-    const rules = Array.from<CSSStyleRule>(styleSheet.cssRules || []);
-    return !!rules.find((rule) => rule?.selectorText?.includes(`.${themeMarker}`));
+    try {
+      const rules = Array.from(styleSheet.cssRules || []) as CSSStyleRule[];
+      return !!rules.find((rule) => rule?.selectorText?.includes(`.${themeMarker}`));
+    } catch (e) {
+      return false;
+    }
   }
 }
 
 function switchThemeStyleSheets(enabledTheme: Theme) {
   const disabledTheme = getNextTheme(enabledTheme);
 
-  Array.from<CSSStyleSheet>(document.styleSheets).forEach((styleSheet) => {
+  Array.from(document.styleSheets).forEach((styleSheet) => {
     try {
-      styleSheet.disabled = isThemeStyleSheet(styleSheet, disabledTheme);
+      const shouldDisable = isThemeStyleSheet(styleSheet, disabledTheme);
+      if (shouldDisable !== undefined) {
+        styleSheet.disabled = shouldDisable;
+      }
     } catch (e) {
       // Handle cross-origin stylesheets
     }

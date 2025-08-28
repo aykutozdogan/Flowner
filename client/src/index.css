@@ -14,6 +14,129 @@
   font-family: 'Roboto', sans-serif !important;
 }
 
+/* Global Dark Theme Support */
+:root.theme-dark,
+:root.app-theme-dark {
+  /* Update body and main containers */
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+:root.theme-dark body,
+:root.app-theme-dark body {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+/* Dashboard Components Dark Theme */
+:root.theme-dark .bg-white,
+:root.app-theme-dark .bg-white {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+:root.theme-dark .text-gray-900,
+:root.app-theme-dark .text-gray-900 {
+  color: #f9fafb !important;
+}
+
+:root.theme-dark .text-gray-600,
+:root.app-theme-dark .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+:root.theme-dark .border-gray-200,
+:root.app-theme-dark .border-gray-200 {
+  border-color: #374151 !important;
+}
+
+/* Material-UI Dark Theme */
+:root.theme-dark .MuiCard-root,
+:root.app-theme-dark .MuiCard-root {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+
+:root.theme-dark .MuiTypography-root,
+:root.app-theme-dark .MuiTypography-root {
+  color: #f9fafb !important;
+}
+
+:root.theme-dark .MuiButton-root,
+:root.app-theme-dark .MuiButton-root {
+  color: #f9fafb !important;
+}
+
+:root.theme-dark .MuiPaper-root,
+:root.app-theme-dark .MuiPaper-root {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* DevExtreme Grid Dark Theme */
+:root.theme-dark .dx-datagrid,
+:root.app-theme-dark .dx-datagrid {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+:root.theme-dark .dx-datagrid-rowsview .dx-row,
+:root.app-theme-dark .dx-datagrid-rowsview .dx-row {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+:root.theme-dark .dx-datagrid-headers .dx-header-row,
+:root.app-theme-dark .dx-datagrid-headers .dx-header-row {
+  background-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+:root.theme-dark .dx-datagrid-headers .dx-datagrid-table .dx-row > td,
+:root.app-theme-dark .dx-datagrid-headers .dx-datagrid-table .dx-row > td {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+}
+
+:root.theme-dark .dx-datagrid-rowsview .dx-datagrid-table .dx-row > td,
+:root.app-theme-dark .dx-datagrid-rowsview .dx-datagrid-table .dx-row > td {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+/* BPMN Designer Dark Theme */
+:root.theme-dark .bpmn-container,
+:root.app-theme-dark .bpmn-container,
+:root.theme-dark .bjs-container,
+:root.app-theme-dark .bjs-container {
+  background-color: #1f2937 !important;
+}
+
+:root.theme-dark .djs-palette,
+:root.app-theme-dark .djs-palette {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+}
+
+/* Form Builder Dark Theme */
+:root.theme-dark .form-builder-canvas,
+:root.app-theme-dark .form-builder-canvas,
+:root.theme-dark .form-builder-area,
+:root.app-theme-dark .form-builder-area,
+:root.theme-dark .drag-drop-area,
+:root.app-theme-dark .drag-drop-area,
+:root.theme-dark .form-field,
+:root.app-theme-dark .form-field,
+:root.theme-dark .field-panel,
+:root.app-theme-dark .field-panel,
+:root.theme-dark .component-list,
+:root.app-theme-dark .component-list {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
 /* DevExtreme Professional Theme System */
 :root {
   /* Base theme variables will be provided by SCSS theme files */
