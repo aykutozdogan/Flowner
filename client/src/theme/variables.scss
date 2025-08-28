@@ -1,0 +1,147 @@
+// DevExtreme Professional Theme Variables
+// Based on official template gallery
+
+// Light Theme Variables
+:root,
+:root.light,
+:root.theme-light,
+:root.flowner-theme-light {
+  // Base colors
+  --primary-color: #1976d2;
+  --primary-color-hover: #1565c0;
+  --primary-color-active: #0d47a1;
+  
+  // Background colors
+  --background-color: #ffffff;
+  --background-color-secondary: #f8fafc;
+  --background-color-tertiary: #f1f5f9;
+  
+  // Text colors
+  --text-color: #1e293b;
+  --text-color-secondary: #64748b;
+  --text-color-muted: #94a3b8;
+  
+  // Border colors
+  --border-color: #e2e8f0;
+  --border-color-light: #f1f5f9;
+  --border-color-dark: #cbd5e1;
+  
+  // Success colors
+  --success-color: #10b981;
+  --success-color-light: #d1fae5;
+  
+  // Warning colors
+  --warning-color: #f59e0b;
+  --warning-color-light: #fef3c7;
+  
+  // Error colors
+  --error-color: #ef4444;
+  --error-color-light: #fee2e2;
+  
+  // DevExtreme specific
+  --dx-color-primary: var(--primary-color);
+  --dx-color-border: var(--border-color);
+  --dx-color-text: var(--text-color);
+  --dx-color-bg: var(--background-color);
+  
+  // Shadows
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+// Dark Theme Variables
+:root.dark,
+:root.theme-dark,
+:root.flowner-theme-dark {
+  // Base colors
+  --primary-color: #3b82f6;
+  --primary-color-hover: #2563eb;
+  --primary-color-active: #1d4ed8;
+  
+  // Background colors
+  --background-color: #0f172a;
+  --background-color-secondary: #1e293b;
+  --background-color-tertiary: #334155;
+  
+  // Text colors
+  --text-color: #f8fafc;
+  --text-color-secondary: #cbd5e1;
+  --text-color-muted: #64748b;
+  
+  // Border colors
+  --border-color: #334155;
+  --border-color-light: #475569;
+  --border-color-dark: #1e293b;
+  
+  // Success colors
+  --success-color: #22c55e;
+  --success-color-light: #064e3b;
+  
+  // Warning colors
+  --warning-color: #eab308;
+  --warning-color-light: #451a03;
+  
+  // Error colors
+  --error-color: #f87171;
+  --error-color-light: #7f1d1d;
+  
+  // DevExtreme specific
+  --dx-color-primary: var(--primary-color);
+  --dx-color-border: var(--border-color);
+  --dx-color-text: var(--text-color);
+  --dx-color-bg: var(--background-color);
+  
+  // Shadows for dark theme
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+// Corporate Theme Variables
+:root.corporate,
+:root.theme-corporate,
+:root.flowner-theme-corporate {
+  // Base colors - Professional blue/gray palette
+  --primary-color: #0f4c75;
+  --primary-color-hover: #0d3d5c;
+  --primary-color-active: #0a2e44;
+  
+  // Background colors
+  --background-color: #ffffff;
+  --background-color-secondary: #f7f9fc;
+  --background-color-tertiary: #eef2f7;
+  
+  // Text colors
+  --text-color: #2d3748;
+  --text-color-secondary: #4a5568;
+  --text-color-muted: #718096;
+  
+  // Border colors
+  --border-color: #e2e8f0;
+  --border-color-light: #f7fafc;
+  --border-color-dark: #cbd5e1;
+  
+  // Success colors
+  --success-color: #38a169;
+  --success-color-light: #c6f6d5;
+  
+  // Warning colors
+  --warning-color: #d69e2e;
+  --warning-color-light: #faf089;
+  
+  // Error colors
+  --error-color: #e53e3e;
+  --error-color-light: #fed7d7;
+  
+  // DevExtreme specific
+  --dx-color-primary: var(--primary-color);
+  --dx-color-border: var(--border-color);
+  --dx-color-text: var(--text-color);
+  --dx-color-bg: var(--background-color);
+  
+  // Shadows
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}

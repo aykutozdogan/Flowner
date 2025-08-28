@@ -14,39 +14,26 @@ interface AdminLayoutProps {
 }
 
 function AdminLayout({ children, user }: AdminLayoutProps) {
-  // PERSISTENT SIDEBAR STATE
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    const saved = localStorage.getItem('admin-sidebar-open');
-    return saved !== null ? JSON.parse(saved) : true;
-  });
+  // SIMPLIFIED SIDEBAR STATE - ALWAYS OPEN, ONLY TOGGLE COLLAPSE
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('admin-sidebar-collapsed');
-    return saved !== null ? JSON.parse(saved) : false;
+    return saved === 'true' ? true : false; // Simple string comparison
   });
+  const sidebarOpen = true; // Always open in desktop mode
   const { isDark, switchTheme } = useTheme();
   const { logout } = useAuth();
 
-  // SAVE STATE TO LOCALSTORAGE - ONLY TOGGLE EXPAND/COLLAPSE
+  // SIMPLE TOGGLE - ONLY EXPAND/COLLAPSE (DevExtreme Style)
   const handleToggleSidebar = () => {
-    if (sidebarOpen) {
-      // Only toggle between expanded and collapsed, never fully close
-      const newCollapsed = !sidebarCollapsed;
-      setSidebarCollapsed(newCollapsed);
-      localStorage.setItem('admin-sidebar-collapsed', JSON.stringify(newCollapsed));
-    } else {
-      // If closed, open it expanded
-      setSidebarOpen(true);
-      setSidebarCollapsed(false);
-      localStorage.setItem('admin-sidebar-open', 'true');
-      localStorage.setItem('admin-sidebar-collapsed', 'false');
-    }
+    const newCollapsed = !sidebarCollapsed;
+    setSidebarCollapsed(newCollapsed);
+    localStorage.setItem('admin-sidebar-collapsed', newCollapsed.toString());
+    console.log('🔧 Sidebar toggled:', newCollapsed ? 'COLLAPSED' : 'EXPANDED');
   };
 
   const handleCloseSidebar = () => {
-    setSidebarOpen(false);
-    setSidebarCollapsed(false);
-    localStorage.setItem('admin-sidebar-open', 'false');
-    localStorage.setItem('admin-sidebar-collapsed', 'false');
+    // Not used in desktop mode - sidebar always visible
+    console.log('🔧 Close sidebar called (desktop mode: no action)');
   };
 
   // No backdrop click needed for desktop usage
