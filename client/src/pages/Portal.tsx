@@ -1,7 +1,6 @@
 import React from 'react';
 import { useLocation } from 'wouter';
-import { Button as DxButton, DataGrid as DxDataGrid } from 'devextreme-react';
-import { Column } from 'devextreme-react/data-grid';
+import { Button as DxButton } from 'devextreme-react';
 import { Assignment, PlayArrow, Schedule, Person, CheckCircle } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 
@@ -189,8 +188,13 @@ export function Portal() {
           gap: '16px' 
         }}>
           {tasks.map((task) => (
-            <Card variant="outlined" key={task.id}>
-                <div>
+            <div style={{
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              overflow: 'hidden'
+            }} key={task.id}>
+                <div style={{ padding: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                     <Assignment style={{ fontSize: '20px', color: '#1976d2' }} />
                     <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -209,55 +213,64 @@ export function Portal() {
                     {task.description}
                   </p>
                   
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                    <Chip 
-                      label={task.status} 
-                      color={getStatusColor(task.status)}
-                      size="small"
-                    />
-                    <Chip 
-                      label={task.priority} 
-                      color={getPriorityColor(task.priority)}
-                      variant="outlined"
-                      size="small"
-                    />
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      backgroundColor: getStatusColor(task.status) === 'warning' ? '#fff3cd' : '#d4edda',
+                      color: getStatusColor(task.status) === 'warning' ? '#856404' : '#155724'
+                    }}>
+                      {task.status}
+                    </span>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      backgroundColor: getPriorityColor(task.priority) === 'error' ? '#f8d7da' : '#cce7ff',
+                      color: getPriorityColor(task.priority) === 'error' ? '#721c24' : '#004085'
+                    }}>
+                      {task.priority}
+                    </span>
                     {task.form && (
-                      <Chip 
-                        label="Form" 
-                        color="info"
-                        variant="outlined"
-                        size="small"
-                        data-testid={`chip-form-${task.id}`}
-                      />
+                      <span style={{
+                        padding: '4px 8px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        backgroundColor: '#e3f2fd',
+                        color: '#1565c0'
+                      }}
+                      data-testid={`chip-form-${task.id}`}>
+                        Form
+                      </span>
                     )}
                   </div>
                   
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <PlayArrow fontSize="small" color="disabled" />
-                    <Typography variant="body2" color="text.secondary" noWrap>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <PlayArrow style={{ fontSize: '16px', color: '#999' }} />
+                    <span style={{ fontSize: '14px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {task.process.name}
-                    </Typography>
+                    </span>
                   </div>
                   
                   {task.due_date && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Schedule fontSize="small" color="disabled" />
-                      <Typography variant="body2" color="text.secondary">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Schedule style={{ fontSize: '16px', color: '#999' }} />
+                      <span style={{ fontSize: '14px', color: '#666' }}>
                         {new Date(task.due_date).toLocaleDateString('tr-TR')}
-                      </Typography>
+                      </span>
                     </div>
                   )}
                 </div>
                 
                 <div style={{ padding: '16px', borderTop: '1px solid #f0f0f0' }}>
-                  <Button 
-                    size="small" 
-                    variant="contained"
+                  <DxButton 
+                    text="Task'ı Aç"
+                    type="default"
+                    stylingMode="contained"
                     onClick={() => setLocation(`/portal/tasks/${task.id}`)}
-                    data-testid={`button-open-task-${task.id}`}
-                  >
-                    Task'ı Aç
-                  </Button>
+                    elementAttr={{ 'data-testid': `button-open-task-${task.id}` }}
+                  />
                 </div>
               </div>
           ))}
