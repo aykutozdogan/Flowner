@@ -12,6 +12,7 @@ interface PortalLayoutProps {
 
 function PortalLayout({ children, user }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(false);
   const { logout } = useAuth();
   const { isDark, switchTheme } = useTheme();
 

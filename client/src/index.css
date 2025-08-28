@@ -65,6 +65,7 @@
 }
 
 /* Dark Theme */
+:root.dark,
 :root.theme-dark {
   --bg-primary: #1e1e1e;
   --bg-secondary: #2d3436;
@@ -74,30 +75,60 @@
   --dx-color-primary: #42a5f5;
 }
 
+:root.dark body,
 :root.theme-dark body {
   background-color: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
 }
 
-:root.theme-dark .dx-widget {
+:root.dark .dx-widget,
+:root.theme-dark .dx-widget,
+:root.dark .dx-datagrid,
+:root.theme-dark .dx-datagrid,
+:root.dark .dx-datagrid-rowsview,
+:root.theme-dark .dx-datagrid-rowsview,
+:root.dark .dx-datagrid-content,
+:root.theme-dark .dx-datagrid-content {
   background-color: var(--bg-primary) !important;
   color: var(--text-primary) !important;
   border-color: var(--border-color) !important;
 }
 
-:root.theme-dark .bg-white {
+:root.dark .bg-white,
+:root.theme-dark .bg-white,
+:root.dark .admin-sidebar-rendered,
+:root.theme-dark .admin-sidebar-rendered,
+:root.dark [style*="background-color: white"],
+:root.theme-dark [style*="background-color: white"],
+:root.dark [style*="background-color: #fff"],
+:root.theme-dark [style*="background-color: #fff"] {
   background-color: var(--bg-primary) !important;
   color: var(--text-primary) !important;
 }
 
+:root.dark .text-gray-900,
 :root.theme-dark .text-gray-900,
+:root.dark .text-gray-600,
 :root.theme-dark .text-gray-600,
-:root.theme-dark .text-gray-500 {
+:root.dark .text-gray-500,
+:root.theme-dark .text-gray-500,
+:root.dark .dx-datagrid-content .dx-row .dx-texteditor-input,
+:root.theme-dark .dx-datagrid-content .dx-row .dx-texteditor-input,
+:root.dark .dx-datagrid .dx-row,
+:root.theme-dark .dx-datagrid .dx-row,
+:root.dark .dx-data-row,
+:root.theme-dark .dx-data-row {
   color: var(--text-primary) !important;
 }
 
+:root.dark .border,
 :root.theme-dark .border,
-:root.theme-dark .border-gray-200 {
+:root.dark .border-gray-200,
+:root.theme-dark .border-gray-200,
+:root.dark .border-r,
+:root.theme-dark .border-r,
+:root.dark .border-b,
+:root.theme-dark .border-b {
   border-color: var(--border-color) !important;
 }
 

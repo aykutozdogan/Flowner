@@ -86,10 +86,7 @@ const AdminSidebar = ({ onClose, isCollapsed = false }: AdminSidebarProps) => {
   const { hasRole } = useAuth();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Management', 'Administration']);
 
-  // FIXED: Prevent rendering multiple sidebars
-  if (document.querySelector('.admin-sidebar-rendered')) {
-    return null;
-  }
+  // REMOVED: Duplicate sidebar prevention - causing issues
 
   const handleLinkClick = () => {
     // Don't close sidebar on desktop - only close on mobile if needed
@@ -182,7 +179,11 @@ const AdminSidebar = ({ onClose, isCollapsed = false }: AdminSidebarProps) => {
   };
 
   return (
-    <div className={`bg-white h-full transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-full'}`}>
+    <div className={`bg-white dark:bg-gray-800 h-full transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-full'}`}
+         style={{
+           backgroundColor: 'var(--bg-primary, #ffffff)',
+           color: 'var(--text-primary, #333333)'
+         }}>
       <nav className="py-2">
         {menuItems.map(item => renderMenuItem(item))}
       </nav>
