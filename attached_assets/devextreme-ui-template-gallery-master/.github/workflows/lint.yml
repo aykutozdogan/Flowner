@@ -1,0 +1,45 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-project:
+    strategy:
+      fail-fast: false
+      matrix:
+        PROJECT: [ angular, react, vue, js, html, css ]
+
+    runs-on: ubuntu-latest
+    name: Lint ${{ matrix.PROJECT }}
+
+    steps:
+    - name: Get sources
+      uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Restore npm cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node
+
+    - name: Run npm install
+      run: npm install
+
+    - name: Lint applications
+      run: npm run lint-${{ matrix.PROJECT }}
+
+    - name: Archive artifacts
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: artifacts
+        path: test-results.xml

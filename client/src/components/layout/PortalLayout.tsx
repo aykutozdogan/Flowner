@@ -26,20 +26,15 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
   const { isDark, switchTheme } = useTheme();
   const { logout } = useAuth();
 
-  // SAVE STATE TO LOCALSTORAGE - SAME AS ADMIN
+  // SAVE STATE TO LOCALSTORAGE - ONLY TOGGLE EXPAND/COLLAPSE 
   const handleToggleSidebar = () => {
     if (sidebarOpen) {
-      if (sidebarCollapsed) {
-        // If collapsed, close completely
-        setSidebarOpen(false);
-        localStorage.setItem('portal-sidebar-open', 'false');
-      } else {
-        // If expanded, collapse it
-        setSidebarCollapsed(true);
-        localStorage.setItem('portal-sidebar-collapsed', 'true');
-      }
+      // Only toggle between expanded and collapsed, never fully close
+      const newCollapsed = !sidebarCollapsed;
+      setSidebarCollapsed(newCollapsed);
+      localStorage.setItem('portal-sidebar-collapsed', JSON.stringify(newCollapsed));
     } else {
-      // If closed, open it
+      // If closed, open it expanded
       setSidebarOpen(true);
       setSidebarCollapsed(false);
       localStorage.setItem('portal-sidebar-open', 'true');
