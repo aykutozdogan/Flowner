@@ -14,25 +14,44 @@ interface AdminLayoutProps {
 }
 
 function AdminLayout({ children, user }: AdminLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Start expanded
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Collapsed state
+  // PERSISTENT SIDEBAR STATE
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('admin-sidebar-open');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('admin-sidebar-collapsed');
+    return saved !== null ? JSON.parse(saved) : false;
+  });
   const { isDark, switchTheme } = useTheme();
   const { logout } = useAuth();
 
+  // SAVE STATE TO LOCALSTORAGE
   const handleToggleSidebar = () => {
     if (sidebarOpen) {
-      // If open, just collapse it
-      setSidebarCollapsed(!sidebarCollapsed);
+      if (sidebarCollapsed) {
+        // If collapsed, close completely
+        setSidebarOpen(false);
+        localStorage.setItem('admin-sidebar-open', 'false');
+      } else {
+        // If expanded, collapse it
+        setSidebarCollapsed(true);
+        localStorage.setItem('admin-sidebar-collapsed', 'true');
+      }
     } else {
       // If closed, open it
       setSidebarOpen(true);
       setSidebarCollapsed(false);
+      localStorage.setItem('admin-sidebar-open', 'true');
+      localStorage.setItem('admin-sidebar-collapsed', 'false');
     }
   };
 
   const handleCloseSidebar = () => {
     setSidebarOpen(false);
     setSidebarCollapsed(false);
+    localStorage.setItem('admin-sidebar-open', 'false');
+    localStorage.setItem('admin-sidebar-collapsed', 'false');
   };
 
   // No backdrop click needed for desktop usage

@@ -14,29 +14,44 @@ interface PortalLayoutProps {
 }
 
 function PortalLayout({ children, user }: PortalLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Start expanded like admin
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Collapsed state
+  // PERSISTENT SIDEBAR STATE - SAME AS ADMIN
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('portal-sidebar-open');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('portal-sidebar-collapsed');
+    return saved !== null ? JSON.parse(saved) : false;
+  });
   const { isDark, switchTheme } = useTheme();
   const { logout } = useAuth();
 
+  // SAVE STATE TO LOCALSTORAGE - SAME AS ADMIN
   const handleToggleSidebar = () => {
     if (sidebarOpen) {
-      // If open, just collapse it
-      setSidebarCollapsed(!sidebarCollapsed);
+      if (sidebarCollapsed) {
+        // If collapsed, close completely
+        setSidebarOpen(false);
+        localStorage.setItem('portal-sidebar-open', 'false');
+      } else {
+        // If expanded, collapse it
+        setSidebarCollapsed(true);
+        localStorage.setItem('portal-sidebar-collapsed', 'true');
+      }
     } else {
       // If closed, open it
       setSidebarOpen(true);
       setSidebarCollapsed(false);
+      localStorage.setItem('portal-sidebar-open', 'true');
+      localStorage.setItem('portal-sidebar-collapsed', 'false');
     }
   };
 
   const handleCloseSidebar = () => {
     setSidebarOpen(false);
     setSidebarCollapsed(false);
-  };
-
-  const handlePinSidebar = () => {
-    // Toggle pin state - not used in this simplified version
+    localStorage.setItem('portal-sidebar-open', 'false');
+    localStorage.setItem('portal-sidebar-collapsed', 'false');
   };
 
   const headerStyle: React.CSSProperties = {
