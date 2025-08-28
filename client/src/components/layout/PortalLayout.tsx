@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button as DxButton } from 'devextreme-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useSimpleTheme } from '@/hooks/use-simple-theme';
+import { useTheme } from '@/providers/ThemeProvider';
 import { ProfileDropdown, ThemeToggle } from '@/components/ui/profile-dropdown';
 import PortalSidebar from './PortalSidebar';
 
@@ -13,7 +13,7 @@ interface PortalLayoutProps {
 function PortalLayout({ children, user }: PortalLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { logout } = useAuth();
-  const { isDark, toggleTheme } = useSimpleTheme();
+  const { isDark, switchTheme } = useTheme();
 
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -155,7 +155,7 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
 
           <ThemeToggle 
             isDark={isDark}
-            onToggle={toggleTheme}
+            onToggle={switchTheme}
           />
 
           <ProfileDropdown userType="portal" />

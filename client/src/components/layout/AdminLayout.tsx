@@ -3,7 +3,7 @@ import {
   Button as DxButton,
   Drawer as DxDrawer
 } from 'devextreme-react';
-import { useSimpleTheme } from '@/hooks/use-simple-theme';
+import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
 import { ProfileDropdown, ThemeToggle } from '@/components/ui/profile-dropdown';
 import AdminSidebar from './AdminSidebar';
@@ -15,7 +15,7 @@ interface AdminLayoutProps {
 
 function AdminLayout({ children, user }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { isDark, toggleTheme } = useSimpleTheme();
+  const { isDark, switchTheme } = useTheme();
   const { logout } = useAuth();
 
   const handleToggleSidebar = () => {
@@ -108,7 +108,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
 
           <ThemeToggle 
             isDark={isDark}
-            onToggle={toggleTheme}
+            onToggle={switchTheme}
           />
 
           <DxButton

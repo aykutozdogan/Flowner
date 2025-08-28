@@ -41,9 +41,20 @@
   --dx-color-primary: #42a5f5;
 }
 
-:root.theme-dark body {
-  background-color: var(--bg-secondary) !important;
-  color: var(--text-primary) !important;
+/* DevExtreme Professional Theme System */
+:root {
+  /* Base theme variables will be provided by SCSS theme files */
+  --bg-primary: var(--card-background, #ffffff);
+  --bg-secondary: var(--background-color, #f5f5f5);
+  --text-primary: var(--base-text-color, #000000);
+  --text-secondary: var(--subtitle-text-color, #666666);
+  --border-color: var(--border-color, #e0e0e0);
+  --dx-color-primary: var(--accent-color, #1976d2);
+}
+
+body {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 :root.theme-dark .dx-widget {
