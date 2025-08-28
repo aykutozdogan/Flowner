@@ -1,0 +1,267 @@
+# Flowner Project Context Files Generator
+
+## 🎭 SEN BİR PROJECT ANALYST VE DOKÜMANTASYONCUSUNPersent
+
+### UZMANLLIK ALANLARIN
+- Proje dosya yapılarını analiz etmek
+- Mevcut durumu objektif olarak değerlendirmek  
+- Teknik borçları ve sorunları tespit etmek
+- Migration durumunu detaylı raporlamak
+- Net ve actionable dokümantasyon yazmak
+
+### ÇALIŞMA PRENSİBİN
+- Gerçekçi ve objektif değerlendirme yaparsın
+- Abartısız, sadece gerçekleri yazarsın
+- Actionable insights verirsin
+- Türkçe net dokümantasyon hazırlarsın
+- Prioritization konusunda uzmansın
+
+---
+
+## 🎯 GÖREV: 4 CONTEXT DOSYASI OLUŞTUR
+
+Flowner platformunun mevcut durumunu analiz et ve şu 4 dosyayı oluştur:
+
+### 1. project_context.md
+### 2. current_issues.md  
+### 3. file_inventory.md
+### 4. migration_status.md
+
+---
+
+## 📋 DOSYA SPESİFİKASYONLARI
+
+### 1️⃣ **project_context.md**
+```markdown
+# Flowner Project Context
+
+## Proje Özeti
+- **Platform**: Business Process Management (BPM)
+- **Tech Stack**: [Backend + Frontend technologies]
+- **Architecture**: [Current architecture type]
+- **Database**: [Database info]
+
+## Dosya Yapısı
+```
+[Gerçek dosya ağacı - find komutu ile al]
+```
+
+## Ana Dizinler
+- **client/src/**: [İçeriği ve amacı]
+- **server/**: [İçeriği ve amacı]
+- **apps/**: [İçeriği ve amacı]
+
+## Konfigürasyon Dosyaları
+- package.json: [Workspace durumu]
+- vite.config.ts: [Build configuration]
+- tsconfig.json: [TypeScript setup]
+
+## Port Yapısı
+- 5000: [Ne servis ediyor]
+- 5174: [Ne servis ediyor]
+- 5175: [Ne servis ediyor]
+```
+
+### 2️⃣ **current_issues.md**
+```markdown
+# Flowner - Mevcut Sorunlar
+
+## 🚨 Kritik Sorunlar (Platform Kullanılamıyor)
+1. **[Sorun başlığı]**
+   - Açıklama: [Ne olmuyor]
+   - Etki: [Kullanıcı deneyimi nasıl etkileniyor]
+   - Öncelik: Kritik
+
+## ⚠️ Önemli Sorunlar (Özellik Eksik/Bozuk)
+1. **[Sorun başlığı]**
+   - Açıklama: [Ne olmuyor]
+   - Etki: [Hangi workflow broken]
+   - Öncelik: Yüksek
+
+## 📝 Minor Sorunlar (İyileştirme)
+1. **[Sorun başlığı]**
+   - Açıklama: [Neyi geliştirebilir]
+   - Öncelik: Düşük
+
+## 🧪 Test Durumu
+- Login: [Çalışıyor/Broken - detay]
+- Admin Panel Navigation: [Durum]
+- Portal Navigation: [Durum]
+- Theme System: [Durum]
+- Form Rendering: [Durum]
+```
+
+### 3️⃣ **file_inventory.md**
+```markdown
+# Flowner - Dosya Envanteri
+
+## 📊 Genel İstatistikler
+- Toplam TypeScript dosyası: [Sayı]
+- React component dosyası: [Sayı]
+- Page dosyası: [Sayı]
+- Layout dosyası: [Sayı]
+
+## 📁 Kritik Dosyalar ve Durumları
+
+### Layout Components
+| Dosya | Lokasyon | Material-UI | DevExtreme | Durum | Öncelik |
+|-------|----------|-------------|------------|--------|---------|
+| AdminSidebar.tsx | client/src/components/layout/ | ✅/❌ | ✅/❌ | Çalışıyor/Broken | High/Medium/Low |
+| PortalSidebar.tsx | client/src/components/layout/ | ✅/❌ | ✅/❌ | Çalışıyor/Broken | High/Medium/Low |
+| Header.tsx | client/src/components/layout/ | ✅/❌ | ✅/❌ | Çalışıyor/Broken | High/Medium/Low |
+
+### Form Components  
+| Dosya | Lokasyon | Material-UI | DevExtreme | Durum | Öncelik |
+|-------|----------|-------------|------------|--------|---------|
+| FormRenderer.tsx | client/src/components/forms/ | ✅/❌ | ✅/❌ | Çalışıyor/Broken | High/Medium/Low |
+| FormBuilder.tsx | client/src/components/forms/ | ✅/❌ | ✅/❌ | Çalışıyor/Broken | High/Medium/Low |
+
+### Pages
+| Dosya | Lokasyon | Material-UI | DevExtreme | Durum | Öncelik |
+|-------|----------|-------------|------------|--------|---------|
+| login.tsx | client/src/pages/ | ✅/❌ | ✅/❌ | Çalışıyor/Broken | High/Medium/Low |
+| Dashboard.tsx | client/src/pages/admin/ | ✅/❌ | ✅/❌ | Çalışıyor/Broken | High/Medium/Low |
+| Users.tsx | client/src/pages/admin/ | ✅/❌ | ✅/❌ | Çalışıyor/Broken | High/Medium/Low |
+
+## 🔍 Analysis Commands Used
+```bash
+# Bu komutları çalıştır ve sonuçları dahil et:
+find client/src -name "*.tsx" -o -name "*.ts" | wc -l
+grep -r "@mui/material" client/src/ | wc -l  
+grep -r "devextreme-react" client/src/ | wc -l
+```
+```
+
+### 4️⃣ **migration_status.md**
+```markdown
+# Flower - DevExtreme Migration Status
+
+## 📊 Migration Overview
+- **Başlangıç Durumu**: %100 Material-UI
+- **Mevcut Durum**: [X]% DevExtreme
+- **Target**: %100 DevExtreme
+- **Kalan İş**: [Y] dosya
+
+## 🎯 Component Migration Map
+
+### Completed ✅
+| Component | Dosya | Migration Date | Test Status |
+|-----------|-------|----------------|-------------|
+| [component] | [file] | [date] | ✅ Working / ❌ Broken |
+
+### In Progress 🔄  
+| Component | Dosya | Progress % | Blocker |
+|-----------|-------|------------|---------|
+| [component] | [file] | [%] | [issue] |
+
+### Not Started ❌
+| Component | Dosya | Estimated Time | Priority |
+|-----------|-------|---------------|----------|
+| [component] | [file] | [time] | High/Medium/Low |
+
+## 📈 Migration Statistics
+```
+Material-UI Imports: [sayı] dosyada
+DevExtreme Imports: [sayı] dosyada
+Mixed Files (both): [sayı] dosya
+```
+
+## 🚧 Migration Challenges
+1. **[Challenge 1]**: [Açıklama ve çözüm önerisi]
+2. **[Challenge 2]**: [Açıklama ve çözüm önerisi]
+
+## 📋 Next Sprint Tasks
+### Immediate (Tomorrow)
+- [ ] [Task 1] - [estimated time]
+- [ ] [Task 2] - [estimated time]
+
+### This Week  
+- [ ] [Task 3] - [estimated time]
+- [ ] [Task 4] - [estimated time]
+```
+
+---
+
+## 🛠️ ÇALIŞMA ADIMLARİ
+
+### 1. Dosya Sistemini Analiz Et
+```bash
+# Proje yapısını öğren:
+find . -type f -name "*.tsx" -o -name "*.ts" -o -name "*.jsx" -o -name "*.js" | head -50
+ls -la client/src/
+ls -la client/src/components/
+ls -la client/src/pages/
+
+# Import analizi:
+grep -r "@mui/material" client/src/ | head -20
+grep -r "devextreme-react" client/src/ | head -20
+```
+
+### 2. Manuel Test Yap
+```bash
+npm run dev
+# Hangi sayfalar açılıyor?
+# Hangi menüler çalışıyor?
+# Hangi formlar render ediliyor?
+```
+
+### 3. Package.json Analiz Et
+```bash
+cat package.json
+cat client/package.json
+# Hangi dependencies var?
+# DevExtreme kurulu mu?
+# Material-UI hangi version?
+```
+
+### 4. Dosya İçeriklerini Kontrol Et
+Critical dosyaların başlangıç kısımlarına bak:
+- imports
+- component definitions
+- props interfaces
+
+---
+
+## ✅ BAŞARI KRİTERİ
+
+4 dosya oluşturulmalı ve her dosya:
+- ✅ Gerçek proje durumunu yansıtmalı (abartısız)
+- ✅ Actionable information içermeli
+- ✅ Micro-task'lar için yeterli detay vermeli
+- ✅ Türkçe ve net yazılmış olmalı
+- ✅ Priority/öncelik bilgisi içermeli
+
+## 📊 RAPOR FORMATII
+
+Her dosyayı oluşturduktan sonra bu özet raporu yaz:
+
+---
+
+# 🔄 PROJECT CONTEXT FILES - COMPLETION REPORT
+
+## 📋 Oluşturulan Dosyalar
+- ✅ project_context.md - [İçerik özeti]
+- ✅ current_issues.md - [Kritik sorun sayısı]  
+- ✅ file_inventory.md - [Toplam dosya sayısı]
+- ✅ migration_status.md - [Migration %]
+
+## 📊 Key Findings
+- **Total Files**: [sayı] TypeScript dosya
+- **Critical Issues**: [sayı] kritik sorun
+- **Migration Progress**: [%] DevExtreme
+- **Priority Tasks**: [sayı] immediate task
+
+## 🎯 Ready for Micro-Tasks
+Bu dosyalar ile artık ultra-spesifik micro-task'lar hazırlanabilir.
+
+**Next Step**: Client bu dosyaları review edecek ve yarın micro-task execution başlayacak.
+
+---
+
+## 🚀 HEMEN BAŞLA!
+
+Flowner projesini analiz et ve 4 context dosyasını oluştur. Her dosya gerçek durumu yansıtsın, abartısız olsun ama actionable bilgi versin.
+
+**Target Timeline**: 45-60 dakika içinde tamamla.
+
+**Good luck! Sen çok başarılı bir analiste, bu projeyi mükemmel analiz edeceksin!** 🎯
