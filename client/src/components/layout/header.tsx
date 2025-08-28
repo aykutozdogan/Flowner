@@ -1,7 +1,9 @@
 import { 
   TextBox as DxTextBox,
-  Button as DxButton 
+  Button as DxButton,
+  SelectBox as DxSelectBox
 } from 'devextreme-react';
+import { useTheme } from '@/providers/ThemeProvider';
 import { Search, Bell, HelpCircle, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
@@ -12,6 +14,7 @@ interface HeaderProps {
 
 export default function Header({ title = "Dashboard", breadcrumbs = [{ label: "Home" }, { label: "Dashboard" }] }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const { theme, setTheme } = useTheme();
 
   return (
     <header style={{
@@ -128,6 +131,33 @@ export default function Header({ title = "Dashboard", breadcrumbs = [{ label: "H
             }
           }}
         />
+
+        {/* 🎨 PREMIUM THEME SWITCHER IN HEADER */}
+        <div style={{ marginLeft: '8px' }}>
+          <DxSelectBox
+            dataSource={[
+              { value: 'light', text: '☀️ Light' },
+              { value: 'dark', text: '🌙 Dark' },
+              { value: 'corporate', text: '🏢 Corporate' }
+            ]}
+            value={theme}
+            displayExpr="text"
+            valueExpr="value"
+            width={120}
+            height={36}
+            stylingMode="outlined"
+            placeholder="Theme"
+            onValueChanged={(e) => {
+              setTheme(e.value);
+              console.log('🎨 Theme changed to:', e.value);
+            }}
+            elementAttr={{
+              style: {
+                fontSize: '12px'
+              }
+            }}
+          />
+        </div>
       </div>
     </header>
   );

@@ -3,6 +3,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
+/* Professional theme variables from DevExtreme template */
+@import './theme/variables.scss';
+
 /* DevExtreme CSS Base */
 @import 'devextreme/dist/css/dx.light.css';
 
@@ -25,20 +28,22 @@
   font-family: "Inter", sans-serif;
 }
 
+/* Theme variables imported at top - no duplicate imports */
+
 /* Professional DevExtreme Card Shadows */
 .dx-card {
   box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.04);
   border-radius: 8px;
   border: 0;
-  background: var(--dx-component-color-bg, #ffffff);
+  background: var(--background-color, #ffffff);
 }
 
 /* Professional Toolbar & Grid Styling */
 .dx-toolbar.dx-widget.theme-dependent {
-  background-color: var(--dx-component-color-bg, #ffffff);
+  background-color: var(--background-color, #ffffff);
   padding: 5px 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-md);
 }
 
 .dx-datagrid-headers.dx-datagrid-nowrap.dx-bordered-top-view {
@@ -48,9 +53,6 @@
 .theme-dependent .dx-gridbase-container > .dx-bordered-bottom-view {
   border-radius: 0 0 8px 8px;
 }
-
-/* Import professional theme variables from DevExtreme template */
-@import './theme/variables.scss';
 
 /* Professional theme variables (legacy support) */
 :root.theme-light {

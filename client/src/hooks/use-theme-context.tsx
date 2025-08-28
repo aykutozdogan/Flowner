@@ -120,3 +120,6 @@ export function useThemeContext() {
 }
 
 export const ThemeContext = React.createContext<ReturnType<typeof useThemeContext> | null>(null);
+
+// Backward compatibility - export useTheme alias
+export const useTheme = useThemeContext;
