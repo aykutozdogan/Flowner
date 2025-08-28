@@ -6,21 +6,8 @@ import QuickActions from '@/components/dashboard/quick-actions';
 import RecentActivity from '@/components/dashboard/recent-activity';
 import ActiveProcesses from '@/components/dashboard/active-processes';
 import SystemHealth from '@/components/dashboard/system-health';
-// 🎨 PREMIUM DevExtreme Component Library
-import { DashboardWidget } from '@/components/ui/analytics/DashboardWidget';
-import { RevenueCard } from '@/components/ui/analytics/RevenueCard';
 
 export default function Dashboard() {
-  // Sample revenue data for DevExtreme chart
-  const revenueData = [
-    { date: 'Jan', revenue: 245000, profit: 85000 },
-    { date: 'Feb', revenue: 267000, profit: 92000 },
-    { date: 'Mar', revenue: 234000, profit: 78000 },
-    { date: 'Apr', revenue: 298000, profit: 105000 },
-    { date: 'May', revenue: 312000, profit: 118000 },
-    { date: 'Jun', revenue: 289000, profit: 95000 }
-  ];
-
   return (
     <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
       <Sidebar />
@@ -36,11 +23,6 @@ export default function Dashboard() {
             overflow: 'auto',
           }}
         >
-          {/* 💎 PREMIUM ANALYTICS WIDGETS */}
-          <Box sx={{ mb: 3 }}>
-            <DashboardWidget />
-          </Box>
-
           {/* Stats Cards */}
           <StatsCards />
           
@@ -68,17 +50,6 @@ export default function Dashboard() {
           >
             <ActiveProcesses />
             <SystemHealth />
-          </Box>
-
-          {/* 📊 PREMIUM REVENUE ANALYTICS */}
-          <Box sx={{ mb: 4 }}>
-            <RevenueCard
-              title="📈 Revenue Analysis - DevExtreme Professional (MUI Dashboard)"
-              data={revenueData}
-              totalRevenue={1645000}
-              totalProfit={573000}
-              percentageChange={12.5}
-            />
           </Box>
           
           {/* Workflow Designer Preview */}

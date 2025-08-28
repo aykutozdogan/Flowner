@@ -3,21 +3,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-/* Professional theme variables from DevExtreme template */
-@import './theme/variables.scss';
-
 /* DevExtreme CSS Base */
 @import 'devextreme/dist/css/dx.light.css';
 
-/* Tailwind CSS */
+/* Tailwind CSS - MUST COME BEFORE CUSTOM STYLES */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* DevExtreme Professional Theme System */
+/* DevExtreme Global Fonts */
 .dx-widget {
-  font-family: 'Inter', 'Roboto', sans-serif !important;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  font-family: 'Inter', 'Roboto', sans-serif;
 }
 
 .dx-theme-fluent-typography {
@@ -28,9 +24,7 @@
   font-family: "Inter", sans-serif;
 }
 
-/* Theme variables imported at top - no duplicate imports */
-
-/* Essential Icons and Base Styles - RESTORED */
+/* Material Icons - Essential Fix */
 .material-icons {
   font-family: 'Material Icons';
   font-weight: normal;
@@ -47,98 +41,11 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Fix body styles */
+/* Global Body Styles */
 body {
-  background-color: var(--background-color, #ffffff);
-  color: var(--text-color, #000000);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
   margin: 0;
   padding: 0;
-}
-
-/* Material Icons - Critical Fix */
-.material-icons, 
-.material-icons-outlined,
-.material-icons-round,
-.material-icons-sharp,
-.material-icons-two-tone {
-  font-family: 'Material Icons' !important;
-  font-weight: normal !important;
-  font-style: normal !important;
-  font-size: 24px !important;
-  line-height: 1 !important;
-  letter-spacing: normal !important;
-  text-transform: none !important;
-  display: inline-block !important;
-  white-space: nowrap !important;
-  word-wrap: normal !important;
-  direction: ltr !important;
-  -webkit-font-feature-settings: 'liga' !important;
-  -webkit-font-smoothing: antialiased !important;
-  vertical-align: middle !important;
-}
-
-/* Sidebar Icons Fix */
-.sidebar-icon {
-  font-family: 'Material Icons' !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-/* Logo and Brand Icons */
-.logo-icon,
-.brand-icon {
-  font-family: 'Material Icons' !important;
-  vertical-align: middle !important;
-  display: inline-flex !important;
-  align-items: center !important;
-}
-
-/* Tailwind text size utilities - CRITICAL FIX */
-.text-xl {
-  font-size: 1.25rem !important;
-  line-height: 1.75rem !important;
-}
-
-.text-white {
-  color: rgb(255 255 255) !important;
-}
-
-/* Essential Tailwind spacing and layout fixes */
-.flex {
-  display: flex !important;
-}
-
-.items-center {
-  align-items: center !important;
-}
-
-.justify-center {
-  justify-content: center !important;
-}
-
-.mb-3 {
-  margin-bottom: 0.75rem !important;
-}
-
-.mr-2 {
-  margin-right: 0.5rem !important;
-}
-
-/* MUI Box component overrides */
-.MuiBox-root {
-  box-sizing: border-box;
-}
-
-/* Ensure Material Icons render properly in all contexts */
-span.material-icons {
-  font-family: 'Material Icons' !important;
-  font-feature-settings: 'liga' 1 !important;
-  -webkit-font-feature-settings: 'liga' 1 !important;
-  -moz-font-feature-settings: 'liga' 1 !important;
-  user-select: none !important;
 }
 
 /* Professional DevExtreme Card Shadows */
