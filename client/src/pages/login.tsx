@@ -29,8 +29,7 @@ export default function Login() {
   const urlParams = new URLSearchParams(window.location.search);
   const redirectTo = urlParams.get('redirectTo');
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSubmit = async () => {
     setLoading(true);
     setError('');
 
@@ -150,7 +149,7 @@ export default function Login() {
           </Box>
 
           {/* Login Form */}
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+          <Box sx={{ width: '100%' }}>
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
                 Email Address *
