@@ -8,6 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { User, Mail, Key, Bell, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  SelectBox as DxSelectBox,
+  CheckBox as DxCheckBox
+} from 'devextreme-react';
 
 export default function PortalProfile() {
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -215,22 +219,34 @@ export default function PortalProfile() {
                   <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
                     <p className="font-medium">Email notification types:</p>
                     <div className="space-y-2">
-                      <label className="flex items-center space-x-2">
-                        <input type="checkbox" defaultChecked className="rounded" />
-                        <span className="text-sm">Task assignments</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input type="checkbox" defaultChecked className="rounded" />
-                        <span className="text-sm">Process completions</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input type="checkbox" className="rounded" />
-                        <span className="text-sm">Weekly summaries</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input type="checkbox" className="rounded" />
-                        <span className="text-sm">System maintenance</span>
-                      </label>
+                      <div className="flex items-center space-x-2">
+                        <DxCheckBox
+                          defaultValue={true}
+                          text="Task assignments"
+                          elementAttr={{ 'data-testid': 'checkbox-task-assignments' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <DxCheckBox
+                          defaultValue={true}
+                          text="Process completions"
+                          elementAttr={{ 'data-testid': 'checkbox-process-completions' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <DxCheckBox
+                          defaultValue={false}
+                          text="Weekly summaries"
+                          elementAttr={{ 'data-testid': 'checkbox-weekly-summaries' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <DxCheckBox
+                          defaultValue={false}
+                          text="System maintenance"
+                          elementAttr={{ 'data-testid': 'checkbox-system-maintenance' }}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -247,34 +263,90 @@ export default function PortalProfile() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="language">Language</Label>
-                    <select id="language" className="w-full p-2 border rounded-md">
-                      <option value="tr">Türkçe</option>
-                      <option value="en">English</option>
-                    </select>
+                    <DxSelectBox
+                      dataSource={[
+                        { value: 'tr', text: 'Türkçe' },
+                        { value: 'en', text: 'English' }
+                      ]}
+                      displayExpr="text"
+                      valueExpr="value"
+                      defaultValue="tr"
+                      placeholder="Dil seçin..."
+                      searchEnabled={false}
+                      showClearButton={false}
+                      width="100%"
+                      height={40}
+                      elementAttr={{
+                        id: 'language',
+                        'data-testid': 'select-language'
+                      }}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="timezone">Timezone</Label>
-                    <select id="timezone" className="w-full p-2 border rounded-md">
-                      <option value="Europe/Istanbul">Istanbul (UTC+3)</option>
-                      <option value="UTC">UTC</option>
-                      <option value="Europe/London">London (UTC+0)</option>
-                    </select>
+                    <DxSelectBox
+                      dataSource={[
+                        { value: 'Europe/Istanbul', text: 'Istanbul (UTC+3)' },
+                        { value: 'UTC', text: 'UTC' },
+                        { value: 'Europe/London', text: 'London (UTC+0)' }
+                      ]}
+                      displayExpr="text"
+                      valueExpr="value"
+                      defaultValue="Europe/Istanbul"
+                      placeholder="Zaman dilimi seçin..."
+                      searchEnabled={false}
+                      showClearButton={false}
+                      width="100%"
+                      height={40}
+                      elementAttr={{
+                        id: 'timezone',
+                        'data-testid': 'select-timezone'
+                      }}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dateFormat">Date Format</Label>
-                    <select id="dateFormat" className="w-full p-2 border rounded-md">
-                      <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                      <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                      <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                    </select>
+                    <DxSelectBox
+                      dataSource={[
+                        { value: 'DD/MM/YYYY', text: 'DD/MM/YYYY' },
+                        { value: 'MM/DD/YYYY', text: 'MM/DD/YYYY' },
+                        { value: 'YYYY-MM-DD', text: 'YYYY-MM-DD' }
+                      ]}
+                      displayExpr="text"
+                      valueExpr="value"
+                      defaultValue="DD/MM/YYYY"
+                      placeholder="Tarih formatı seçin..."
+                      searchEnabled={false}
+                      showClearButton={false}
+                      width="100%"
+                      height={40}
+                      elementAttr={{
+                        id: 'dateFormat',
+                        'data-testid': 'select-date-format'
+                      }}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="theme">Theme</Label>
-                    <select id="theme" className="w-full p-2 border rounded-md">
-                      <option value="light">Light</option>
-                      <option value="dark">Dark</option>
-                      <option value="auto">Auto</option>
-                    </select>
+                    <DxSelectBox
+                      dataSource={[
+                        { value: 'light', text: '☀️ Light' },
+                        { value: 'dark', text: '🌙 Dark' },
+                        { value: 'auto', text: '🔄 Auto' }
+                      ]}
+                      displayExpr="text"
+                      valueExpr="value"
+                      defaultValue="light"
+                      placeholder="Tema seçin..."
+                      searchEnabled={false}
+                      showClearButton={false}
+                      width="100%"
+                      height={40}
+                      elementAttr={{
+                        id: 'theme',
+                        'data-testid': 'select-theme'
+                      }}
+                    />
                   </div>
                 </div>
               </CardContent>

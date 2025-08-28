@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, TextareaAutosize, FormControl, InputLabel, Select, MenuItem, FormControlLabel, Checkbox, Radio, RadioGroup, Button, Typography, Alert, CircularProgress } from '@mui/material';
-import { DatePicker, TimePicker, DateTimePicker } from '@mui/x-date-pickers';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { tr } from 'date-fns/locale';
+import { Box, Typography, Alert, CircularProgress } from '@mui/material';
+import { 
+  TextBox as DxTextBox,
+  TextArea as DxTextArea, 
+  SelectBox as DxSelectBox,
+  CheckBox as DxCheckBox,
+  RadioGroup as DxRadioGroup,
+  Button as DxButton,
+  DateBox as DxDateBox
+} from 'devextreme-react';
 
 interface FormField {
   name: string;
@@ -157,104 +162,110 @@ export function FormRenderer({ schema, uiSchema, value, onSubmit, outcomes = [],
     switch (field.type) {
       case 'text':
         return (
-          <TextField
-            key={field.name}
-            label={field.label}
-            placeholder={field.placeholder || fieldProps.placeholder}
-            value={formData[field.name] || ''}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            error={!!error}
-            helperText={error}
-            disabled={disabled}
-            fullWidth
-            data-testid={`input-${field.name}`}
-          />
+          <div key={field.name} className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
+            <DxTextBox
+              placeholder={field.placeholder || fieldProps.placeholder}
+              value={formData[field.name] || ''}
+              onValueChanged={(e) => handleFieldChange(field.name, e.value)}
+              disabled={disabled}
+              width="100%"
+              height={40}
+              elementAttr={{
+                'data-testid': `input-${field.name}`
+              }}
+            />
+            {error && (
+              <span className="text-sm text-red-500">{error}</span>
+            )}
+          </div>
         );
         
       case 'textarea':
         return (
-          <Box key={field.name}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {field.label}{field.required && ' *'}
-            </Typography>
-            <TextareaAutosize
+          <div key={field.name} className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
+            <DxTextArea
               placeholder={field.placeholder || fieldProps.placeholder}
               value={formData[field.name] || ''}
-              onChange={(e) => handleFieldChange(field.name, e.target.value)}
+              onValueChanged={(e) => handleFieldChange(field.name, e.value)}
               disabled={disabled}
-              minRows={3}
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderColor: error ? '#d32f2f' : '#c4c4c4',
-                borderRadius: '4px',
-                fontFamily: 'inherit'
+              height={120}
+              width="100%"
+              elementAttr={{
+                'data-testid': `textarea-${field.name}`
               }}
-              data-testid={`textarea-${field.name}`}
             />
             {error && (
-              <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
-                {error}
-              </Typography>
+              <span className="text-sm text-red-500">{error}</span>
             )}
-          </Box>
+          </div>
         );
         
       case 'number':
         return (
-          <TextField
-            key={field.name}
-            type="number"
-            label={field.label}
-            placeholder={field.placeholder || fieldProps.placeholder}
-            value={formData[field.name] || ''}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            error={!!error}
-            helperText={error}
-            disabled={disabled}
-            fullWidth
-            data-testid={`input-${field.name}`}
-          />
+          <div key={field.name} className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
+            <DxTextBox
+              placeholder={field.placeholder || fieldProps.placeholder}
+              value={formData[field.name] || ''}
+              onValueChanged={(e) => handleFieldChange(field.name, e.value)}
+              disabled={disabled}
+              width="100%"
+              height={40}
+              elementAttr={{
+                'data-testid': `input-${field.name}`,
+                type: 'number'
+              }}
+            />
+            {error && (
+              <span className="text-sm text-red-500">{error}</span>
+            )}
+          </div>
         );
         
       case 'select':
         return (
-          <FormControl key={field.name} fullWidth error={!!error} disabled={disabled}>
-            <InputLabel>{field.label}</InputLabel>
-            <Select
+          <div key={field.name} className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
+            <DxSelectBox
+              dataSource={field.options || []}
+              displayExpr="label"
+              valueExpr="value"
               value={formData[field.name] || ''}
-              onChange={(e) => handleFieldChange(field.name, e.target.value)}
-              label={field.label}
-              data-testid={`select-${field.name}`}
-            >
-              {field.options?.map(option => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
+              onValueChanged={(e) => handleFieldChange(field.name, e.value)}
+              disabled={disabled}
+              width="100%"
+              height={40}
+              placeholder={`${field.label} seçin...`}
+              searchEnabled={false}
+              showClearButton={true}
+              elementAttr={{
+                'data-testid': `select-${field.name}`
+              }}
+            />
             {error && (
-              <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                {error}
-              </Typography>
+              <span className="text-sm text-red-500">{error}</span>
             )}
-          </FormControl>
+          </div>
         );
         
       case 'checkbox':
         return (
-          <FormControlLabel
-            key={field.name}
-            control={
-              <Checkbox
-                checked={formData[field.name] || false}
-                onChange={(e) => handleFieldChange(field.name, e.target.checked)}
-                disabled={disabled}
-                data-testid={`checkbox-${field.name}`}
-              />
-            }
-            label={field.label}
-          />
+          <div key={field.name} className="space-y-2">
+            <DxCheckBox
+              value={formData[field.name] || false}
+              text={field.label}
+              onValueChanged={(e) => handleFieldChange(field.name, e.value)}
+              disabled={disabled}
+              elementAttr={{
+                'data-testid': `checkbox-${field.name}`
+              }}
+            />
+            {error && (
+              <span className="text-sm text-red-500">{error}</span>
+            )}
+          </div>
         );
         
       case 'radio':
@@ -287,24 +298,23 @@ export function FormRenderer({ schema, uiSchema, value, onSubmit, outcomes = [],
         
       case 'date':
         return (
-          <LocalizationProvider key={field.name} dateAdapter={AdapterDateFns} adapterLocale={tr}>
-            <DatePicker
-              label={field.label}
+          <div key={field.name} className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
+            <DxDateBox
+              type="date"
               value={formData[field.name] ? new Date(formData[field.name]) : null}
-              onChange={(date) => handleFieldChange(field.name, date?.toISOString())}
+              onValueChanged={(e) => handleFieldChange(field.name, e.value?.toISOString())}
               disabled={disabled}
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  error: !!error,
-                  helperText: error,
-                  inputProps: {
-                    'data-testid': `date-${field.name}`
-                  }
-                }
+              width="100%"
+              height={40}
+              elementAttr={{
+                'data-testid': `date-${field.name}`
               }}
             />
-          </LocalizationProvider>
+            {error && (
+              <span className="text-sm text-red-500">{error}</span>
+            )}
+          </div>
         );
         
       default:
@@ -369,17 +379,20 @@ export function FormRenderer({ schema, uiSchema, value, onSubmit, outcomes = [],
           </Box>
         )}
         
-        <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-          <Button
-            variant="contained"
+        <div className="mt-6 flex gap-2 justify-end">
+          <DxButton
+            text="Tamamla"
+            type="default"
+            stylingMode="contained"
             onClick={handleSubmit}
             disabled={disabled}
-            size="large"
-            data-testid="button-submit"
-          >
-            Tamamla
-          </Button>
-        </Box>
+            height={44}
+            width={120}
+            elementAttr={{
+              'data-testid': 'button-submit'
+            }}
+          />
+        </div>
       </Box>
     </LocalizationProvider>
   );
