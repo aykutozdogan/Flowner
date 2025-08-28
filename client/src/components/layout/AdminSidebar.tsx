@@ -86,6 +86,11 @@ const AdminSidebar = ({ onClose, isCollapsed = false }: AdminSidebarProps) => {
   const { hasRole } = useAuth();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Management', 'Administration']);
 
+  // FIXED: Prevent rendering multiple sidebars
+  if (document.querySelector('.admin-sidebar-rendered')) {
+    return null;
+  }
+
   const handleLinkClick = () => {
     // Don't close sidebar on desktop - only close on mobile if needed
     // if (onClose) {

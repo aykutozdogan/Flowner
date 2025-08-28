@@ -1,18 +1,21 @@
-import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, Divider, Avatar } from '@mui/material';
 import { 
-  Dashboard as DashboardIcon,
-  Description as FormIcon,
-  AccountTree as WorkflowIcon,
-  Inbox as InboxIcon,
-  Analytics as AnalyticsIcon,
-  People as PeopleIcon,
-  IntegrationInstructions as IntegrationsIcon,
-  Settings as SettingsIcon,
-  MoreVert as MoreVertIcon,
-  Assignment as TaskIcon,
-  PlayCircleOutline as ProcessIcon,
-  Monitor as MonitoringIcon,
-} from '@mui/icons-material';
+  TreeView as DxTreeView,
+  Button as DxButton
+} from 'devextreme-react';
+import { 
+  LayoutDashboard,
+  FileText,
+  GitBranch,
+  Inbox,
+  BarChart3,
+  Users,
+  Plug,
+  Settings,
+  MoreVertical,
+  ClipboardList,
+  Play,
+  Monitor
+} from 'lucide-react';
 import { useLocation } from 'wouter';
 
 interface SidebarProps {
@@ -33,31 +36,31 @@ const menuSections = [
   {
     title: '',
     items: [
-      { key: 'dashboard', label: 'Dashboard', icon: DashboardIcon, path: '/' },
+      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     ]
   },
   {
     title: 'DESIGN',
     items: [
-      { key: 'form-designer', label: 'Form Designer', icon: FormIcon, path: '/forms' },
-      { key: 'workflow-designer', label: 'Workflow Designer', icon: WorkflowIcon, path: '/workflows' },
+      { key: 'form-designer', label: 'Form Designer', icon: FileText, path: '/forms' },
+      { key: 'workflow-designer', label: 'Workflow Designer', icon: GitBranch, path: '/workflows' },
     ]
   },
   {
     title: 'MANAGEMENT',
     items: [
-      { key: 'processes', label: 'Processes', icon: ProcessIcon, path: '/processes' },
-      { key: 'tasks', label: 'Task Inbox', icon: TaskIcon, path: '/tasks' },
-      { key: 'analytics', label: 'Analytics', icon: AnalyticsIcon, path: '/analytics' },
-      { key: 'users-roles', label: 'Users & Roles', icon: PeopleIcon, path: '/users' },
+      { key: 'processes', label: 'Processes', icon: Play, path: '/processes' },
+      { key: 'tasks', label: 'Task Inbox', icon: ClipboardList, path: '/tasks' },
+      { key: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
+      { key: 'users-roles', label: 'Users & Roles', icon: Users, path: '/users' },
     ]
   },
   {
     title: 'SYSTEM',
     items: [
-      { key: 'engine-stats', label: 'Engine Stats', icon: MonitoringIcon, path: '/engine/stats' },
-      { key: 'integrations', label: 'Integrations', icon: IntegrationsIcon, path: '/integrations' },
-      { key: 'settings', label: 'Settings', icon: SettingsIcon, path: '/settings' },
+      { key: 'engine-stats', label: 'Engine Stats', icon: Monitor, path: '/engine/stats' },
+      { key: 'integrations', label: 'Integrations', icon: Plug, path: '/integrations' },
+      { key: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
     ]
   }
 ];
@@ -82,160 +85,179 @@ export default function Sidebar({ user }: SidebarProps) {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const handleItemClick = (itemPath: string) => {
+    setLocation(itemPath);
+  };
+
   return (
-    <Box
-      sx={{
-        width: 256,
-        bgcolor: 'background.paper',
-        borderRight: '1px solid',
-        borderColor: 'grey.200',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        boxShadow: 1,
-      }}
-    >
-      {/* App Header */}
-      <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'grey.200' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              bgcolor: 'primary.dark',
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <WorkflowIcon sx={{ color: 'white', fontSize: 20 }} />
-          </Box>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
-              Flowner
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {currentUser.tenant.name}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
+    <div style={{
+      backgroundColor: 'var(--bg-primary, #ffffff)',
+      borderRight: '1px solid var(--border-color, #e0e0e0)',
+      height: '100vh',
+      width: '280px',
+      display: 'flex',
+      flexDirection: 'column',
+      overflowY: 'auto'
+    }}>
+      {/* User Profile Section */}
+      <div style={{
+        padding: '24px 16px',
+        borderBottom: '1px solid var(--border-color, #e0e0e0)',
+        backgroundColor: 'var(--bg-secondary, #f8f9fa)'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: 'var(--dx-color-primary, #1976d2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontSize: '16px',
+            fontWeight: '600'
+          }}>
+            {getInitials(currentUser.name)}
+          </div>
+          
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: '16px',
+              fontWeight: '600',
+              color: 'var(--text-primary, #1976d2)',
+              marginBottom: '4px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              {currentUser.name}
+            </div>
+            <div style={{
+              fontSize: '14px',
+              color: 'var(--text-secondary, #666)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              {currentUser.email}
+            </div>
+            <div style={{
+              fontSize: '12px',
+              color: 'var(--text-secondary, #999)',
+              marginTop: '2px'
+            }}>
+              {currentUser.role}
+            </div>
+          </div>
+
+          <DxButton
+            icon="chevrondown"
+            stylingMode="text"
+            height={32}
+            width={32}
+            elementAttr={{ 'data-testid': 'button-user-menu' }}
+          />
+        </div>
+      </div>
 
       {/* Navigation Menu */}
-      <Box sx={{ flexGrow: 1, px: 1, py: 2 }}>
+      <nav style={{ flex: 1, padding: '16px 0' }}>
         {menuSections.map((section, sectionIndex) => (
-          <Box key={section.title || sectionIndex} sx={{ mb: section.title ? 2 : 1 }}>
+          <div key={sectionIndex} style={{ marginBottom: section.title ? '24px' : '16px' }}>
             {section.title && (
-              <Typography
-                variant="caption"
-                sx={{
-                  px: 1.5,
-                  py: 1,
-                  fontWeight: 600,
-                  color: 'text.secondary',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  fontSize: '0.75rem',
-                }}
-              >
+              <div style={{
+                fontSize: '12px',
+                fontWeight: '600',
+                color: 'var(--text-secondary, #999)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                padding: '0 16px',
+                marginBottom: '12px'
+              }}>
                 {section.title}
-              </Typography>
+              </div>
             )}
-            <List sx={{ py: 0.5 }}>
+
+            <div>
               {section.items.map((item) => {
-                const Icon = item.icon;
                 const isActive = location === item.path;
-                
+                const IconComponent = item.icon;
+
                 return (
-                  <ListItem key={item.key} sx={{ py: 0, px: 0.5 }}>
-                    <ListItemButton
-                      onClick={() => setLocation(item.path)}
-                      sx={{
-                        borderRadius: 1.5,
-                        minHeight: 44,
-                        bgcolor: isActive ? 'primary.light' : 'transparent',
-                        color: isActive ? 'primary.main' : 'text.primary',
-                        '&:hover': {
-                          bgcolor: isActive ? 'primary.light' : 'grey.50',
-                        },
-                      }}
-                      data-testid={`nav-${item.key}`}
-                    >
-                      <ListItemIcon sx={{ minWidth: 40 }}>
-                        <Icon 
-                          sx={{ 
-                            fontSize: 20,
-                            color: isActive ? 'primary.main' : 'text.secondary'
-                          }} 
-                        />
-                      </ListItemIcon>
-                      <ListItemText 
-                        primary={item.label}
-                        primaryTypographyProps={{
-                          fontSize: '0.875rem',
-                          fontWeight: isActive ? 500 : 400,
-                        }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
+                  <div
+                    key={item.key}
+                    onClick={() => handleItemClick(item.path)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '12px 16px',
+                      margin: '0 8px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      backgroundColor: isActive 
+                        ? 'var(--dx-color-primary, #1976d2)' 
+                        : 'transparent',
+                      color: isActive 
+                        ? 'white' 
+                        : 'var(--text-primary, #333)',
+                      transition: 'all 0.2s ease',
+                      borderLeft: isActive ? '4px solid rgba(255,255,255,0.3)' : '4px solid transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = 'var(--bg-secondary, #f8f9fa)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
+                    }}
+                    data-testid={`sidebar-item-${item.key}`}
+                  >
+                    <IconComponent 
+                      size={20} 
+                      style={{ 
+                        marginRight: '12px',
+                        color: isActive ? 'white' : 'var(--text-secondary, #666)'
+                      }} 
+                    />
+                    <span style={{
+                      fontSize: '14px',
+                      fontWeight: isActive ? '600' : '500'
+                    }}>
+                      {item.label}
+                    </span>
+                  </div>
                 );
               })}
-            </List>
-          </Box>
+            </div>
+          </div>
         ))}
-      </Box>
+      </nav>
 
-      {/* User Profile */}
-      <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'grey.200' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar
-            sx={{
-              width: 32,
-              height: 32,
-              bgcolor: 'primary.dark',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-            }}
-          >
-            {getInitials(currentUser.name)}
-          </Avatar>
-          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontWeight: 500, 
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                lineHeight: 1.2 
-              }}
-            >
-              {currentUser.name}
-            </Typography>
-            <Typography 
-              variant="caption" 
-              color="text.secondary"
-              sx={{ 
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {currentUser.role}
-            </Typography>
-          </Box>
-          <MoreVertIcon 
-            sx={{ 
-              fontSize: 20, 
-              color: 'text.secondary',
-              cursor: 'pointer',
-              '&:hover': { color: 'text.primary' }
-            }}
-            data-testid="button-user-menu"
-          />
-        </Box>
-      </Box>
-    </Box>
+      {/* Footer Section */}
+      <div style={{
+        padding: '16px',
+        borderTop: '1px solid var(--border-color, #e0e0e0)',
+        backgroundColor: 'var(--bg-secondary, #f8f9fa)'
+      }}>
+        <div style={{
+          fontSize: '12px',
+          color: 'var(--text-secondary, #999)',
+          textAlign: 'center'
+        }}>
+          <div style={{ marginBottom: '4px' }}>
+            <strong>{currentUser.tenant.name}</strong>
+          </div>
+          <div>{currentUser.tenant.domain}</div>
+        </div>
+      </div>
+    </div>
   );
 }

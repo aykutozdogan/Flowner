@@ -1,29 +1,16 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import {
-  Box,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  Alert,
-  IconButton
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Visibility as ViewIcon,
-  Publish as PublishIcon
-} from '@mui/icons-material';
+import { Button as DxButton } from 'devextreme-react/button';
+import DataGrid, { 
+  Column,
+  Paging,
+  Pager,
+  HeaderFilter,
+  FilterRow,
+  SearchPanel
+} from 'devextreme-react/data-grid';
+import { Plus, Edit, Eye, Upload } from 'lucide-react';
 
 interface Form {
   id: string;
@@ -32,15 +19,16 @@ interface Form {
   description: string;
   latest_version: number;
   status: 'draft' | 'published' | 'archived';
-  created_at: string;
   updated_at: string;
+  created_at: string;
+  tenant_id: string;
 }
 
 const STATUS_LABELS = {
   draft: 'Taslak',
-  published: 'Yayınlandı',
+  published: 'Yayında',
   archived: 'Arşivlendi'
-};
+} as const;
 
 const STATUS_COLORS = {
   draft: 'warning',
@@ -85,104 +73,189 @@ export default function FormsPage() {
 
   if (isLoading) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography>Yükleniyor...</Typography>
-      </Box>
+      <div style={{ padding: '24px' }}>
+        <div>Yükleniyor...</div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">
+      <div style={{ padding: '24px' }}>
+        <div style={{ 
+          backgroundColor: '#fee', 
+          border: '1px solid #fcc', 
+          padding: '16px', 
+          borderRadius: '4px',
+          color: '#c33'
+        }}>
           Formlar yüklenirken hata oluştu: {(error as any)?.message}
-        </Alert>
-      </Box>
+        </div>
+      </div>
     );
   }
 
-  return (
-    <Box sx={{ p: 3, backgroundColor: 'transparent' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 500 }}>
-          Form Yönetimi
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleNewForm}
-          data-testid="button-new-form"
-        >
-          Yeni Form
-        </Button>
-      </Box>
+  // Prepare data for DevExtreme DataGrid
+  const formData = forms?.map((form: Form) => ({
+    id: form.id,
+    key: form.key,
+    name: form.name,
+    description: form.description || '-',
+    latest_version: `v${form.latest_version}`,
+    status: STATUS_LABELS[form.status],
+    statusKey: form.status,
+    updated_at: new Date(form.updated_at).toLocaleDateString('tr-TR'),
+    actions: form.key
+  })) || [];
 
-      <TableContainer component={Paper} elevation={0} sx={{ backgroundColor: 'white', borderRadius: 1 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Form Adı</TableCell>
-                  <TableCell>Anahtar</TableCell>
-                  <TableCell>Açıklama</TableCell>
-                  <TableCell>Versiyon</TableCell>
-                  <TableCell>Durum</TableCell>
-                  <TableCell>Son Güncelleme</TableCell>
-                  <TableCell>İşlemler</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {forms?.map((form: Form) => (
-                  <TableRow key={form.id} data-testid={`form-row-${form.key}`}>
-                    <TableCell>
-                      <Typography variant="subtitle2">
-                        {form.name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {form.key}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {form.description || '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>v{form.latest_version}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={STATUS_LABELS[form.status]}
-                        color={STATUS_COLORS[form.status]}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {new Date(form.updated_at).toLocaleDateString('tr-TR')}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        onClick={() => handleEditForm(form.key)}
-                        size="small"
-                        title="Düzenle"
-                        data-testid={`button-edit-form-${form.key}`}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(!forms || forms.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center">
-                      <Typography color="text.secondary">
-                        Henüz form bulunmuyor
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-      </TableContainer>
-    </Box>
+  return (
+    <div style={{ padding: '24px', backgroundColor: 'transparent' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '24px' 
+      }}>
+        <h1 style={{ 
+          fontSize: '32px', 
+          fontWeight: '500', 
+          margin: 0,
+          color: '#1976d2'
+        }}>
+          Form Yönetimi
+        </h1>
+        
+        <DxButton
+          text="Yeni Form"
+          icon="plus"
+          type="default"
+          stylingMode="contained"
+          onClick={handleNewForm}
+          elementAttr={{ 'data-testid': 'button-new-form' }}
+        />
+      </div>
+
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      }}>
+        <DataGrid
+          dataSource={formData}
+          showBorders={true}
+          showRowLines={true}
+          showColumnLines={true}
+          rowAlternationEnabled={true}
+          columnAutoWidth={true}
+          keyExpr="id"
+          elementAttr={{ 'data-testid': 'forms-grid' }}
+        >
+          <Column 
+            dataField="name"
+            caption="Form Adı"
+            cellRender={(cellData) => (
+              <div style={{ fontWeight: '600', color: '#1976d2' }}>
+                {cellData.value}
+              </div>
+            )}
+          />
+          <Column 
+            dataField="key"
+            caption="Anahtar"
+            cellRender={(cellData) => (
+              <div style={{ color: '#666', fontSize: '14px' }}>
+                {cellData.value}
+              </div>
+            )}
+          />
+          <Column 
+            dataField="description"
+            caption="Açıklama"
+            cellRender={(cellData) => (
+              <div style={{ color: '#666', fontSize: '14px' }}>
+                {cellData.value}
+              </div>
+            )}
+          />
+          <Column 
+            dataField="latest_version"
+            caption="Versiyon"
+            width={100}
+            alignment="center"
+          />
+          <Column 
+            dataField="status"
+            caption="Durum"
+            width={120}
+            alignment="center"
+            cellRender={(cellData) => {
+              const statusKey = cellData.data.statusKey;
+              const statusColor = statusKey === 'published' ? '#2eb52c' : 
+                                 statusKey === 'draft' ? '#f57c00' : '#969696';
+              return (
+                <div style={{
+                  backgroundColor: statusColor,
+                  color: 'white',
+                  padding: '6px 12px',
+                  borderRadius: '16px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  textAlign: 'center',
+                  display: 'inline-block',
+                  minWidth: '80px'
+                }}>
+                  {cellData.value}
+                </div>
+              );
+            }}
+          />
+          <Column 
+            dataField="updated_at"
+            caption="Son Güncelleme"
+            width={150}
+            alignment="center"
+          />
+          <Column 
+            dataField="actions"
+            caption="İşlemler"
+            width={100}
+            alignment="center"
+            cellRender={(cellData) => (
+              <DxButton
+                icon="edit"
+                stylingMode="text"
+                hint="Düzenle"
+                onClick={() => handleEditForm(cellData.value)}
+                elementAttr={{ 'data-testid': `button-edit-form-${cellData.value}` }}
+              />
+            )}
+          />
+
+          <Paging defaultPageSize={20} />
+          <Pager 
+            showPageSizeSelector={true}
+            allowedPageSizes={[10, 20, 50]}
+            showInfo={true}
+          />
+          <HeaderFilter visible={true} />
+          <FilterRow visible={true} />
+          <SearchPanel 
+            visible={true}
+            placeholder="Form ara..."
+          />
+        </DataGrid>
+
+        {formData.length === 0 && (
+          <div style={{
+            textAlign: 'center',
+            padding: '60px 40px',
+            color: '#666',
+            fontSize: '16px'
+          }}>
+            Henüz form bulunmuyor
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -53,18 +53,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
     padding: '0 24px'
   };
 
-  const sidebarStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: '64px',
-    left: 0,
-    width: sidebarCollapsed ? '64px' : '280px',
-    height: 'calc(100vh - 64px)',
-    backgroundColor: '#fafafa',
-    borderRight: '1px solid #e0e0e0',
-    zIndex: 1001,
-    transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-    transition: 'all 0.3s ease'
-  };
+  // REMOVED: Fixed sidebar style causing duplicate - AdminSidebar handles its own styling
 
   const mainStyle: React.CSSProperties = {
     marginTop: '64px',
@@ -121,7 +110,18 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
       </div>
 
       {/* Sidebar */}
-      <div style={sidebarStyle}>
+      {sidebarOpen && (
+        <div style={{
+          position: 'fixed',
+          top: '64px',
+          left: 0,
+          width: sidebarCollapsed ? '64px' : '280px',
+          height: 'calc(100vh - 64px)',
+          backgroundColor: '#fafafa',
+          borderRight: '1px solid #e0e0e0',
+          zIndex: 1001,
+          transition: 'all 0.3s ease'
+        }}>
         <div style={{
           padding: sidebarCollapsed ? '16px 8px' : '16px',
           display: 'flex',
@@ -140,8 +140,9 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
             </div>
           )}
         </div>
-        <AdminSidebar onClose={handleCloseSidebar} isCollapsed={sidebarCollapsed} />
-      </div>
+          <AdminSidebar onClose={handleCloseSidebar} isCollapsed={sidebarCollapsed} />
+        </div>
+      )}
 
       {/* No backdrop - sidebar should stay open on desktop */}
 
