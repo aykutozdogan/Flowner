@@ -6,7 +6,7 @@ import {
   Play,
   Bell
 } from 'lucide-react';
-import { useLocation, Link } from 'wouter';
+import { useLocation } from 'wouter';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -95,57 +95,58 @@ const PortalSidebar = ({ onClose, isCollapsed = false }: PortalSidebarProps) => 
                           (item.href !== '/inbox' && location.startsWith(item.href));
 
           return (
-            <Link
+            <div
               key={item.href}
-              to={item.href}
-              onClick={handleLinkClick}
+              onClick={() => {
+                handleLinkClick();
+                if (item.href) {
+                  window.location.href = item.href;
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                padding: isCollapsed ? '12px 8px' : '12px 16px',
+                margin: '0 8px',
+                borderRadius: '8px',
+                backgroundColor: isActive 
+                  ? 'var(--dx-color-primary, #1976d2)' 
+                  : 'transparent',
+                color: isActive 
+                  ? 'white' 
+                  : 'var(--text-primary, #333)',
+                transition: 'all 0.2s ease',
+                borderLeft: isActive ? '4px solid rgba(255,255,255,0.3)' : '4px solid transparent'
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'var(--hover-color, rgba(25, 118, 210, 0.1))';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+              title={isCollapsed ? item.label : ''}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  padding: isCollapsed ? '12px 8px' : '12px 16px',
-                  margin: '0 8px',
-                  borderRadius: '8px',
-                  backgroundColor: isActive 
-                    ? 'var(--dx-color-primary, #1976d2)' 
-                    : 'transparent',
-                  color: isActive 
-                    ? 'white' 
-                    : 'var(--text-primary, #333)',
-                  transition: 'all 0.2s ease',
-                  borderLeft: isActive ? '4px solid rgba(255,255,255,0.3)' : '4px solid transparent'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'var(--hover-color, rgba(25, 118, 210, 0.1))';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
-                title={isCollapsed ? item.label : ''}
-              >
-                <item.icon 
-                  size={18} 
-                  style={{ 
-                    marginRight: isCollapsed ? '0' : '12px',
-                    color: isActive ? 'white' : 'var(--text-secondary, #666)'
-                  }} 
-                />
-                {!isCollapsed && (
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: isActive ? '600' : '500'
-                  }}>
-                    {item.label}
-                  </span>
-                )}
-              </div>
-            </Link>
+              <item.icon 
+                size={18} 
+                style={{ 
+                  marginRight: isCollapsed ? '0' : '12px',
+                  color: isActive ? 'white' : 'var(--text-secondary, #666)'
+                }} 
+              />
+              {!isCollapsed && (
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: isActive ? '600' : '500'
+                }}>
+                  {item.label}
+                </span>
+              )}
+            </div>
           );
         })}
       </nav>

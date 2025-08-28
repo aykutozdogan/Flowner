@@ -4,24 +4,16 @@ import { useLocation } from 'wouter';
 import {
   Box,
   Typography,
-  Button,
   Card,
   CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
-  Chip,
-  Alert,
-  IconButton
+  Alert
 } from '@mui/material';
 import {
-  Add as AddIcon,
-  Edit as EditIcon
-} from '@mui/icons-material';
+  Button as DxButton,
+  DataGrid as DxDataGrid
+} from 'devextreme-react';
+import { Column } from 'devextreme-react/data-grid';
 
 interface Workflow {
   id: string;
@@ -110,78 +102,113 @@ export default function WorkflowsPage() {
         <Typography variant="h4" component="h1">
           İş Akışı Yönetimi
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
+        <DxButton
+          text="Yeni İş Akışı"
+          icon="plus"
+          stylingMode="contained"
           onClick={handleNewWorkflow}
-          data-testid="button-new-workflow"
-        >
-          Yeni İş Akışı
-        </Button>
+          height={40}
+          width={140}
+          elementAttr={{
+            'data-testid': 'button-new-workflow'
+          }}
+        />
       </Box>
 
       <Card>
-        <CardContent sx={{ p: 0 }}>
-          <TableContainer component={Paper} elevation={0}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>İş Akışı Adı</TableCell>
-                  <TableCell>Açıklama</TableCell>
-                  <TableCell>Versiyon</TableCell>
-                  <TableCell>Durum</TableCell>
-                  <TableCell>Son Güncelleme</TableCell>
-                  <TableCell>İşlemler</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {workflows?.map((workflow: Workflow) => (
-                  <TableRow key={workflow.id} data-testid={`workflow-row-${workflow.id}`}>
-                    <TableCell>
-                      <Typography variant="subtitle2">
-                        {workflow.name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {workflow.description || '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>v{workflow.version}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={STATUS_LABELS[workflow.status]}
-                        color={STATUS_COLORS[workflow.status]}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {new Date(workflow.updated_at).toLocaleDateString('tr-TR')}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        onClick={() => handleEditWorkflow(workflow.key, workflow.id)}
-                        size="small"
-                        title="Düzenle"
-                        data-testid={`button-edit-workflow-${workflow.id}`}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(!workflows || workflows.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">
-                      <Typography color="text.secondary">
-                        Henüz iş akışı bulunmuyor
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+        <CardContent sx={{ p: 2 }}>
+          <DxDataGrid
+            dataSource={workflows || []}
+            keyExpr="id"
+            showBorders
+            showRowLines
+            showColumnLines
+            height={600}
+            wordWrapEnabled
+            allowColumnResizing
+            columnAutoWidth
+            hoverStateEnabled
+            noDataText="Henüz iş akışı bulunmuyor"
+          >
+            <Column
+              dataField="name"
+              caption="İş Akışı Adı"
+              width="200"
+            />
+            <Column
+              dataField="description"
+              caption="Açıklama"
+              cellRender={(data) => (
+                <span style={{ color: '#666' }}>
+                  {data.value || '-'}
+                </span>
+              )}
+            />
+            <Column
+              dataField="version"
+              caption="Versiyon"
+              width="100"
+              alignment="center"
+              cellRender={(data) => `v${data.value}`}
+            />
+            <Column
+              dataField="status"
+              caption="Durum"
+              width="120"
+              alignment="center"
+              cellRender={(data) => {
+                const status = data.value;
+                const colors = {
+                  draft: '#ff9800',
+                  published: '#4caf50',
+                  archived: '#757575'
+                };
+                return (
+                  <span
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      backgroundColor: colors[status] || '#757575',
+                      color: 'white'
+                    }}
+                  >
+                    {STATUS_LABELS[status] || status}
+                  </span>
+                );
+              }}
+            />
+            <Column
+              dataField="updated_at"
+              caption="Son Güncelleme"
+              width="140"
+              alignment="center"
+              cellRender={(data) => (
+                <span style={{ color: '#666' }}>
+                  {new Date(data.value).toLocaleDateString('tr-TR')}
+                </span>
+              )}
+            />
+            <Column
+              caption="İşlemler"
+              width="100"
+              alignment="center"
+              cellRender={(data) => (
+                <DxButton
+                  icon="edit"
+                  stylingMode="text"
+                  onClick={() => handleEditWorkflow(data.data.key, data.data.id)}
+                  hint="Düzenle"
+                  height={32}
+                  width={32}
+                  elementAttr={{
+                    'data-testid': `button-edit-workflow-${data.data.id}`
+                  }}
+                />
+              )}
+            />
+          </DxDataGrid>
         </CardContent>
       </Card>
     </Box>

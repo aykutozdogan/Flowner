@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Home, ChevronDown, ChevronRight, User, CheckSquare, FolderOpen, Route, Play, Building, Users, Settings, BarChart3 } from 'lucide-react';
-import { useLocation, Link } from 'wouter';
+import { useLocation } from 'wouter';
 import { useAuth } from '../../hooks/useAuth';
 
 interface MenuItem {
@@ -147,47 +147,48 @@ const AdminSidebar = ({ onClose, isCollapsed = false }: AdminSidebarProps) => {
 
     if (item.href) {
       return (
-        <Link
+        <div
           key={item.href}
-          to={item.href}
-          onClick={handleLinkClick}
+          onClick={() => {
+            handleLinkClick();
+            if (item.href) {
+              window.location.href = item.href;
+            }
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            padding: isCollapsed ? '12px 8px' : '12px 16px',
+            margin: '0 8px',
+            borderRadius: '8px',
+            backgroundColor: isActive 
+              ? 'var(--dx-color-primary, #1976d2)' 
+              : 'transparent',
+            color: isActive 
+              ? 'white' 
+              : 'var(--text-primary, #333)',
+            transition: 'all 0.2s ease',
+            borderLeft: isActive ? '4px solid rgba(255,255,255,0.3)' : '4px solid transparent'
+          }}
+          onMouseEnter={(e) => {
+            if (!isActive) {
+              e.currentTarget.style.backgroundColor = 'var(--hover-color, rgba(25, 118, 210, 0.1))';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isActive) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+          title={isCollapsed ? item.label : ''}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              padding: isCollapsed ? '12px 8px' : '12px 16px',
-              margin: '0 8px',
-              borderRadius: '8px',
-              backgroundColor: isActive 
-                ? 'var(--dx-color-primary, #1976d2)' 
-                : 'transparent',
-              color: isActive 
-                ? 'white' 
-                : 'var(--text-primary, #333)',
-              transition: 'all 0.2s ease',
-              borderLeft: isActive ? '4px solid rgba(255,255,255,0.3)' : '4px solid transparent'
-            }}
-            onMouseEnter={(e) => {
-              if (!isActive) {
-                e.currentTarget.style.backgroundColor = 'var(--hover-color, rgba(25, 118, 210, 0.1))';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isActive) {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }
-            }}
-            title={isCollapsed ? item.label : ''}
-          >
-            <item.icon 
-              size={18} 
-              className={isActive ? 'text-blue-600' : 'text-gray-500'} 
-            />
-            {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
-          </div>
-        </Link>
+          <item.icon 
+            size={18} 
+            className={isActive ? 'text-blue-600' : 'text-gray-500'} 
+          />
+          {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+        </div>
       );
     }
 
