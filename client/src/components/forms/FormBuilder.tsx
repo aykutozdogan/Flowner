@@ -167,30 +167,41 @@ const FieldEditor = ({ field, onUpdate, onDelete }: {
         </Box>
 
         <Stack spacing={2}>
-          <TextField
-            label="Alan Adı"
-            value={editField.name}
-            onChange={(e) => setEditField({ ...editField, name: e.target.value })}
-            onBlur={handleUpdate}
-            size="small"
-            data-testid={`field-name-${field.id}`}
-          />
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>Alan Adı</label>
+            <DxTextBox
+              value={editField.name}
+              onValueChanged={(e) => setEditField({ ...editField, name: e.value })}
+              onFocusOut={handleUpdate}
+              width="100%"
+              height={32}
+              elementAttr={{
+                'data-testid': `field-name-${field.id}`
+              }}
+            />
+          </div>
           
-          <TextField
-            label="Etiket"
-            value={editField.label}
-            onChange={(e) => setEditField({ ...editField, label: e.target.value })}
-            onBlur={handleUpdate}
-            size="small"
-          />
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>Etiket</label>
+            <DxTextBox
+              value={editField.label}
+              onValueChanged={(e) => setEditField({ ...editField, label: e.value })}
+              onFocusOut={handleUpdate}
+              width="100%"
+              height={32}
+            />
+          </div>
 
-          <TextField
-            label="Placeholder"
-            value={editField.placeholder || ''}
-            onChange={(e) => setEditField({ ...editField, placeholder: e.target.value })}
-            onBlur={handleUpdate}
-            size="small"
-          />
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>Placeholder</label>
+            <DxTextBox
+              value={editField.placeholder || ''}
+              onValueChanged={(e) => setEditField({ ...editField, placeholder: e.value })}
+              onFocusOut={handleUpdate}
+              width="100%"
+              height={32}
+            />
+          </div>
 
           <FormControlLabel
             control={
@@ -211,44 +222,49 @@ const FieldEditor = ({ field, onUpdate, onDelete }: {
               <Typography variant="subtitle2" sx={{ mb: 1 }}>Seçenekler</Typography>
               {editField.options?.map((option, index) => (
                 <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                  <TextField
-                    label="Değer"
-                    value={option.value}
-                    onChange={(e) => {
-                      const newOptions = [...(editField.options || [])];
-                      newOptions[index] = { ...option, value: e.target.value };
-                      setEditField({ ...editField, options: newOptions });
-                    }}
-                    onBlur={handleUpdate}
-                    size="small"
-                    sx={{ flex: 1 }}
-                  />
-                  <TextField
-                    label="Etiket"
-                    value={option.label}
-                    onChange={(e) => {
-                      const newOptions = [...(editField.options || [])];
-                      newOptions[index] = { ...option, label: e.target.value };
-                      setEditField({ ...editField, options: newOptions });
-                    }}
-                    onBlur={handleUpdate}
-                    size="small"
-                    sx={{ flex: 1 }}
-                  />
+                  <div style={{ flex: 1, marginRight: '8px' }}>
+                    <label style={{ display: 'block', fontSize: '11px', marginBottom: '2px' }}>Değer</label>
+                    <DxTextBox
+                      value={option.value}
+                      onValueChanged={(e) => {
+                        const newOptions = [...(editField.options || [])];
+                        newOptions[index] = { ...option, value: e.value };
+                        setEditField({ ...editField, options: newOptions });
+                      }}
+                      onFocusOut={handleUpdate}
+                      width="100%"
+                      height={28}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '11px', marginBottom: '2px' }}>Etiket</label>
+                    <DxTextBox
+                      value={option.label}
+                      onValueChanged={(e) => {
+                        const newOptions = [...(editField.options || [])];
+                        newOptions[index] = { ...option, label: e.value };
+                        setEditField({ ...editField, options: newOptions });
+                      }}
+                      onFocusOut={handleUpdate}
+                      width="100%"
+                      height={28}
+                    />
+                  </div>
                 </Box>
               ))}
-              <Button
-                size="small"
+              <DxButton
+                text="Seçenek Ekle"
+                icon="plus"
+                stylingMode="outlined"
+                height={32}
+                width={120}
                 onClick={() => {
                   const newOptions = [...(editField.options || []), { value: '', label: '' }];
                   const updated = { ...editField, options: newOptions };
                   setEditField(updated);
                   onUpdate(updated);
                 }}
-                startIcon={<AddIcon />}
-              >
-                Seçenek Ekle
-              </Button>
+              />
             </Box>
           )}
         </Stack>
@@ -373,52 +389,70 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             <Typography variant="h5">Form Builder</Typography>
             
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
+              <DxButton
+                text="Geri Al"
+                icon="undo"
+                stylingMode="outlined"
                 onClick={undo}
                 disabled={historyIndex === 0}
-                startIcon={<UndoIcon />}
-                data-testid="undo-button"
-              >
-                Geri Al
-              </Button>
+                height={36}
+                width={90}
+                elementAttr={{
+                  'data-testid': 'undo-button'
+                }}
+              />
               
-              <Button
+              <DxButton
+                text="İleri Al"
+                icon="redo"
+                stylingMode="outlined"
                 onClick={redo}
                 disabled={historyIndex === history.length - 1}
-                startIcon={<RedoIcon />}
-                data-testid="redo-button"
-              >
-                İleri Al
-              </Button>
+                height={36}
+                width={90}
+                elementAttr={{
+                  'data-testid': 'redo-button'
+                }}
+              />
               
-              <Button
+              <DxButton
+                text="Taslak Kaydet"
+                icon="save"
+                stylingMode="outlined"
                 onClick={handleSave}
-                startIcon={<SaveIcon />}
-                variant="outlined"
-                data-testid="save-button"
-              >
-                Taslak Kaydet
-              </Button>
+                height={36}
+                width={120}
+                elementAttr={{
+                  'data-testid': 'save-button'
+                }}
+              />
               
-              <Button
+              <DxButton
+                text="Yayınla"
+                icon="upload"
+                stylingMode="contained"
                 onClick={() => setPublishDialogOpen(true)}
-                startIcon={<PublishIcon />}
-                variant="contained"
-                data-testid="publish-button"
-              >
-                Yayınla
-              </Button>
+                height={36}
+                width={90}
+                elementAttr={{
+                  'data-testid': 'publish-button'
+                }}
+              />
             </Box>
           </Box>
 
-          <TextField
-            label="Form Başlığı"
-            value={schema.title}
-            onChange={(e) => setSchema({ ...schema, title: e.target.value })}
-            fullWidth
-            sx={{ mb: 2 }}
-            data-testid="form-title"
-          />
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px' }}>Form Başlığı</label>
+            <DxTextBox
+              value={schema.title}
+              onValueChanged={(e) => setSchema({ ...schema, title: e.value })}
+              width="100%"
+              height={40}
+              elementAttr={{
+                'data-testid': 'form-title'
+              }}
+            />
+          </div>
 
           <DroppableCanvas onDrop={(item) => addField(item.fieldType)}>
             {schema.fields.length === 0 ? (
@@ -445,33 +479,43 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       </Box>
 
       {/* Publish Dialog */}
-      <Dialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen} maxWidth="sm" fullWidth>
+      <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Formu Yayınla</DialogTitle>
         <DialogContent>
-          <TextField
-            label="Değişiklik Notları"
-            value={changelog}
-            onChange={(e) => setChangelog(e.target.value)}
-            multiline
-            rows={4}
-            fullWidth
-            sx={{ mt: 1 }}
-            placeholder="Bu sürümde yapılan değişiklikleri açıklayın..."
-            data-testid="changelog-input"
-          />
+          <div style={{ marginTop: '8px' }}>
+            <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px' }}>Değişiklik Notları</label>
+            <DxTextBox
+              value={changelog}
+              onValueChanged={(e) => setChangelog(e.value)}
+              mode="text"
+              placeholder="Bu sürümde yapılan değişiklikleri açıklayın..."
+              width="100%"
+              height={80}
+              elementAttr={{
+                'data-testid': 'changelog-input'
+              }}
+            />
+          </div>
           
           <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-            <Button onClick={() => setPublishDialogOpen(false)}>
-              İptal
-            </Button>
-            <Button 
+            <DxButton
+              text="İptal"
+              stylingMode="outlined"
+              onClick={() => setPublishDialogOpen(false)}
+              height={36}
+              width={80}
+            />
+            <DxButton
+              text="Yayınla"
+              stylingMode="contained"
               onClick={handlePublish}
-              variant="contained"
               disabled={!changelog.trim()}
-              data-testid="confirm-publish"
-            >
-              Yayınla
-            </Button>
+              height={36}
+              width={90}
+              elementAttr={{
+                'data-testid': 'confirm-publish'
+              }}
+            />
           </Box>
         </DialogContent>
       </Dialog>
