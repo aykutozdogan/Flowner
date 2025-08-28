@@ -100,7 +100,7 @@ const PortalSidebar = ({ onClose, isCollapsed = false }: PortalSidebarProps) => 
               onClick={() => {
                 handleLinkClick();
                 if (item.href) {
-                  setLocation(`/portal${item.href}`);
+                  setLocation(item.href);
                 }
               }}
               style={{
