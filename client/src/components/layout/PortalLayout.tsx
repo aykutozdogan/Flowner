@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Button as DxButton } from 'devextreme-react';
-import { useAuth } from '@/hooks/useAuth';
+import { 
+  Button as DxButton,
+  Drawer as DxDrawer
+} from 'devextreme-react';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { ProfileDropdown, ThemeToggle } from '@/components/ui/profile-dropdown';
 import PortalSidebar from './PortalSidebar';
 
@@ -11,21 +14,29 @@ interface PortalLayoutProps {
 }
 
 function PortalLayout({ children, user }: PortalLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarPinned, setSidebarPinned] = useState(false);
-  const { logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Start expanded like admin
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Collapsed state
   const { isDark, switchTheme } = useTheme();
+  const { logout } = useAuth();
 
   const handleToggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+    if (sidebarOpen) {
+      // If open, just collapse it
+      setSidebarCollapsed(!sidebarCollapsed);
+    } else {
+      // If closed, open it
+      setSidebarOpen(true);
+      setSidebarCollapsed(false);
+    }
   };
 
   const handleCloseSidebar = () => {
     setSidebarOpen(false);
+    setSidebarCollapsed(false);
   };
 
-  const handleBackdropClick = () => {
-    setSidebarOpen(false);
+  const handlePinSidebar = () => {
+    // Toggle pin state - not used in this simplified version
   };
 
   const headerStyle: React.CSSProperties = {
@@ -34,8 +45,8 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
     left: 0,
     right: 0,
     height: '64px',
-    backgroundColor: '#fff',
-    borderBottom: '1px solid #e0e0e0',
+    backgroundColor: 'var(--bg-primary, #fff)',
+    borderBottom: '1px solid var(--border-color, #e0e0e0)',
     boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
     zIndex: 1000,
     display: 'flex',
@@ -44,36 +55,13 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
     padding: '0 24px'
   };
 
-  const sidebarStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: '64px',
-    left: 0,
-    width: '280px',
-    height: 'calc(100vh - 64px)',
-    backgroundColor: '#fafafa',
-    borderRight: '1px solid #e0e0e0',
-    zIndex: sidebarPinned ? 999 : 1001,
-    transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-    transition: 'transform 0.3s ease'
-  };
-
   const mainStyle: React.CSSProperties = {
     marginTop: '64px',
-    marginLeft: sidebarPinned ? '280px' : '0',
-    backgroundColor: '#f8fafc',
+    marginLeft: sidebarOpen ? (sidebarCollapsed ? '64px' : '280px') : '0',
+    backgroundColor: 'var(--bg-secondary, #f8fafc)',
     minHeight: 'calc(100vh - 64px)',
     transition: 'margin-left 0.3s ease',
-    width: sidebarPinned ? 'calc(100% - 280px)' : '100%'
-  };
-
-  const backdropStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 998
+    width: sidebarOpen ? (sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 280px)') : '100%'
   };
 
   return (
@@ -91,7 +79,7 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
           <div style={{
             fontSize: '20px',
             fontWeight: '600',
-            color: isDark ? '#ffffff' : '#1976d2'
+            color: 'var(--dx-color-primary, #1976d2)'
           }}>
             Flowner Portal
           </div>
@@ -99,100 +87,42 @@ function PortalLayout({ children, user }: PortalLayoutProps) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <DxButton
-            icon="folder"
+            icon="search"
             stylingMode="text"
-            hint="Görevlerim"
+            hint="Arama"
           />
-
-          <div style={{ position: 'relative' }}>
-            <DxButton
-              icon="bell"
-              stylingMode="text"
-              hint="Bildirimler"
-            />
-            <div style={{
-              position: 'absolute',
-              top: '4px',
-              right: '4px',
-              backgroundColor: '#f44336',
-              color: 'white',
-              borderRadius: '50%',
-              width: '16px',
-              height: '16px',
-              fontSize: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold'
-            }}>
-              3
-            </div>
-          </div>
-
-          <div style={{ position: 'relative' }}>
-            <DxButton
-              icon="message"
-              stylingMode="text"
-              hint="Mesajlar"
-            />
-            <div style={{
-              position: 'absolute',
-              top: '4px',
-              right: '4px',
-              backgroundColor: '#f44336',
-              color: 'white',
-              borderRadius: '50%',
-              width: '16px',
-              height: '16px',
-              fontSize: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold'
-            }}>
-              2
-            </div>
-          </div>
 
           <ThemeToggle 
             isDark={isDark}
             onToggle={switchTheme}
           />
 
+          <DxButton
+            icon="bell"
+            stylingMode="text"
+            hint="Bildirimler"
+          />
+
           <ProfileDropdown userType="portal" />
         </div>
       </div>
 
-      {/* Sidebar */}
-      <div style={sidebarStyle}>
+      {/* Sidebar - SAME AS ADMIN */}
+      {sidebarOpen && (
         <div style={{
-          padding: '16px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          borderBottom: '1px solid #e0e0e0',
-          backgroundColor: '#fff'
+          position: 'fixed',
+          top: '64px',
+          left: 0,
+          width: sidebarCollapsed ? '64px' : '280px',
+          height: 'calc(100vh - 64px)',
+          backgroundColor: 'var(--bg-primary, #fafafa)',
+          borderRight: '1px solid var(--border-color, #e0e0e0)',
+          zIndex: 1001,
+          transition: 'all 0.3s ease',
+          overflowY: 'auto'
         }}>
-          <div style={{
-            fontSize: '14px',
-            fontWeight: '600',
-            color: '#333'
-          }}>
-            Portal Menü
-          </div>
-          <DxButton
-            icon={sidebarPinned ? "unpin" : "pin"}
-            stylingMode="text"
-            onClick={handlePinSidebar}
-            hint={sidebarPinned ? "Menüyü Serbest Bırak" : "Menüyü Sabitle"}
-          />
+          <PortalSidebar onClose={handleCloseSidebar} isCollapsed={sidebarCollapsed} />
         </div>
-        <PortalSidebar onClose={handleCloseSidebar} />
-      </div>
-
-      {/* Backdrop for mobile */}
-      {sidebarOpen && !sidebarPinned && (
-        <div style={backdropStyle} onClick={handleBackdropClick} />
       )}
 
       {/* Main Content */}

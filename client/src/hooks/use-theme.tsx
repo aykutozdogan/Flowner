@@ -30,15 +30,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
     
     // Remove all theme classes
-    root.classList.remove('dark', 'corporate');
+    root.classList.remove('dark', 'theme-dark', 'corporate', 'theme-corporate');
     
-    // Add current theme class
-    if (theme !== 'light') {
-      root.classList.add(theme);
+    // Add current theme class - both formats for compatibility
+    if (theme === 'dark') {
+      root.classList.add('dark', 'theme-dark');
+    } else if (theme === 'corporate') {
+      root.classList.add('corporate', 'theme-corporate');
     }
     
     // Store in localStorage
     localStorage.setItem('flowner-theme', theme);
+    
+    // Force re-render of DevExtreme components
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 100);
   }, [theme]);
 
   const toggleTheme = () => {

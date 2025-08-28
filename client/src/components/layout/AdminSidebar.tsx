@@ -153,16 +153,32 @@ const AdminSidebar = ({ onClose, isCollapsed = false }: AdminSidebarProps) => {
           onClick={handleLinkClick}
         >
           <div
-            className={`
-              flex items-center cursor-pointer
-              transition-colors border-l-4
-              ${isActive 
-                ? 'bg-blue-50 text-blue-700 border-blue-500' 
-                : 'text-gray-700 hover:bg-gray-50 border-transparent'
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              padding: isCollapsed ? '12px 8px' : '12px 16px',
+              margin: '0 8px',
+              borderRadius: '8px',
+              backgroundColor: isActive 
+                ? 'var(--dx-color-primary, #1976d2)' 
+                : 'transparent',
+              color: isActive 
+                ? 'white' 
+                : 'var(--text-primary, #333)',
+              transition: 'all 0.2s ease',
+              borderLeft: isActive ? '4px solid rgba(255,255,255,0.3)' : '4px solid transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.backgroundColor = 'var(--hover-color, rgba(25, 118, 210, 0.1))';
               }
-              ${isCollapsed ? 'justify-center py-3 px-2' : 'space-x-3 px-4 py-3'}
-              ${level > 0 && !isCollapsed ? 'pl-12' : ''}
-            `}
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
             title={isCollapsed ? item.label : ''}
           >
             <item.icon 
@@ -179,12 +195,28 @@ const AdminSidebar = ({ onClose, isCollapsed = false }: AdminSidebarProps) => {
   };
 
   return (
-    <div className={`bg-white dark:bg-gray-800 h-full transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-full'}`}
-         style={{
-           backgroundColor: 'var(--bg-primary, #ffffff)',
-           color: 'var(--text-primary, #333333)'
-         }}>
-      <nav className="py-2">
+    <div 
+      style={{
+        backgroundColor: 'var(--bg-primary, #ffffff)',
+        color: 'var(--text-primary, #333333)',
+        height: '100%',
+        width: '100%',
+        transition: 'all 0.3s ease'
+      }}
+    >
+      <nav style={{ padding: '16px 0' }}>
+        <div style={{
+          fontSize: '12px',
+          fontWeight: '600',
+          color: 'var(--text-secondary, #999)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          padding: '0 16px',
+          marginBottom: '12px'
+        }}>
+          {!isCollapsed && 'ADMIN MENU'}
+        </div>
+        
         {menuItems.map(item => renderMenuItem(item))}
       </nav>
     </div>

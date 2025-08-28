@@ -109,7 +109,7 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
         </div>
       </div>
 
-      {/* Sidebar */}
+      {/* Sidebar - FIXED: Single clean sidebar */}
       {sidebarOpen && (
         <div style={{
           position: 'fixed',
@@ -117,29 +117,12 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
           left: 0,
           width: sidebarCollapsed ? '64px' : '280px',
           height: 'calc(100vh - 64px)',
-          backgroundColor: '#fafafa',
-          borderRight: '1px solid #e0e0e0',
+          backgroundColor: 'var(--bg-primary, #fafafa)',
+          borderRight: '1px solid var(--border-color, #e0e0e0)',
           zIndex: 1001,
-          transition: 'all 0.3s ease'
+          transition: 'all 0.3s ease',
+          overflowY: 'auto'
         }}>
-        <div style={{
-          padding: sidebarCollapsed ? '16px 8px' : '16px',
-          display: 'flex',
-          justifyContent: sidebarCollapsed ? 'center' : 'space-between',
-          alignItems: 'center',
-          borderBottom: '1px solid #e0e0e0',
-          backgroundColor: '#fff'
-        }}>
-          {!sidebarCollapsed && (
-            <div style={{
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#1976d2'
-            }}>
-              Admin Menü
-            </div>
-          )}
-        </div>
           <AdminSidebar onClose={handleCloseSidebar} isCollapsed={sidebarCollapsed} />
         </div>
       )}
