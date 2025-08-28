@@ -14,20 +14,30 @@ interface AdminLayoutProps {
 }
 
 function AdminLayout({ children, user }: AdminLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Start expanded
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Collapsed state
   const { isDark, switchTheme } = useTheme();
   const { logout } = useAuth();
 
   const handleToggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+    if (sidebarOpen) {
+      // If open, just collapse it
+      setSidebarCollapsed(!sidebarCollapsed);
+    } else {
+      // If closed, open it
+      setSidebarOpen(true);
+      setSidebarCollapsed(false);
+    }
   };
 
   const handleCloseSidebar = () => {
     setSidebarOpen(false);
+    setSidebarCollapsed(false);
   };
 
   const handleBackdropClick = () => {
     setSidebarOpen(false);
+    setSidebarCollapsed(false);
   };
 
   const headerStyle: React.CSSProperties = {
@@ -50,22 +60,22 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
     position: 'fixed',
     top: '64px',
     left: 0,
-    width: '280px',
+    width: sidebarCollapsed ? '64px' : '280px',
     height: 'calc(100vh - 64px)',
     backgroundColor: '#fafafa',
     borderRight: '1px solid #e0e0e0',
     zIndex: 1001,
     transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-    transition: 'transform 0.3s ease'
+    transition: 'all 0.3s ease'
   };
 
   const mainStyle: React.CSSProperties = {
     marginTop: '64px',
-    marginLeft: '0',
+    marginLeft: sidebarOpen ? (sidebarCollapsed ? '64px' : '280px') : '0',
     backgroundColor: '#f8fafc',
     minHeight: 'calc(100vh - 64px)',
     transition: 'margin-left 0.3s ease',
-    width: '100%'
+    width: sidebarOpen ? (sidebarCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 280px)') : '100%'
   };
 
   const backdropStyle: React.CSSProperties = {
@@ -124,22 +134,24 @@ function AdminLayout({ children, user }: AdminLayoutProps) {
       {/* Sidebar */}
       <div style={sidebarStyle}>
         <div style={{
-          padding: '16px',
+          padding: sidebarCollapsed ? '16px 8px' : '16px',
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: sidebarCollapsed ? 'center' : 'space-between',
           alignItems: 'center',
           borderBottom: '1px solid #e0e0e0',
           backgroundColor: '#fff'
         }}>
-          <div style={{
-            fontSize: '14px',
-            fontWeight: '600',
-            color: '#1976d2'
-          }}>
-            Admin Menü
-          </div>
+          {!sidebarCollapsed && (
+            <div style={{
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#1976d2'
+            }}>
+              Admin Menü
+            </div>
+          )}
         </div>
-        <AdminSidebar onClose={handleCloseSidebar} />
+        <AdminSidebar onClose={handleCloseSidebar} isCollapsed={sidebarCollapsed} />
       </div>
 
       {/* Backdrop for mobile */}

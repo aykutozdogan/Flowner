@@ -54,17 +54,24 @@ function switchThemeStyleSheets(enabledTheme: Theme) {
 async function setAppTheme(newTheme?: Theme) {
   const themeName = newTheme || getCurrentTheme();
 
-  switchThemeStyleSheets(themeName);
+  // Remove old theme classes
+  document.documentElement.classList.remove('theme-light', 'theme-dark', 'app-theme-light', 'app-theme-dark');
   
-  // Add theme class to document
-  document.documentElement.className = document.documentElement.className
-    .replace(/app-theme-\w+/g, '')
-    .trim();
-  document.documentElement.classList.add(`app-theme-${themeName}`);
+  // Add new theme classes
+  document.documentElement.classList.add(`theme-${themeName}`, `app-theme-${themeName}`);
 
-  const regexTheme = new RegExp(`\\.(${themes.join('|')})`, 'g');
-  currentVizTheme(currentVizTheme().replace(regexTheme, `.${themeName}`));
-  refreshTheme();
+  switchThemeStyleSheets(themeName);
+
+  try {
+    const regexTheme = new RegExp(`\\.(${themes.join('|')})`, 'g');
+    const currentThemeName = currentVizTheme();
+    if (currentThemeName) {
+      currentVizTheme(currentThemeName.replace(regexTheme, `.${themeName}`));
+      refreshTheme();
+    }
+  } catch (e) {
+    console.warn('DevExtreme theme refresh failed:', e);
+  }
 }
 
 function toggleTheme(currentTheme: Theme): Theme {

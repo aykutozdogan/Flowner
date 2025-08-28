@@ -2,43 +2,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-/* DevExtreme CSS Base */
-@import 'devextreme/dist/css/dx.light.css';
+/* DevExtreme CSS will be loaded by theme system */
 
 /* Tailwind CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Simple Light/Dark Theme System */
+/* DevExtreme Professional Theme System Integration */
 .dx-widget {
   font-family: 'Roboto', sans-serif !important;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-/* Light Theme (default) */
-:root.theme-light {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --text-primary: #000000;
-  --text-secondary: #666666;
-  --border-color: #e0e0e0;
-  --dx-color-primary: #1976d2;
-}
-
-:root.theme-light .dx-widget {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-/* Dark Theme */
-:root.theme-dark {
-  --bg-primary: #1e1e1e;
-  --bg-secondary: #2d3436;
-  --text-primary: #ffffff;
-  --text-secondary: #dddddd;
-  --border-color: #404040;
-  --dx-color-primary: #42a5f5;
 }
 
 /* DevExtreme Professional Theme System */

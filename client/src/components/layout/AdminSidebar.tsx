@@ -78,9 +78,10 @@ const menuItems: MenuItem[] = [
 
 interface AdminSidebarProps {
   onClose?: () => void;
+  isCollapsed?: boolean;
 }
 
-const AdminSidebar = ({ onClose }: AdminSidebarProps) => {
+const AdminSidebar = ({ onClose, isCollapsed = false }: AdminSidebarProps) => {
   const [location] = useLocation();
   const { hasRole } = useAuth();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Management', 'Administration']);
@@ -115,22 +116,24 @@ const AdminSidebar = ({ onClose }: AdminSidebarProps) => {
       return (
         <div key={item.label}>
           <div
-            onClick={() => toggleExpanded(item.label)}
+            onClick={() => !isCollapsed && toggleExpanded(item.label)}
             className={`
-              flex items-center justify-between px-4 py-3 cursor-pointer
+              flex items-center cursor-pointer
               text-gray-700 hover:bg-gray-50 border-l-4 border-transparent
-              ${level > 0 ? 'pl-8' : ''}
+              ${isCollapsed ? 'justify-center py-3 px-2' : 'justify-between px-4 py-3'}
+              ${level > 0 && !isCollapsed ? 'pl-8' : ''}
             `}
             style={{ borderLeftColor: isExpanded ? '#1976d2' : 'transparent' }}
+            title={isCollapsed ? item.label : ''}
           >
-            <div className="flex items-center space-x-3">
+            <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'}`}>
               <item.icon size={18} className="text-gray-500" />
-              <span className="text-sm font-medium">{item.label}</span>
+              {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
             </div>
-            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            {!isCollapsed && (isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
           </div>
           
-          {isExpanded && (
+          {!isCollapsed && isExpanded && (
             <div className="bg-gray-50">
               {item.children.map(child => renderMenuItem(child, level + 1))}
             </div>
@@ -148,20 +151,22 @@ const AdminSidebar = ({ onClose }: AdminSidebarProps) => {
         >
           <div
             className={`
-              flex items-center space-x-3 px-4 py-3 cursor-pointer
+              flex items-center cursor-pointer
               transition-colors border-l-4
               ${isActive 
                 ? 'bg-blue-50 text-blue-700 border-blue-500' 
                 : 'text-gray-700 hover:bg-gray-50 border-transparent'
               }
-              ${level > 0 ? 'pl-12' : ''}
+              ${isCollapsed ? 'justify-center py-3 px-2' : 'space-x-3 px-4 py-3'}
+              ${level > 0 && !isCollapsed ? 'pl-12' : ''}
             `}
+            title={isCollapsed ? item.label : ''}
           >
             <item.icon 
               size={18} 
               className={isActive ? 'text-blue-600' : 'text-gray-500'} 
             />
-            <span className="text-sm font-medium">{item.label}</span>
+            {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
           </div>
         </Link>
       );
@@ -171,7 +176,7 @@ const AdminSidebar = ({ onClose }: AdminSidebarProps) => {
   };
 
   return (
-    <div className="w-full bg-white h-full">
+    <div className={`bg-white h-full transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-full'}`}>
       <nav className="py-2">
         {menuItems.map(item => renderMenuItem(item))}
       </nav>
