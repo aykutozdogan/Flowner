@@ -87,9 +87,10 @@ const AdminSidebar = ({ onClose, isCollapsed = false }: AdminSidebarProps) => {
   const [expandedItems, setExpandedItems] = useState<string[]>(['Management', 'Administration']);
 
   const handleLinkClick = () => {
-    if (onClose) {
-      onClose();
-    }
+    // Don't close sidebar on desktop - only close on mobile if needed
+    // if (onClose) {
+    //   onClose();
+    // }
   };
 
   const toggleExpanded = (label: string) => {

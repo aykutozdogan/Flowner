@@ -102,9 +102,9 @@ export default function FormsPage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, backgroundColor: 'transparent' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 500 }}>
           Form Yönetimi
         </Typography>
         <Button
@@ -117,9 +117,7 @@ export default function FormsPage() {
         </Button>
       </Box>
 
-      <Card>
-        <CardContent sx={{ p: 0 }}>
-          <TableContainer component={Paper} elevation={0}>
+      <TableContainer component={Paper} elevation={0} sx={{ backgroundColor: 'white', borderRadius: 1 }}>
             <Table>
               <TableHead>
                 <TableRow>
@@ -184,9 +182,7 @@ export default function FormsPage() {
                 )}
               </TableBody>
             </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+      </TableContainer>
     </Box>
   );
 }
