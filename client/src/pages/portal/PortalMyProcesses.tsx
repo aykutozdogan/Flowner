@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
+import { 
+  Button as DxButton,
+  TextBox as DxTextBox
+} from 'devextreme-react';
 import { Search, Play, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 interface UserProcess {
@@ -78,11 +80,15 @@ export default function PortalMyProcesses() {
           <CardContent className="p-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
+              <DxTextBox
                 placeholder="Search processes..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                onValueChanged={(e) => setSearchTerm(e.value)}
+                width="100%"
+                height={40}
+                elementAttr={{
+                  className: "pl-10"
+                }}
               />
             </div>
           </CardContent>
@@ -196,9 +202,12 @@ export default function PortalMyProcesses() {
                         </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(process.status)}
-                          <Button variant="outline" size="sm">
-                            View Details
-                          </Button>
+                          <DxButton
+                            text="View Details"
+                            stylingMode="outlined"
+                            height={32}
+                            width={100}
+                          />
                         </div>
                       </div>
                     </CardContent>

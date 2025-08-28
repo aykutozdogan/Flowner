@@ -3,13 +3,15 @@ import { useLocation } from 'wouter';
 import { 
   Container, 
   Paper, 
-  TextField, 
-  Button, 
   Typography, 
   Box, 
   Alert,
   CircularProgress 
 } from '@mui/material';
+import { 
+  TextBox as DxTextBox,
+  Button as DxButton 
+} from 'devextreme-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,8 +29,8 @@ export default function Login() {
   const urlParams = new URLSearchParams(window.location.search);
   const redirectTo = urlParams.get('redirectTo');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoading(true);
     setError('');
 
@@ -149,35 +151,42 @@ export default function Login() {
 
           {/* Login Form */}
           <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              autoFocus
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-              data-testid="input-email"
-            />
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                Email Address *
+              </label>
+              <DxTextBox
+                placeholder="Enter your email address"
+                value={email}
+                onValueChanged={(e) => setEmail(e.value)}
+                disabled={loading}
+                width="100%"
+                height={44}
+                elementAttr={{
+                  id: 'email',
+                  'data-testid': 'input-email'
+                }}
+              />
+            </div>
             
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              data-testid="input-password"
-            />
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                Password *
+              </label>
+              <DxTextBox
+                mode="password"
+                placeholder="Enter your password"
+                value={password}
+                onValueChanged={(e) => setPassword(e.value)}
+                disabled={loading}
+                width="100%"
+                height={44}
+                elementAttr={{
+                  id: 'password',
+                  'data-testid': 'input-password'
+                }}
+              />
+            </div>
 
             {error && (
               <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
@@ -185,26 +194,18 @@ export default function Login() {
               </Alert>
             )}
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ 
-                mt: 3, 
-                mb: 2, 
-                py: 1.5,
-                fontSize: '1rem',
-                fontWeight: 500,
-              }}
+            <DxButton
+              text={loading ? 'Signing In...' : 'Sign In'}
+              type="default"
+              stylingMode="contained"
+              onClick={handleSubmit}
               disabled={loading}
-              data-testid="button-login"
-            >
-              {loading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                'Sign In'
-              )}
-            </Button>
+              width="100%"
+              height={50}
+              elementAttr={{
+                'data-testid': 'button-login'
+              }}
+            />
 
             <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
               Need help? Contact your system administrator

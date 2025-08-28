@@ -1,4 +1,5 @@
-import { Box, Card, CardContent, Typography, Button } from '@mui/material';
+import { Box, Card, CardContent, Typography } from '@mui/material';
+import { Button as DxButton } from 'devextreme-react';
 import { 
   AddBox as AddBoxIcon,
   DeviceHub as DeviceHubIcon,
@@ -56,54 +57,21 @@ export default function QuickActions() {
         </Typography>
         
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {actions.map((action, index) => {
-            const Icon = action.icon;
-            
-            return (
-              <Button
-                key={index}
-                fullWidth
-                variant="text"
-                onClick={() => setLocation(action.path)}
-                sx={{
-                  justifyContent: 'space-between',
-                  p: 1.5,
-                  bgcolor: action.primary ? 'primary.light' : 'grey.50',
-                  color: action.primary ? 'primary.main' : 'text.primary',
-                  '&:hover': {
-                    bgcolor: action.primary ? 'primary.light' : 'grey.100',
-                  },
-                  borderRadius: 2,
-                  textTransform: 'none',
-                }}
-                data-testid={`button-quick-action-${index}`}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Icon 
-                    sx={{ 
-                      fontSize: 20,
-                      color: action.primary ? 'primary.main' : 'text.secondary'
-                    }} 
-                  />
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      fontWeight: 500,
-                      color: action.primary ? 'primary.main' : 'text.primary'
-                    }}
-                  >
-                    {action.title}
-                  </Typography>
-                </Box>
-                <ArrowForwardIcon 
-                  sx={{ 
-                    fontSize: 16,
-                    color: action.primary ? 'primary.main' : 'text.secondary'
-                  }} 
-                />
-              </Button>
-            );
-          })}
+          {actions.map((action, index) => (
+            <DxButton
+              key={index}
+              text={action.title}
+              onClick={() => setLocation(action.path)}
+              width="100%"
+              height={44}
+              stylingMode={action.primary ? "contained" : "outlined"}
+              type={action.primary ? "default" : "normal"}
+              elementAttr={{
+                'data-testid': `button-quick-action-${index}`,
+                className: action.primary ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
+              }}
+            />
+          ))}
         </Box>
       </CardContent>
     </Card>

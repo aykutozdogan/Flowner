@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { 
+  Button as DxButton,
+  TextBox as DxTextBox,
+  TextArea as DxTextArea
+} from 'devextreme-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Play, Search, GitBranch, FileText } from 'lucide-react';
@@ -106,11 +108,15 @@ export default function PortalStartProcess() {
           <CardContent className="p-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
+              <DxTextBox
                 placeholder="Search workflows..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                onValueChanged={(e) => setSearchTerm(e.value)}
+                width="100%"
+                height={40}
+                elementAttr={{
+                  className: "pl-10"
+                }}
               />
             </div>
           </CardContent>
@@ -149,14 +155,17 @@ export default function PortalStartProcess() {
                       <span className="font-medium">Key:</span> {workflow.key}
                     </div>
                     
-                    <Button 
+                    <DxButton
+                      text="Start Process"
+                      icon="play"
                       onClick={() => handleStartProcess(workflow)}
-                      className="w-full"
-                      data-testid={`start-workflow-${workflow.key}`}
-                    >
-                      <Play className="w-4 h-4 mr-2" />
-                      Start Process
-                    </Button>
+                      width="100%"
+                      height={36}
+                      stylingMode="contained"
+                      elementAttr={{
+                        'data-testid': `start-workflow-${workflow.key}`
+                      }}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -185,23 +194,30 @@ export default function PortalStartProcess() {
 
                 <div className="space-y-2">
                   <Label htmlFor="processName">Process Name *</Label>
-                  <Input
-                    id="processName"
+                  <DxTextBox
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onValueChanged={(e) => setFormData({ ...formData, name: e.value })}
                     placeholder="Enter process name"
-                    required
+                    width="100%"
+                    height={40}
+                    elementAttr={{
+                      id: "processName",
+                      required: true
+                    }}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="processDescription">Description</Label>
-                  <Textarea
-                    id="processDescription"
+                  <DxTextArea
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onValueChanged={(e) => setFormData({ ...formData, description: e.value })}
                     placeholder="Optional description"
-                    rows={3}
+                    width="100%"
+                    height={80}
+                    elementAttr={{
+                      id: "processDescription"
+                    }}
                   />
                 </div>
 
@@ -216,19 +232,21 @@ export default function PortalStartProcess() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <DxButton
+                    text="Cancel"
+                    stylingMode="outlined"
                     onClick={() => setIsDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
+                    width={80}
+                    height={36}
+                  />
+                  <DxButton
+                    text={startProcessMutation.isPending ? 'Starting...' : 'Start Process'}
+                    stylingMode="contained"
+                    onClick={handleSubmit}
                     disabled={startProcessMutation.isPending || !formData.name.trim()}
-                  >
-                    {startProcessMutation.isPending ? 'Starting...' : 'Start Process'}
-                  </Button>
+                    width={120}
+                    height={36}
+                  />
                 </div>
               </form>
             )}

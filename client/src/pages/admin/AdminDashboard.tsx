@@ -1,6 +1,7 @@
 import React from 'react';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { useTheme } from '@/providers/ThemeProvider';
+import { Button as DxButton } from 'devextreme-react';
 import StatsCards from '@/components/dashboard/stats-cards';
 import QuickActions from '@/components/dashboard/quick-actions';
 import RecentActivity from '@/components/dashboard/recent-activity';
@@ -25,12 +26,26 @@ export default function AdminDashboard() {
               Use Form Builder and BPMN Designer to create custom workflows.
             </p>
             <div className="flex gap-2">
-              <button className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
-                Form Builder
-              </button>
-              <button className="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700">
-                BPMN Designer
-              </button>
+              <DxButton
+                text="Form Builder"
+                stylingMode="contained"
+                type="default"
+                height={34}
+                width={110}
+                elementAttr={{
+                  className: "bg-blue-600 hover:bg-blue-700"
+                }}
+              />
+              <DxButton
+                text="BPMN Designer"
+                stylingMode="contained"
+                type="default"
+                height={34}
+                width={130}
+                elementAttr={{
+                  className: "bg-green-600 hover:bg-green-700"
+                }}
+              />
             </div>
           </div>
           <RecentActivity />
@@ -51,11 +66,16 @@ export default function AdminDashboard() {
                 Sezgisel BPMN tasarımcısı ile iş süreçlerini oluşturun ve yönetin
               </p>
             </div>
-            <button 
-              className="px-4 py-2 bg-blue-700 text-white text-sm font-medium rounded-md hover:bg-blue-800 transition-colors"
-            >
-              Designer'ı Aç
-            </button>
+            <DxButton
+              text="Designer'ı Aç"
+              stylingMode="contained"
+              type="default"
+              height={36}
+              width={120}
+              elementAttr={{
+                className: "bg-blue-700 hover:bg-blue-800"
+              }}
+            />
           </div>
         </div>
       </div>

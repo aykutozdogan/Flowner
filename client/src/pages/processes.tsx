@@ -2,10 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  Button as DxButton,
+  TextBox as DxTextBox,
+  SelectBox as DxSelectBox
+} from 'devextreme-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -230,20 +232,29 @@ export default function ProcessesPage() {
             <p className="text-gray-600 mt-2">İş süreçlerini izleyin ve yönetin</p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <DxButton
+              text="Otomatik Yenile"
+              icon="refresh"
+              stylingMode="outlined"
               onClick={() => setAutoRefresh(!autoRefresh)}
-              className={autoRefresh ? 'bg-green-50 border-green-200' : ''}
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
-              Otomatik Yenile
-            </Button>
+              height={36}
+              width={140}
+              elementAttr={{
+                className: autoRefresh ? 'bg-green-50 border-green-200' : ''
+              }}
+            />
             <Dialog open={isStartDialogOpen} onOpenChange={setIsStartDialogOpen}>
               <DialogTrigger asChild>
-                <Button data-testid="start-process-button">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Süreç Başlat
-                </Button>
+                <DxButton
+                  text="Süreç Başlat"
+                  icon="plus"
+                  stylingMode="contained"
+                  height={36}
+                  width={130}
+                  elementAttr={{
+                    'data-testid': 'start-process-button'
+                  }}
+                />
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -252,40 +263,55 @@ export default function ProcessesPage() {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="workflow">Workflow</Label>
-                    <Select value={selectedWorkflowId} onValueChange={setSelectedWorkflowId}>
-                      <SelectTrigger data-testid="workflow-select">
-                        <SelectValue placeholder="Select a published workflow" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {workflows?.map((workflow) => (
-                          <SelectItem key={workflow.id} value={workflow.id}>
-                            {workflow.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <DxSelectBox
+                      dataSource={workflows || []}
+                      displayExpr="name"
+                      valueExpr="id"
+                      value={selectedWorkflowId}
+                      onValueChanged={(e) => setSelectedWorkflowId(e.value)}
+                      placeholder="Select a published workflow"
+                      searchEnabled={false}
+                      showClearButton={true}
+                      width="100%"
+                      height={40}
+                      elementAttr={{
+                        'data-testid': 'workflow-select'
+                      }}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="processName">Process Name</Label>
-                    <Input
-                      id="processName"
+                    <DxTextBox
                       value={processName}
-                      onChange={(e) => setProcessName(e.target.value)}
+                      onValueChanged={(e) => setProcessName(e.value)}
                       placeholder="Enter process instance name"
-                      data-testid="process-name-input"
+                      width="100%"
+                      height={40}
+                      elementAttr={{
+                        id: 'processName',
+                        'data-testid': 'process-name-input'
+                      }}
                     />
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsStartDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button
+                    <DxButton
+                      text="Cancel"
+                      stylingMode="outlined"
+                      onClick={() => setIsStartDialogOpen(false)}
+                      width={100}
+                      height={36}
+                    />
+                    <DxButton
+                      text="Start Process"
+                      stylingMode="contained"
                       onClick={handleStartProcess}
                       disabled={startProcessMutation.isPending}
-                      data-testid="start-process-confirm"
-                    >
-                      Start Process
-                    </Button>
+                      width={120}
+                      height={36}
+                      elementAttr={{
+                        'data-testid': 'start-process-confirm'
+                      }}
+                    />
                   </div>
                 </div>
               </DialogContent>

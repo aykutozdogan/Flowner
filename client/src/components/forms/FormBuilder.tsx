@@ -6,15 +6,12 @@ import {
   Card, 
   CardContent, 
   Typography, 
-  Button, 
   IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
-  TextField,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
   Switch,
   FormControlLabel,
@@ -24,6 +21,11 @@ import {
   AccordionSummary,
   AccordionDetails
 } from '@mui/material';
+import { 
+  Button as DxButton,
+  TextBox as DxTextBox,
+  SelectBox as DxSelectBox
+} from 'devextreme-react';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
