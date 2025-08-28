@@ -16,7 +16,7 @@ flowner/
 │   │   ├── ui/                 # shadcn/ui + DevExtreme wrappers
 │   │   └── workflows/          # BpmnDesigner
 │   ├── pages/                  # Route-based pages
-│   │   ├── admin/              # Admin panel pages (8 files)
+│   │   ├── admin/              project_context# Admin panel pages (8 files)
 │   │   └── portal/             # Portal user pages (7 files)
 │   ├── hooks/                  # Custom React hooks
 │   ├── lib/                    # Utilities and API client

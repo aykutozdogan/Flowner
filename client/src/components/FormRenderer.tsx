@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Alert, CircularProgress } from '@mui/material';
 import { 
   TextBox as DxTextBox,
   TextArea as DxTextArea, 
@@ -270,30 +269,26 @@ export function FormRenderer({ schema, uiSchema, value, onSubmit, outcomes = [],
         
       case 'radio':
         return (
-          <Box key={field.name}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          <div key={field.name} className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
               {field.label}{field.required && ' *'}
-            </Typography>
-            <RadioGroup
+            </label>
+            <DxRadioGroup
+              dataSource={field.options || []}
+              displayExpr="label"
+              valueExpr="value"
               value={formData[field.name] || ''}
-              onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            >
-              {field.options?.map(option => (
-                <FormControlLabel
-                  key={option.value}
-                  value={option.value}
-                  control={<Radio disabled={disabled} />}
-                  label={option.label}
-                  data-testid={`radio-${field.name}-${option.value}`}
-                />
-              ))}
-            </RadioGroup>
+              onValueChanged={(e: any) => handleFieldChange(field.name, e.value)}
+              disabled={disabled}
+              layout="vertical"
+              elementAttr={{
+                'data-testid': `radio-${field.name}`
+              }}
+            />
             {error && (
-              <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                {error}
-              </Typography>
+              <span className="text-sm text-red-500">{error}</span>
             )}
-          </Box>
+          </div>
         );
         
       case 'date':
@@ -319,81 +314,85 @@ export function FormRenderer({ schema, uiSchema, value, onSubmit, outcomes = [],
         
       default:
         return (
-          <TextField
-            key={field.name}
-            label={field.label}
-            placeholder={field.placeholder || fieldProps.placeholder}
-            value={formData[field.name] || ''}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            error={!!error}
-            helperText={error}
-            disabled={disabled}
-            fullWidth
-            data-testid={`input-${field.name}`}
-          />
+          <div key={field.name} className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
+            <DxTextBox
+              placeholder={field.placeholder || fieldProps.placeholder}
+              value={formData[field.name] || ''}
+              onValueChanged={(e: any) => handleFieldChange(field.name, e.value)}
+              disabled={disabled}
+              width="100%"
+              height={40}
+              elementAttr={{
+                'data-testid': `input-${field.name}`
+              }}
+            />
+            {error && (
+              <span className="text-sm text-red-500">{error}</span>
+            )}
+          </div>
         );
     }
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
-      <Box sx={{ maxWidth: '800px', mx: 'auto', p: 3 }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gap: 3,
-            gridTemplateColumns: uiSchema.layout === 'grid' && uiSchema.columns 
-              ? `repeat(${uiSchema.columns}, 1fr)` 
-              : '1fr'
-          }}
-        >
-          {schema.fields.map(renderField)}
-        </Box>
-        
-        {outcomes.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Karar
-            </Typography>
-            <FormControl fullWidth error={!!errors._outcome}>
-              <InputLabel>Seçenek</InputLabel>
-              <Select
-                value={selectedOutcome}
-                onChange={(e) => setSelectedOutcome(e.target.value)}
-                label="Seçenek"
-                disabled={disabled}
-                data-testid="select-outcome"
-              >
-                {outcomes.map(outcome => (
-                  <MenuItem key={outcome.value} value={outcome.value}>
-                    {outcome.label}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors._outcome && (
-                <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                  {errors._outcome}
-                </Typography>
-              )}
-            </FormControl>
-          </Box>
-        )}
-        
-        <div className="mt-6 flex gap-2 justify-end">
-          <DxButton
-            text="Tamamla"
-            type="default"
-            stylingMode="contained"
-            onClick={handleSubmit}
-            disabled={disabled}
-            height={44}
-            width={120}
-            elementAttr={{
-              'data-testid': 'button-submit'
-            }}
-          />
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px' }}>
+      <div
+        style={{
+          display: 'grid',
+          gap: '24px',
+          gridTemplateColumns: uiSchema.layout === 'grid' && uiSchema.columns 
+            ? `repeat(${uiSchema.columns}, 1fr)` 
+            : '1fr'
+        }}
+      >
+        {schema.fields.map(renderField)}
+      </div>
+      
+      {outcomes.length > 0 && (
+        <div style={{ marginTop: '32px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#333' }}>
+            Karar
+          </h3>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Seçenek</label>
+            <DxSelectBox
+              dataSource={outcomes}
+              displayExpr="label"
+              valueExpr="value"
+              value={selectedOutcome}
+              onValueChanged={(e: any) => setSelectedOutcome(e.value)}
+              disabled={disabled}
+              width="100%"
+              height={40}
+              placeholder="Seçenek seçin..."
+              searchEnabled={false}
+              showClearButton={true}
+              elementAttr={{
+                'data-testid': 'select-outcome'
+              }}
+            />
+            {errors._outcome && (
+              <span className="text-sm text-red-500">{errors._outcome}</span>
+            )}
+          </div>
         </div>
-      </Box>
-    </LocalizationProvider>
+      )}
+      
+      <div className="mt-6 flex gap-2 justify-end">
+        <DxButton
+          text="Tamamla"
+          type="default"
+          stylingMode="contained"
+          onClick={handleSubmit}
+          disabled={disabled}
+          height={44}
+          width={120}
+          elementAttr={{
+            'data-testid': 'button-submit'
+          }}
+        />
+      </div>
+    </div>
   );
 }

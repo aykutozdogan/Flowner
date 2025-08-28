@@ -1,0 +1,126 @@
+# Task 1: FormRenderer LSP Hatası Düzeltme
+
+## ROLE: TypeScript LSP Error Specialist
+
+### UZMANLLIK ALANLARIN
+
+- TypeScript compilation error çözme
+- React component type safety
+- Import/export dependency düzeltme
+- LSP error root cause analysis
+
+### BU GÖREVDE YAPACAKLARIN
+
+- FormRenderer.tsx’deki 20 LSP hatasını tespit et ve düzelt
+- Import statement’ları kontrol et ve düzelt
+- Type definitions eksikse ekle
+- Component props type safety sağla
+
+## SPESIFIK GÖREV
+
+### Hedef Dosya
+
+`client/src/components/FormRenderer.tsx`
+
+### Yapılacaklar (Sırasıyla)
+
+1. **LSP Error Analizi**
+- Terminal’de TypeScript errors listele: `npx tsc --noEmit`
+- FormRenderer.tsx’e specific errors odaklan
+- Error type’larını kategorize et (import, type, syntax)
+1. **Import Dependencies Fix**
+   
+   ```typescript
+   // Mevcut imports kontrol et ve düzelt:
+   // Material-UI imports varsa DevExtreme ile değiştir
+   // Missing type imports ekle
+   // Unused imports kaldır
+   ```
+1. **Type Definitions Fix**
+   
+   ```typescript
+   // Props interface'leri kontrol et
+   // FormSchema, FormField types tanımlı mı?
+   // Event handler types doğru mu?
+   // Any type usage minimize et
+   ```
+1. **Component Logic Fix**
+   
+   ```typescript
+   // Render fonksiyonundaki type errors
+   // State management type errors
+   // Event handler parameter types
+   ```
+
+### Çalışma Prensibin
+
+- Önce tüm LSP errors’ı listele
+- Bir error’ı fix et, compile et, next error’a geç
+- Breaking changes yapmaktan kaçın
+- Mevcut functionality’yi koru
+
+### Test Kriterleri
+
+```bash
+# Başarı kriterleri:
+npx tsc --noEmit | grep FormRenderer
+# Result: No errors
+
+npm run dev
+# FormRenderer sayfası açılıyor ve çalışıyor
+```
+
+### Zaman Limiti
+
+**Max 15 dakika** - Eğer 15 dakikada bitmezse durdur ve rapor et
+
+### Başarı Kriteri
+
+- FormRenderer.tsx ile ilgili 0 LSP hatası
+- Component başarılı compile oluyor
+- Form rendering basic functionality çalışıyor
+
+## RAPOR FORMATII
+
+Tamamladıktan sonra bu format ile rapor ver:
+
+-----
+
+## FormRenderer LSP Fix Raporu
+
+### Bulunan Hatalar
+
+1. [Error type] - [Açıklama] → [Çözüm]
+1. [Error type] - [Açıklama] → [Çözüm]
+
+### Yapılan Değişiklikler
+
+- Import düzeltmeleri: [detay]
+- Type definitions: [detay]
+- Component fixes: [detay]
+
+### Test Sonucu
+
+- LSP errors: [önceki sayı] → [sonraki sayı]
+- Compile status: [başarılı/başarısız]
+- Runtime test: [çalışıyor/broken]
+
+### Süre
+
+- Toplam: [dakika]
+
+### Next Task Ready?
+
+- [Evet/Hayır - sebep]
+
+-----
+
+## HEMEN BAŞLA!
+
+FormRenderer.tsx LSP hatalarını düzelt. Bu kritik component çalışması gerekiyor.
+
+**Success focus:** 0 LSP error, working FormRenderer
+
+**Time limit:** 15 dakika max
+
+**Turkish communication:** Tüm raporlama Türkçe
