@@ -2042,7 +2042,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           counts: {
             pending: tasks.filter(t => t.status === "pending").length,
             completed: tasks.filter(t => t.status === "completed").length,
-            overdue: 0 // TODO: Calculate overdue tasks
+            overdue: tasks.filter(t =>
+              t.due_date &&
+              new Date(t.due_date) < new Date() &&
+              t.status !== "completed" &&
+              t.status !== "cancelled"
+            ).length
           }
         }
       });
